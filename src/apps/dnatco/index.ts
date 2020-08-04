@@ -66,7 +66,6 @@ class DnatcoWrapper {
     private densityMapSigma: number = 1.5;
     private densityMapAlpha: number = 0.5;
     private densityMapAsWireframe: boolean = true;
-
     private showDensityDiffMap: boolean = false;
     private notSelectedRepr: SRR.BuiltIn = 'cartoon';
     private surroundingsRadius: number = 0.0;
