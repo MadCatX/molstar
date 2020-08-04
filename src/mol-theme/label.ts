@@ -114,8 +114,14 @@ function _structureElementStatsLabel(stats: StructureElement.Stats, countsOnly =
             label.push(chainCount === 1 ? elementLabel(stats.firstChainLoc, { condensed, granularity: 'chain', hidePrefix, reverse }) : otherLabel(chainCount, stats.firstChainLoc, 'chain', hidePrefix, reverse, condensed));
             hidePrefix = true;
         }
-        if (residueCount > 0) {
+        if (residueCount === 1) {
             label.push(residueCount === 1 ? elementLabel(stats.firstResidueLoc, { condensed, granularity: 'residue', hidePrefix, reverse }) : otherLabel(residueCount, stats.firstResidueLoc, 'residue', hidePrefix, reverse, condensed));
+            hidePrefix = true;
+        } else if (residueCount === 2) {
+            label.push(twoResiduesLabel(stats, { condensed, granularity: 'residue', hidePrefix, reverse }));
+            hidePrefix = true;
+        } else if (residueCount >= 3) {
+            label.push(otherLabel(residueCount, stats.firstResidueLoc, 'residue', hidePrefix, reverse, condensed));
             hidePrefix = true;
         }
         if (conformationCount > 0) {
@@ -229,6 +235,50 @@ function _elementLabel(location: StructureElement.Location, granularity: LabelGr
     }
 
     return reverse ? label.reverse() : label;
+}
+
+export function twoResiduesLabel(stats: StructureElement.Stats, options: Partial<LabelOptions> = {}): string {
+    const o = { ...DefaultLabelOptions, ...options }
+    const label = _twoResiduesLabel(stats, o.granularity, o.hidePrefix).join(' | ')
+    return o.htmlStyling ? label : stripTags(label)
+}
+
+function _twoResiduesLabel(stats: StructureElement.Stats, granularity: LabelGranularity = 'element', hidePrefix = false): string[] {
+    const label: string[] = [];
+    const loc = stats.firstElementLoc;
+
+    if (loc.unit.kind !== Unit.Kind.Atomic)
+        return label; // Invalid input type;
+
+    if (!hidePrefix) {
+        label.push(`<small>${loc.unit.model.entry}</small>`) // entry
+        if (granularity !== 'structure') {
+            label.push(`<small>Model ${loc.unit.model.modelNum}</small>`) // model
+            label.push(`<small>Instance ${loc.unit.conformation.operator.name}</small>`) // instance
+        }
+    }
+
+    // Look for where the second residue starts
+    const indices = (() => {
+        const hierarchy = loc.unit.model.atomicHierarchy;
+        const { index: residueIndex } = hierarchy.residueAtomSegments;
+        const eIFirst = loc.element;
+        const rIFirst = residueIndex[eIFirst];
+        const rINext = rIFirst + 1 >= residueIndex.length ? residueIndex.length - 1 : rIFirst + 1;
+        const eINext = (() => {
+            let eI = eIFirst;
+            while (residueIndex[++eI] < rINext);
+
+            return eI;
+        })();
+
+        return [ eIFirst, eINext ];
+    })();
+
+    label.push(..._atomicElementLabel(StructureElement.Location.create(loc.structure, loc.unit, indices[0]), granularity));
+    label.push(..._atomicElementLabel(StructureElement.Location.create(loc.structure, loc.unit, indices[1]), granularity));
+
+    return label;
 }
 
 function _atomicElementLabel(location: StructureElement.Location<Unit.Atomic>, granularity: LabelGranularity, hideOccupancy = false): string[] {
