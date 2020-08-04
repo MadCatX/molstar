@@ -5,5 +5,6 @@ const examples = ['proteopedia-wrapper', 'basic-wrapper', 'lighting', 'alpha-orb
 module.exports = [
     createApp('viewer', 'molstar'),
     createApp('docking-viewer', 'molstar'),
+    createApp('dnatco', 'molstar'),
     ...examples.map(createExample)
 ];
