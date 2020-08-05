@@ -224,8 +224,7 @@ class DnatcoWrapper {
             b = Util.visualPyramids(this.plugin, b.to(AsmRef), this.customPyramidsColorMap, this.customPyramidsVisibleMap, this.pyramidsTransparent);
         if (this.showBalls)
             b = Util.visualBalls(this.plugin, b.to(AsmRef), this.customBallsColorMap, this.customBallsVisibleMap, this.ballsTransparent);
-
-        await PluginCommands.State.Update(this.plugin, { state: this.plugin.state.data, tree: b });
+        b.commit();
 
         const interactivityProps: Partial<InteractivityManager.Props> = { granularity: 'two-residues' };
         this.plugin.managers.interactivity.setProps(interactivityProps);
@@ -234,7 +233,7 @@ class DnatcoWrapper {
         this.currentModelIndex = 0;
         this.setDefaultBaseRadius();
 
-        this.resetCamera();
+        await this.resetCamera();
     }
 
     async loadDensityMap(showDiff: boolean) {
