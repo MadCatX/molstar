@@ -6,3 +6,4 @@
  */
 
 export { DnatcoConfalPyramids } from './confal-pyramids/behavior';
+export { DnatcoNtcBalls } from './ntc-balls/behavior';
