@@ -59,9 +59,12 @@ class DnatcoWrapper {
     private numberOfModels: number;
     private baseRadius: number;
     private radiusRatio: number;
+
     private densityMapLoc: string = '';
     private densityMapSigma: number = 1.5;
     private densityMapAlpha: number = 0.5;
+    private densityMapAsWireframe: boolean = true;
+
     private showDensityDiffMap: boolean = false;
     private notSelectedRepr: SRR.BuiltIn = 'cartoon';
     private surroundingsRadius: number = 0.0;
@@ -244,8 +247,15 @@ class DnatcoWrapper {
         this.showDensityDiffMap = showDiff;
 
         await Util.densityMapData(this.plugin, this.densityMapLoc, ddt as DensityDataType, this.currentBoundingSphere);
-        if (this.plugin.state.data.cells.has(ID.DensityFile))
-            Util.densityMapVisual(this.plugin, this.densityMapSigma, this.densityMapAlpha, this.showDensityDiffMap);
+        if (this.plugin.state.data.cells.has(ID.DensityFile)) {
+            Util.densityMapVisual(
+                this.plugin,
+                this.densityMapSigma,
+                this.densityMapAlpha,
+                this.showDensityDiffMap,
+                this.densityMapAsWireframe
+            );
+        }
     }
 
     async removeSuperposed() {
@@ -310,10 +320,11 @@ class DnatcoWrapper {
         )).commit();
     }
 
-    async setDensityMapAppearance(sigma: number, alpha: number) {
+    async setDensityMapAppearance(sigma: number, alpha: number, asWireframe: boolean) {
         this.densityMapSigma = sigma;
         this.densityMapAlpha = alpha;
-        Util.updateDensityMapVisual(this.plugin, sigma, alpha);
+        this.densityMapAsWireframe = asWireframe;
+        Util.updateDensityMapVisual(this.plugin, sigma, alpha, this.densityMapAsWireframe);
     }
 
     setDensityMapLocator(loc: string) {
@@ -490,7 +501,7 @@ class DnatcoWrapper {
     async toggleDensityDifferenceMap(show: boolean) {
         this.showDensityDiffMap = show;
         if (show) {
-            Util.densityMapDiffVisual(this.plugin, this.densityMapSigma, this.densityMapAlpha);
+            Util.densityMapDiffVisual(this.plugin, this.densityMapSigma, this.densityMapAlpha, this.densityMapAsWireframe);
         } else {
             Util.removeDensityMapDiffVisual(this.plugin);
         }

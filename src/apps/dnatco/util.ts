@@ -72,11 +72,11 @@ export namespace Util {
         }
     }
 
-    function makeDensityMapVisualParams(ctx: PluginContext, sigma: number, alpha: number, color: Color) {
+    function makeDensityMapVisualParams(ctx: PluginContext, sigma: number, alpha: number, color: Color, asWireframe: boolean) {
         return VolumeRepresentation3DHelpers.getDefaultParamsStatic(
             ctx,
             'isosurface',
-            { isoValue: Volume.IsoValue.relative(sigma), alpha },
+            { isoValue: Volume.IsoValue.relative(sigma), alpha, visuals: [ asWireframe ? 'wireframe' : 'solid' ] },
             'uniform',
             { value: color }
         );
@@ -222,36 +222,38 @@ export namespace Util {
         await b.commit();
     }
 
-    export async function densityMapVisual(ctx: PluginContext, sigma: number, alpha: number, showDiff: boolean) {
+    export async function densityMapVisual(ctx: PluginContext, sigma: number, alpha: number, showDiff: boolean, asWireframe: boolean) {
         const tree = ctx.build();
 
         if (!tree.currentTree.children.has(ID.DensityMap))
             return; // No density map data
 
-        const baseParams = makeDensityMapVisualParams(ctx, sigma, alpha, ColorNames.bisque);
+        const baseColor = asWireframe ? ColorNames.black : ColorNames.bisque;
+
+        const baseParams = makeDensityMapVisualParams(ctx, sigma, alpha, baseColor, asWireframe);
         tree.to(ID.DensityMap).apply(StateTransforms.Representation.VolumeRepresentation3D, baseParams, { ref: ID.DensityMapVisual });
 
         if (tree.currentTree.children.has(ID.DensityDifference) && showDiff) {
             // We have difference map
-            const posParams = makeDensityMapVisualParams(ctx, sigma, alpha * 0.5, ColorNames.blue);
+            const posParams = makeDensityMapVisualParams(ctx, sigma, alpha * 0.5, ColorNames.blue, asWireframe);
             tree.to(ID.DensityDifference).apply(StateTransforms.Representation.VolumeRepresentation3D, posParams, { ref: ID.DensityPosDifVisual });
 
-            const negParams = makeDensityMapVisualParams(ctx, -sigma, alpha * 0.5, ColorNames.red);
+            const negParams = makeDensityMapVisualParams(ctx, -sigma, alpha * 0.5, ColorNames.red, asWireframe);
             tree.to(ID.DensityDifference).apply(StateTransforms.Representation.VolumeRepresentation3D, negParams, { ref: ID.DensityNegDifVisual });
         }
 
         await tree.commit();
     }
 
-    export async function densityMapDiffVisual(ctx: PluginContext, sigma: number, alpha: number) {
+    export async function densityMapDiffVisual(ctx: PluginContext, sigma: number, alpha: number, asWireframe: boolean) {
         const tree = ctx.build();
 
         if (tree.currentTree.children.has(ID.DensityDifference)) {
             // We have difference map
-            const posParams = makeDensityMapVisualParams(ctx, sigma, alpha * 0.5, ColorNames.blue);
+            const posParams = makeDensityMapVisualParams(ctx, sigma, alpha * 0.5, ColorNames.blue, asWireframe);
             tree.to(ID.DensityDifference).apply(StateTransforms.Representation.VolumeRepresentation3D, posParams, { ref: ID.DensityPosDifVisual });
 
-            const negParams = makeDensityMapVisualParams(ctx, -sigma, alpha * 0.5, ColorNames.red);
+            const negParams = makeDensityMapVisualParams(ctx, -sigma, alpha * 0.5, ColorNames.red, asWireframe);
             tree.to(ID.DensityDifference).apply(StateTransforms.Representation.VolumeRepresentation3D, negParams, { ref: ID.DensityNegDifVisual });
         }
 
@@ -383,7 +385,7 @@ export namespace Util {
         b.update(params).commit();
     }
 
-    export async function updateDensityMapVisual(ctx: PluginContext, sigma: number, alpha: number) {
+    export async function updateDensityMapVisual(ctx: PluginContext, sigma: number, alpha: number, asWireframe: boolean) {
         if (ctx === undefined)
             return;
 
@@ -394,16 +396,18 @@ export namespace Util {
 
         let b = state.build();
 
+        const baseColor = asWireframe ? ColorNames.black : ColorNames.bisque;
+
         const map = b.to(ID.DensityMapVisual);
-        b = map.update(makeDensityMapVisualParams(ctx, sigma, alpha, ColorNames.bisque));
+        b = map.update(makeDensityMapVisualParams(ctx, sigma, alpha, baseColor, asWireframe));
 
         if (cells.has(ID.DensityPosDifVisual)) {
             const pos = b.to(ID.DensityPosDifVisual);
-            b = pos.update(makeDensityMapVisualParams(ctx, sigma, alpha * 0.5, ColorNames.blue));
+            b = pos.update(makeDensityMapVisualParams(ctx, sigma, alpha * 0.5, ColorNames.blue, asWireframe));
         }
         if (cells.has(ID.DensityNegDifVisual)) {
             const neg = b.to(ID.DensityNegDifVisual);
-            b = neg.update(makeDensityMapVisualParams(ctx, -sigma, alpha * 0.5, ColorNames.red));
+            b = neg.update(makeDensityMapVisualParams(ctx, -sigma, alpha * 0.5, ColorNames.red, asWireframe));
         }
 
         PluginCommands.State.Update(ctx, { state, tree: b });
