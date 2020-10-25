@@ -56,7 +56,7 @@ export namespace Util {
 
     function makeDensityMapLink(loc: string, source: DensityDataType, sphere?: Sphere3D) {
         if (!sphere) {
-            return `https://blackbox.ibt.biocev.org/maps/${loc}/cell/?encoding=bcif`;
+            return `https://dnatco.datmos.org/maps/${loc}/cell/?encoding=bcif`;
         } else {
             const center = sphere.center;
             const diag = Vec3.create(sphere.radius, sphere.radius, sphere.radius);
@@ -66,7 +66,7 @@ export namespace Util {
             Vec3.sub(a, center, diag);
             Vec3.add(b, center, diag);
 
-            const link = `https://blackbox.ibt.biocev.org/maps/${loc}/box/${a[0]},${a[1]},${a[2]}/${b[0]},${b[1]},${b[2]}/?encoding=bcif`;
+            const link = `https://dnatco.datmos.org/maps/${loc}/box/${a[0]},${a[1]},${a[2]}/${b[0]},${b[1]},${b[2]}/?encoding=bcif`;
             console.log(link);
             return link;
         }
