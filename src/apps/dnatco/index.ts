@@ -20,6 +20,7 @@ import { PluginContext } from '../../mol-plugin/context';
 import { PluginCommands } from '../../mol-plugin/commands';
 import { InteractivityManager } from '../../mol-plugin-state/manager/interactivity';
 import { UpdateTrajectory } from '../../mol-plugin-state/actions/structure';
+import { DnatcoNtcBalls } from '../../extensions/dnatco';
 import { DnatcoConfalPyramids } from '../../extensions/dnatco';
 import { PluginSpec } from '../../mol-plugin/spec';
 import { StructureRepresentationRegistry as SRR } from '../../mol-repr/structure/registry';
@@ -38,6 +39,7 @@ type DnatcoEventHandlers = {
 };
 
 const Extensions = {
+    'ntc-balls-pyramids-prop': PluginSpec.Behavior(DnatcoNtcBalls),
     'confal-pyramids-prop': PluginSpec.Behavior(DnatcoConfalPyramids)
 };
 
