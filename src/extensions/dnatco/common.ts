@@ -36,7 +36,8 @@ export namespace DnatcoCommon {
         label_alt_id_2: string,
         PDB_ins_code_2: string,
         confal_score: number,
-        NtC: string
+        NtC: string,
+        rmsd: number
     }
 
     export const CifSchema = {
@@ -85,16 +86,26 @@ export namespace DnatcoCommon {
 
     export type StepsSummaryTable = Table<typeof CifSchema.ndb_struct_ntc_step_summary>;
 
-    export function getNtCAndConfalScore(id: number, i: number, stepsSummary: StepsSummaryTable) {
-        const { step_id, confal_score, assigned_NtC } = stepsSummary;
+    export function getNtCInfo(id: number, i: number, stepsSummary: StepsSummaryTable) {
+        const { step_id, confal_score, assigned_NtC, cartesian_rmsd_closest_NtC_representative } = stepsSummary;
 
         // Assume that step_ids in ntc_step_summary are in the same order as steps in ntc_step
         for (let j = i; j < stepsSummary._rowCount; j++) {
-            if (id === step_id.value(j)) return { _NtC: assigned_NtC.value(j), _confal_score: confal_score.value(j) };
+            if (id === step_id.value(j))
+                return {
+                    _NtC: assigned_NtC.value(j),
+                    _confal_score: confal_score.value(j),
+                    _rmsd: cartesian_rmsd_closest_NtC_representative.value(j)
+                };
         }
         // Safety net for cases where the previous assumption is not met
         for (let j = 0; j < i; j++) {
-            if (id === step_id.value(j)) return { _NtC: assigned_NtC.value(j), _confal_score: confal_score.value(j) };
+            if (id === step_id.value(j))
+                return {
+                    _NtC: assigned_NtC.value(j),
+                    _confal_score: confal_score.value(j),
+                    _rmsd: cartesian_rmsd_closest_NtC_representative.value(j)
+                };
         }
         throw new Error('Inconsistent mmCIF data');
     }

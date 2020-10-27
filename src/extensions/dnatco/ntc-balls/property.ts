@@ -75,7 +75,7 @@ function createBallsFromCif(model: Model,
             continue; // We are only interested in data for the current model
         }
 
-        const { _NtC, _confal_score } = DC.getNtCAndConfalScore(id.value(i), i, stepsSummary);
+        const { _NtC, _confal_score, _rmsd } = DC.getNtCInfo(id.value(i), i, stepsSummary);
 
         const doubleBall = {
             PDB_model_number: model_num,
@@ -91,7 +91,8 @@ function createBallsFromCif(model: Model,
             label_alt_id_2: label_alt_id_2.value(i),
             PDB_ins_code_2: PDB_ins_code_2.value(i),
             confal_score: _confal_score,
-            NtC: _NtC
+            NtC: _NtC,
+            rmsd: _rmsd
         };
 
         doubleBalls.push(doubleBall);
