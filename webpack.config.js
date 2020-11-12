@@ -12,6 +12,7 @@ module.exports = [
     createApp('viewer', 'molstar'),
     createApp('docking-viewer', 'molstar'),
     createApp('dnatco', 'molstar'),
+    createApp('webmmb', 'molstar'),
     ...examples.map(createExample),
     ...tests.map(createBrowserTest)
 ];
