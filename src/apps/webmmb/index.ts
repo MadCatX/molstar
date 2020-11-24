@@ -14,8 +14,9 @@ export type Representation = 'cartoon' | 'ball-and-stick';
 class WebMmbViewer {
     private WebMmbPluginSpecImpl = WebMmbViewerPluginSpec;
     private plugin: PluginContext;
-    private isInited: boolean = false;
+    private isInited = false;
     private represenation: Representation = 'ball-and-stick';
+    private _locked = false;
 
     private async clear() {
         /* Get the current dataState of the plugin */
@@ -42,7 +43,7 @@ class WebMmbViewer {
         }
     }
 
-    private async removeIfPresent( refs: string[]) {
+    private async removeIfPresent(refs: string[]) {
         const state = this.plugin.state.data;
         let b = state.build();
         for (let ref of refs) {
@@ -72,29 +73,44 @@ class WebMmbViewer {
     }
 
     async load(url: string, format: FileFormat) {
-        await this.clear();
+        if (this._locked === true)
+            return;
 
+        this._locked = true;
+        try {
+            await this.clear();
 
-        let b = this.plugin.state.data.build().toRoot();
-        b = b.apply(Download, { url: Asset.Url(url) }, { ref: 'data' });
-        b = format === 'pdb' ?
-            b.apply(StateTransforms.Model.TrajectoryFromPDB) :
-            b.apply(StateTransforms.Data.ParseCif).apply(StateTransforms.Model.TrajectoryFromMmCif);
-        b = b.apply(StateTransforms.Model.ModelFromTrajectory, { modelIndex: 0 }, { ref: 'trajectory' });
-        b = b.apply(StateTransforms.Model.StructureFromModel, { type: { name: 'assembly', params: { id: 'deposited' } } }, { ref: 'structure' });
-        b = b.apply(StateTransforms.Representation.StructureRepresentation3D, this.getVisualParams(), { ref: 'visual' });
+            let b = this.plugin.state.data.build().toRoot();
+            b = b.apply(Download, { url: Asset.Url(url) }, { ref: 'data' });
+            b = format === 'pdb' ?
+                b.apply(StateTransforms.Model.TrajectoryFromPDB) :
+                b.apply(StateTransforms.Data.ParseCif).apply(StateTransforms.Model.TrajectoryFromMmCif);
+            b = b.apply(StateTransforms.Model.ModelFromTrajectory, { modelIndex: 0 }, { ref: 'trajectory' });
+            b = b.apply(StateTransforms.Model.StructureFromModel, { type: { name: 'assembly', params: { id: 'deposited' } } }, { ref: 'structure' });
+            b = b.apply(StateTransforms.Representation.StructureRepresentation3D, this.getVisualParams(), { ref: 'visual' });
 
-        PluginCommands.State.Update(this.plugin, { state: this.plugin.state.data, tree: b });
+            await PluginCommands.State.Update(this.plugin, { state: this.plugin.state.data, tree: b });
+        } catch (e) {
+        }
+        this._locked = false;
     }
 
     async setRepresentation(repr: Representation) {
-        this.represenation = repr;
-        this.removeIfPresent(['visual']);
+        if (this._locked === true)
+            return;
 
-        let b = this.plugin.state.data.build().to('structure');
-        b = b.apply(StateTransforms.Representation.StructureRepresentation3D, this.getVisualParams(), { ref: 'visual' });
+        this._locked = true;
+        try {
+            this.represenation = repr;
+            this.removeIfPresent(['visual']);
 
-        PluginCommands.State.Update(this.plugin, { state: this.plugin.state.data, tree: b });
+            let b = this.plugin.state.data.build().to('structure');
+            b = b.apply(StateTransforms.Representation.StructureRepresentation3D, this.getVisualParams(), { ref: 'visual' });
+
+            await PluginCommands.State.Update(this.plugin, { state: this.plugin.state.data, tree: b });
+        } catch (e) {
+        }
+        this._locked = false;
     }
 }
 
