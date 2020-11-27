@@ -4,6 +4,8 @@ import { createPlugin } from '../../mol-plugin';
 import { Asset } from '../../mol-util/assets';
 import { PluginCommands } from '../../mol-plugin/commands';
 import { PluginContext } from '../../mol-plugin/context';
+import { UpdateTrajectory } from '../../mol-plugin-state/actions/structure';
+import { PluginStateObject as PSO } from '../../mol-plugin-state/objects';
 import { StateTransforms } from '../../mol-plugin-state/transforms';
 import { Download } from '../../mol-plugin-state/transforms/data';
 import { createStructureRepresentationParams } from '../../mol-plugin-state/helpers/structure-representation-params';
@@ -30,6 +32,24 @@ class WebMmbViewer {
 
         /* Set the new empty tree */
         await PluginCommands.State.Update(this.plugin, { state: this.plugin.state.data, tree });
+    }
+
+    private getNumberOfModels() {
+        const state = this.plugin.state.data;
+        const models = state.selectQ(q => q.ofTransformer(StateTransforms.Model.ModelFromTrajectory));
+
+        for (const m of models) {
+            if (!m.sourceRef)
+                continue;
+
+            const parent = state.cells.get(m.sourceRef)!.obj as PSO.Molecule.Trajectory;
+            if (!parent)
+                continue;
+
+            return parent.data.length;
+        }
+
+        return 0;
     }
 
     private getVisualParams() {
@@ -90,6 +110,12 @@ class WebMmbViewer {
             b = b.apply(StateTransforms.Representation.StructureRepresentation3D, this.getVisualParams(), { ref: 'visual' });
 
             await PluginCommands.State.Update(this.plugin, { state: this.plugin.state.data, tree: b });
+
+            const numModels = this.getNumberOfModels();
+            await PluginCommands.State.ApplyAction(this.plugin, {
+                state: this.plugin.state.data,
+                action: UpdateTrajectory.create({ action: 'advance', by: numModels - 1 })
+            });
         } catch (e) {
         }
         this._locked = false;
