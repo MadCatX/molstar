@@ -26,6 +26,7 @@ import { VisualContext } from '../../../mol-repr/visual';
 import { getAltResidueLociFromId } from '../../../mol-repr/structure/visual/util/common';
 import { ParamDefinition as PD } from '../../../mol-util/param-definition';
 import { Theme, ThemeRegistryContext } from '../../../mol-theme/theme';
+import { NullLocation } from '../../../mol-model/location';
 
 const NtcBallsMeshParams = {
     ...UnitsMeshParams,
@@ -338,9 +339,7 @@ function createNtcBallsIterator(structureGroup: StructureGroup): LocationIterato
 
     const prop = NtcBallsProvider.get(structure.model).value;
     if (prop === undefined || prop.data === undefined) {
-        return LocationIterator(0, 1, (groupIndex: number, instanceIndex: number) => {
-            return empty;
-        });
+        return LocationIterator(0, 1, 1, () => NullLocation);
     }
 
     const { locations } = prop.data;
@@ -349,7 +348,7 @@ function createNtcBallsIterator(structureGroup: StructureGroup): LocationIterato
         if (locations.length <= groupIndex) return empty;
         return locations[groupIndex];
     };
-    return LocationIterator(locations.length, instanceCount, getLocation);
+    return LocationIterator(locations.length, instanceCount, 1, getLocation);
 }
 
 function createNtcBallsMesh(ctx: VisualContext, unit: Unit, structure: Structure, theme: Theme, props: PD.Values<NtcBallsMeshParams>, mesh?: Mesh) {

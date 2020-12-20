@@ -27,6 +27,7 @@ import { VisualContext } from '../../../mol-repr/visual';
 import { getAltResidueLociFromId, StructureGroup } from '../../../mol-repr/structure/visual/util/common';
 import { ParamDefinition as PD } from '../../../mol-util/param-definition';
 import { Theme, ThemeRegistryContext } from '../../../mol-theme/theme';
+import { NullLocation } from '../../../mol-model/location';
 
 const t = Mat4.identity();
 const w = Vec3.zero();

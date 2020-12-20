@@ -10,7 +10,7 @@ import { StepSlider } from './stepslider';
 import { Util } from './util';
 import { PluginSpec } from '../../mol-plugin/spec';
 import { StateActions } from '../../mol-plugin-state/actions';
-import { AnimateModelIndex, AnimateAssemblyUnwind, AnimateUnitsExplode, AnimateStateInterpolation } from '../../mol-plugin-state/animation/built-in';
+//import { AnimateModelIndex, AnimateAssemblyUnwind, AnimateUnitsExplode, AnimateStateInterpolation } from '../../mol-plugin-state/animation/built-in';
 import { StateTransforms } from '../../mol-plugin-state/transforms';
 import { InitVolumeStreaming, BoxifyVolumeStreaming, CreateVolumeStreamingBehavior } from '../../mol-plugin/behavior/dynamic/volume-streaming/transformers';
 import { VolumeStreamingCustomControls } from '../../mol-plugin-ui/custom/volume';
@@ -164,11 +164,5 @@ export const DnatcoPluginSpec: DnatcoPluginSpec = {
     ],
     customParamEditors: [
         [CreateVolumeStreamingBehavior, VolumeStreamingCustomControls]
-    ],
-    animations: [
-        AnimateModelIndex,
-        AnimateAssemblyUnwind,
-        AnimateUnitsExplode,
-        AnimateStateInterpolation
     ],
 };
