@@ -301,7 +301,7 @@ export namespace Util {
             if (!parent)
                 continue;
 
-            return parent.data.length;
+            return parent.data.frameCount;
         }
 
         return 0;
