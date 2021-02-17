@@ -148,7 +148,7 @@ export namespace Util {
                     if (color !== undefined)
                         return { value: color };
                     if (colorTheme === 'element-symbol')
-                        return { carbonColor: 'element-symbol' };
+                        return { carbonColor: { name: 'element-symbol', params: {} } };
                     return {};
                 })()
             }
