@@ -29,7 +29,7 @@ import { ParamDefinition as PD } from '../../mol-util/param-definition';
 import { uint8ToString } from '../../mol-io/common/binary';
 import { Script } from '../../mol-script/script';
 import { MolScriptBuilder as MS } from '../../mol-script/language/builder';
-import Expression from '../../mol-script/language/expression';
+import { Expression } from '../../mol-script/language/expression';
 import { SyncRuntimeContext } from '../../mol-task/execution/synchronous';
 import { ungzip } from '../../mol-util/zip/zip';
 import { NtcBallsRepresentationProvider, NtcBallsRepresentationParams } from '../../extensions/dnatco/ntc-balls/representation';
