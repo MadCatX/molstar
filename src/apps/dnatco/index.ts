@@ -11,7 +11,7 @@ import { Identifiers as ID } from './identifiers';
 import { Selecting } from './selecting';
 import { StepInfo, Steps } from './steps';
 import { Superposition } from './superposition';
-import { Util, SupportedFormats, DensityDataType } from './util';
+import { Util, SupportedFormats } from './util';
 import { DnatcoPluginSpec } from './dnatcopluginspec';
 import { Sphere3D } from '../../mol-math/geometry';
 import { Loci } from '../../mol-model/loci';
@@ -241,13 +241,9 @@ class DnatcoWrapper {
     }
 
     async loadDensityMap(showDiff: boolean) {
-        const ddt = this.densityMapLoc.split('/')[0];
-        if (['em', 'x-ray'].indexOf(ddt) < 0 && ddt.length > 0)
-            throw new Error(`Unknown density data type ${ddt}`);
-
         this.showDensityDiffMap = showDiff;
 
-        await Util.densityMapData(this.plugin, this.densityMapLoc, ddt as DensityDataType, this.currentBoundingSphere);
+        await Util.densityMapData(this.plugin, this.densityMapLoc, this.currentBoundingSphere);
         if (this.plugin.state.data.cells.has(ID.DensityFile)) {
             Util.densityMapVisual(
                 this.plugin,

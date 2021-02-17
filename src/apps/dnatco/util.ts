@@ -40,7 +40,6 @@ import { ConfalPyramidsParams } from '../../extensions/dnatco/confal-pyramids/re
 
 import { ColorTheme } from '../../mol-theme/color';
 
-export type DensityDataType = 'em' | 'x-ray';
 export type SupportedFormats = 'cif' | 'pdb';
 
 const AsmRef = ID.mkRef(ID.Assembly);
@@ -54,7 +53,7 @@ export namespace Util {
         return b.apply(StateTransforms.Model.TrajectoryFromPDB);
     }
 
-    function makeDensityMapLink(loc: string, source: DensityDataType, sphere?: Sphere3D) {
+    function makeDensityMapLink(loc: string, sphere?: Sphere3D) {
         if (!sphere) {
             return `https://dnatco.datmos.org/maps/${loc}/cell/?encoding=bcif`;
         } else {
@@ -191,14 +190,14 @@ export namespace Util {
         return StructureProperties.atom.auth_comp_id(lociToLocation(loci));
     }
 
-    export async function densityMapData(ctx: PluginContext, loc: string, dataType: DensityDataType, sphere?: Sphere3D) {
+    export async function densityMapData(ctx: PluginContext, loc: string, sphere?: Sphere3D) {
         await removeDensityMapVisual(ctx);
         await removeIfPresent(ctx, [ID.DensityFile]);
 
         if (loc === '')
             return;
 
-        const url = makeDensityMapLink(loc, dataType, sphere);
+        const url = makeDensityMapLink(loc, sphere);
 
         console.log(`Density map url: ${url}`);
 
