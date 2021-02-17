@@ -15,8 +15,9 @@ import { addSphere } from '../../../mol-geo/geometry/mesh/builder/sphere';
 import { MeshBuilder } from '../../../mol-geo/geometry/mesh/mesh-builder';
 import { PickingId } from '../../../mol-geo/geometry/picking';
 import { LocationIterator } from '../../../mol-geo/util/location-iterator';
+import { NullLocation } from '../../../mol-model/location';
 import { EmptyLoci, Loci } from '../../../mol-model/loci';
-import { Structure, StructureElement, StructureProperties, Unit } from '../../../mol-model/structure';
+import { Structure, StructureProperties, Unit } from '../../../mol-model/structure';
 import { CustomProperty } from '../../../mol-model-props/common/custom-property';
 import { Representation, RepresentationContext, RepresentationParamsGetter } from '../../../mol-repr/representation';
 import { StructureRepresentation, StructureRepresentationProvider, StructureRepresentationStateBuilder, UnitsRepresentation } from '../../../mol-repr/structure/representation';
@@ -333,23 +334,19 @@ type NtcBallsMeshParams = typeof NtcBallsMeshParams;
 function createNtcBallsIterator(structureGroup: StructureGroup): LocationIterator {
     const { structure, group } = structureGroup;
     const instanceCount = group.units.length;
-    const defaultUnit = group.units[0];
-    const empty = StructureElement.Location.create(structure, defaultUnit); // Dummy empty location
 
     const prop = NtcBallsProvider.get(structure.model).value;
     if (prop === undefined || prop.data === undefined) {
-        return LocationIterator(0, 1, (groupIndex: number, instanceIndex: number) => {
-            return empty;
-        });
+        return LocationIterator(0, 1, 1, () => NullLocation);
     }
 
     const { locations } = prop.data;
 
     const getLocation = (groupIndex: number, instanceIndex: number) => {
-        if (locations.length <= groupIndex) return empty;
+        if (locations.length <= groupIndex) return NullLocation;
         return locations[groupIndex];
     };
-    return LocationIterator(locations.length, instanceCount, getLocation);
+    return LocationIterator(locations.length, instanceCount, 1, getLocation);
 }
 
 function createNtcBallsMesh(ctx: VisualContext, unit: Unit, structure: Structure, theme: Theme, props: PD.Values<NtcBallsMeshParams>, mesh?: Mesh) {
