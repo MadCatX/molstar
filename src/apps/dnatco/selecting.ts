@@ -53,12 +53,12 @@ export namespace Selecting {
             conds.push(makeResidueTest(nextStep.resnoSecond, nextStep.altIdSecond, nextStep.insCodeSecond, ignoreDetails));
 
         let code = conditionsToStatement('or', conds);
-        return conditionsToStatement('and', [`= atom.chain ${currentStep.asymId}`, code]);
+        return conditionsToStatement('and', [`= atom.chain \`${currentStep.asymId}\``, code]);
     }
 
     function makeElementTest(element: string, asymId: string, resno: number, altId: string|null, insCode: string|null) {
         let code = makeHalfStepTest(resno, altId, insCode, false);
-        code = conditionsToStatement('and', [`= atom.chain ${asymId}`, code]);
+        code = conditionsToStatement('and', [`= atom.chain \`${asymId}\``, code]);
 
         return conditionsToStatement('and', ['= ' + element + ' atom.label_atom_id', code]);
     }
@@ -99,7 +99,7 @@ export namespace Selecting {
 
         let code = conditionsToStatement('or', [firstResidue, secondResidue]);
         if (asymId) {
-            code = conditionsToStatement('and', [`= atom.chain ${asymId}`, code]);
+            code = conditionsToStatement('and', [`= atom.chain \`${asymId}\``, code]);
         }
 
         const scr = Script(`(sel.atom.atom-groups :atom-test (${code}))`, 'mol-script');
@@ -108,7 +108,7 @@ export namespace Selecting {
 
     export function residueSelectionScript(info: ResidueInfo, ring?: RingTypes, isFirst?: boolean) {
         let code = makeResidueTest(info.no, info.altId, info.insCode, false, ring, isFirst);
-        code = conditionsToStatement('and', [`= atom.chain ${info.asymId}`, code]);
+        code = conditionsToStatement('and', [`= atom.chain \`${info.asymId}\``, code]);
 
         return Script(`(sel.atom.atom-groups :atom-test (${code}))`, 'mol-script');
     }
@@ -147,7 +147,7 @@ export namespace Selecting {
 
     export function stepSelectionScript(info: StepInfo, firstRing?: RingTypes, secondRing?: RingTypes) {
         let code = makeStepTest(info, false, firstRing, secondRing);
-        code = conditionsToStatement('and', [`= atom.chain ${info.asymId}`, code]);
+        code = conditionsToStatement('and', [`= atom.chain \`${info.asymId}\``, code]);
 
         return Script(`(sel.atom.atom-groups :atom-test (${code}))`, 'mol-script');
     }
