@@ -12,7 +12,6 @@ import { PluginSpec } from '../../mol-plugin/spec';
 import { StateActions } from '../../mol-plugin-state/actions';
 import { StateTransforms } from '../../mol-plugin-state/transforms';
 import { InitVolumeStreaming, BoxifyVolumeStreaming, CreateVolumeStreamingBehavior } from '../../mol-plugin/behavior/dynamic/volume-streaming/transformers';
-import { VolumeStreamingCustomControls } from '../../mol-plugin-ui/custom/volume';
 import { PluginBehavior, PluginBehaviors } from '../../mol-plugin/behavior';
 import { Binding } from '../../mol-util/binding';
 import { ParamDefinition as PD } from '../../mol-util/param-definition';
@@ -161,7 +160,4 @@ export const DnatcoPluginSpec: DnatcoPluginSpec = {
         PluginSpec.Behavior(PluginBehaviors.CustomProps.SecondaryStructure),
         PluginSpec.Behavior(PluginBehaviors.CustomProps.ValenceModel),
     ],
-    customParamEditors: [
-        [CreateVolumeStreamingBehavior, VolumeStreamingCustomControls]
-    ]
 };

@@ -15,8 +15,8 @@ import { Util, SupportedFormats } from './util';
 import { DnatcoPluginSpec } from './dnatcopluginspec';
 import { Sphere3D } from '../../mol-math/geometry';
 import { Loci } from '../../mol-model/loci';
-import { createPlugin } from '../../mol-plugin';
-import { PluginContext } from '../../mol-plugin/context';
+import { createPlugin } from '../../mol-plugin-ui';
+import { PluginUIContext } from '../../mol-plugin-ui/context';
 import { PluginCommands } from '../../mol-plugin/commands';
 import { InteractivityManager } from '../../mol-plugin-state/manager/interactivity';
 import { UpdateTrajectory } from '../../mol-plugin-state/actions/structure';
@@ -80,7 +80,7 @@ class DnatcoWrapper {
     private customPyramidsVisibleMap: Map<string, boolean> = new Map<string, boolean>();
     private pyramidsTransparent: boolean = false;
 
-    plugin: PluginContext;
+    plugin: PluginUIContext;
 
     init(target: HTMLElement, radiusRatio: number) {
         this.currentSelectedStepInfo = null;
@@ -100,9 +100,15 @@ class DnatcoWrapper {
                         isExpanded: false,
                         showControls: false,
                     },
+                },
+                components: {
                     controls: {
+                        top: 'none',
+                        right: 'none',
+                        bottom: 'none',
+                        left: 'none',
                     }
-                }
+                },
             });
     }
 
