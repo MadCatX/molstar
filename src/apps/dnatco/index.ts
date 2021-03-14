@@ -24,6 +24,7 @@ import { DnatcoNtcBalls } from '../../extensions/dnatco';
 import { DnatcoConfalPyramids } from '../../extensions/dnatco';
 import { PluginSpec } from '../../mol-plugin/spec';
 import { StructureRepresentationRegistry as SRR } from '../../mol-repr/structure/registry';
+import { Script } from '../../mol-script/script';
 import { Color } from '../../mol-util/color';
 import { ObjectKeys } from '../../mol-util/type-helpers';
 
@@ -188,6 +189,15 @@ class DnatcoWrapper {
         PluginCommands.Camera.Reset(this.plugin, {});
     }
 
+    async clearOtherAltPos() {
+        const toRemove = [
+            ID.mkRef(ID.SCE, ID.OtherAltPos),
+            ID.mkRef(ID.Visual, ID.OtherAltPos),
+        ];
+
+        Util.removeIfPresent(this.plugin, toRemove);
+    }
+
     async deselectStep() {
         this.plugin.managers.interactivity.lociSelects.deselectAll();
         this.currentSelectedStepInfo = null;
@@ -201,6 +211,8 @@ class DnatcoWrapper {
             ID.mkRef(ID.Visual, ID.Selected),
             ID.mkRef(ID.SCE, ID.NotSelected),
             ID.mkRef(ID.Visual, ID.NotSelected),
+            ID.mkRef(ID.SCE, ID.OtherAltPos),
+            ID.mkRef(ID.Visual, ID.OtherAltPos),
         ];
 
         await Util.removeIfPresent(this.plugin, toRemove);
@@ -342,6 +354,16 @@ class DnatcoWrapper {
             case 'loci-selected':
                 this.lociSelectedHandler = handler.func;
         }
+    }
+
+    async showOtherAltPos() {
+        if (this.currentSelectedStepInfo === null)
+            return;
+
+        const scr = Selecting.selectStepOtherAltPos(this.currentSelectedStepInfo);
+        if (scr.expression.length === 0)
+            return;
+        (await Util.visualiseOtherAltPos(this.plugin, Script.toExpression(scr))).commit();
     }
 
     async showSelectedAsBallAndStick(prevId: string|undefined, nextId: string|undefined) {
