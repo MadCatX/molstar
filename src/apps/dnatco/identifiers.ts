@@ -6,7 +6,7 @@
  */
 
 export namespace Identifiers {
-    export const Assembly: string = 'asm';
+    export const BaseModel: string = 'base-model';
     export const Model: string = 'model';
     export const Properties: string = 'properties';
     export const SCE: string = 'structure-complex-element';

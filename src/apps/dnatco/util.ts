@@ -42,7 +42,7 @@ import { ColorTheme } from '../../mol-theme/color';
 
 export type SupportedFormats = 'cif' | 'pdb';
 
-const AsmRef = ID.mkRef(ID.Assembly);
+const BMRef = ID.mkRef(ID.BaseModel);
 
 export namespace Util {
     function cifToTrajectory(b: StateBuilder.To<PSO.Data.Binary | PSO.Data.String>) {
@@ -174,7 +174,7 @@ export namespace Util {
         await removeIfPresent(ctx, [ ref ]);
 
         const state = ctx.state.data;
-        let b = state.build().to(AsmRef);
+        let b = state.build().to(BMRef);
         return b.apply(
             StateTransforms.Model.StructureSelectionFromExpression,
             { expression },
@@ -259,11 +259,11 @@ export namespace Util {
         await tree.commit();
     }
 
-    export function getBaseAssembly(ctx: PluginContext): PSO.Molecule.Structure {
+    export function getBaseModel(ctx: PluginContext): PSO.Molecule.Structure {
         let state = ctx.state.data;
-        if (!state.transforms.has(AsmRef))
-            throw new Error('Assembly reference not found in current data state');
-        return state.select(AsmRef)[0].obj as PSO.Molecule.Structure;
+        if (!state.transforms.has(BMRef))
+            throw new Error('Base model reference not found in current data state');
+        return state.select(BMRef)[0].obj as PSO.Molecule.Structure;
     }
 
     export async function getModel(ctx: PluginContext, b: StateBuilder.To<PSO.Root>, url: string, format: SupportedFormats, gzipped: boolean, modelIndex = 0, tag?: string) {
@@ -334,11 +334,11 @@ export namespace Util {
         await PluginCommands.State.Update(ctx, { state, tree: b });
     }
 
-    export function structure(b: StateBuilder.To<PSO.Molecule.Model>, assemblyId?: string, tag?: string): StateBuilder.To<PSO.Molecule.Structure> {
+    export function structure(b: StateBuilder.To<PSO.Molecule.Model>, tag?: string): StateBuilder.To<PSO.Molecule.Structure> {
         const props = {
             type: {
-                name: 'assembly' as const,
-                params: { id: assemblyId || 'deposited' }
+                name: 'model' as const,
+                params: {},
             }
         };
 
@@ -346,7 +346,7 @@ export namespace Util {
             .apply(
                 StateTransforms.Model.StructureFromModel,
                 props,
-                { ref: ID.mkRef(ID.Assembly, tag) }
+                { ref: ID.mkRef(ID.BaseModel, tag) }
             );
     }
 

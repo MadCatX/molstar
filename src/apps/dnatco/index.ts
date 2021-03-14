@@ -47,7 +47,7 @@ const DefaultViewerOptions = {
     extensions: ObjectKeys(Extensions)
 };
 
-const AsmRef = ID.mkRef(ID.Assembly);
+const BMRef = ID.mkRef(ID.BaseModel);
 const MinimumRadiusRatio = 0.30;
 
 class DnatcoWrapper {
@@ -126,7 +126,7 @@ class DnatcoWrapper {
     }
 
     private getBoundingSphere(info: StepInfo): Sphere3D | undefined {
-        const loci = Selecting.selectStep(Util.getBaseAssembly(this.plugin), info);
+        const loci = Selecting.selectStep(Util.getBaseModel(this.plugin), info);
         return Loci.getBoundingSphere(loci);
     }
 
@@ -144,7 +144,7 @@ class DnatcoWrapper {
     }
 
     private setDefaultBaseRadius() {
-        const structure = Util.getBaseAssembly(this.plugin);
+        const structure = Util.getBaseModel(this.plugin);
         const sphere = Loci.getBoundingSphere(Selecting.selectAll(structure));
 
         this.baseRadius = sphere !== undefined ? sphere.radius : 1.01;
@@ -162,7 +162,7 @@ class DnatcoWrapper {
         });
         this.currentModelIndex = newIndex;
 
-        let b = this.plugin.state.data.build().to(AsmRef);
+        let b = this.plugin.state.data.build().to(BMRef);
         if (this.showPyramids)
             b = Util.visualPyramids(this.plugin, b, this.customPyramidsColorMap, this.customPyramidsVisibleMap, this.pyramidsTransparent);
         if (this.showBalls)
@@ -231,9 +231,9 @@ class DnatcoWrapper {
 
         b = await Util.visualiseNotSelected(this.plugin, Selecting.SelectAllScript, this.notSelectedRepr);
         if (this.showPyramids)
-            b = Util.visualPyramids(this.plugin, b.to(AsmRef), this.customPyramidsColorMap, this.customPyramidsVisibleMap, this.pyramidsTransparent);
+            b = Util.visualPyramids(this.plugin, b.to(BMRef), this.customPyramidsColorMap, this.customPyramidsVisibleMap, this.pyramidsTransparent);
         if (this.showBalls)
-            b = Util.visualBalls(this.plugin, b.to(AsmRef), this.customBallsColorMap, this.customBallsVisibleMap, this.ballsTransparent);
+            b = Util.visualBalls(this.plugin, b.to(BMRef), this.customBallsColorMap, this.customBallsVisibleMap, this.ballsTransparent);
         b.commit();
 
         const interactivityProps: Partial<InteractivityManager.Props> = { granularity: 'two-residues' };
@@ -274,8 +274,11 @@ class DnatcoWrapper {
         }
     }
 
-    async selectStep(stepId: string) {
+    async selectStep(stepId?: string) {
         this.plugin.managers.interactivity.lociSelects.deselectAll();
+
+        if (stepId === undefined)
+            return;
 
         const info = Steps.makeStepInfo(stepId);
 
@@ -341,12 +344,12 @@ class DnatcoWrapper {
         }
     }
 
-    async showSelectedAsBallAndStick(prevId: string, nextId: string) {
+    async showSelectedAsBallAndStick(prevId: string|undefined, nextId: string|undefined) {
         if (this.currentSelectedStepInfo === null)
             return;
 
-        this.shownPrevId = prevId;
-        this.shownNextId = nextId;
+        this.shownPrevId = prevId === undefined ? '' : prevId;
+        this.shownNextId = nextId === undefined ? '' : nextId;
 
         const [prevInfo, nextInfo] = this.makePrevNextInfo(this.shownPrevId, this.shownNextId);
 
@@ -362,7 +365,7 @@ class DnatcoWrapper {
         )).commit();
     }
 
-    async superpose(prevId: string, nextId: string, prevRef: string, currRef: string, nextRef: string) {
+    async superpose(prevId: string|undefined, nextId: string|undefined, prevRef: string, currRef: string, nextRef: string) {
         if (this.currentSelectedStepInfo === null)
             return;
 
@@ -370,7 +373,7 @@ class DnatcoWrapper {
         const next = nextRef === '' ? undefined : (nextRef as References);
         const curr = currRef === '' ? undefined : (currRef as References);
 
-        const [prevInfo, nextInfo] = this.makePrevNextInfo(prevId, nextId);
+        const [prevInfo, nextInfo] = this.makePrevNextInfo(prevId === undefined ? '' : prevId, nextId === undefined ? '' : nextId);
 
         // HAKZ
         if (prevInfo)
@@ -410,7 +413,7 @@ class DnatcoWrapper {
         if (this.showBalls) {
             Util.visualBalls(
                 this.plugin,
-                this.plugin.state.data.build().to(AsmRef),
+                this.plugin.state.data.build().to(BMRef),
                 this.customBallsColorMap,
                 this.customBallsVisibleMap,
                 this.ballsTransparent
@@ -434,7 +437,7 @@ class DnatcoWrapper {
         if (this.showPyramids) {
             Util.visualPyramids(
                 this.plugin,
-                this.plugin.state.data.build().to(AsmRef),
+                this.plugin.state.data.build().to(BMRef),
                 this.customPyramidsColorMap,
                 this.customPyramidsVisibleMap,
                 this.pyramidsTransparent,
@@ -469,7 +472,7 @@ class DnatcoWrapper {
 
         Util.visualBalls(
             this.plugin,
-            this.plugin.state.data.build().to(AsmRef),
+            this.plugin.state.data.build().to(BMRef),
             this.customBallsColorMap,
             this.customBallsVisibleMap,
             this.ballsTransparent
@@ -494,7 +497,7 @@ class DnatcoWrapper {
 
         Util.visualPyramids(
             this.plugin,
-            this.plugin.state.data.build().to(AsmRef),
+            this.plugin.state.data.build().to(BMRef),
             this.customPyramidsColorMap,
             this.customPyramidsVisibleMap,
             this.pyramidsTransparent
@@ -540,7 +543,7 @@ class DnatcoWrapper {
     async toggleHetero(show: boolean) {
         if (show) {
             const state = this.plugin.state.data;
-            let b = state.build().to(AsmRef);
+            let b = state.build().to(BMRef);
             Util.visualHetero(this.plugin, b, 'ball-and-stick').commit();
         } else {
             Util.removeIfPresent(
@@ -556,7 +559,7 @@ class DnatcoWrapper {
     async toggleProtein(show: boolean) {
         if (show) {
             const state = this.plugin.state.data;
-            let b = state.build().to(AsmRef);
+            let b = state.build().to(BMRef);
             b = Util.visualProtein(this.plugin, b, this.notSelectedRepr);
 
             PluginCommands.State.Update(this.plugin, { state, tree: b });
@@ -568,7 +571,7 @@ class DnatcoWrapper {
     async toggleWater(show: boolean) {
         if (show) {
             const state = this.plugin.state.data;
-            let b = state.build().to(AsmRef);
+            let b = state.build().to(BMRef);
             b = Util.visualWater(this.plugin, b);
 
             PluginCommands.State.Update(this.plugin, { state, tree: b });
