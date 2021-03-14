@@ -63,7 +63,7 @@ export namespace Superposition {
         const xfrms = superpose([ backbone, refBackbone ]);
         let bb = b.to(ID.mkRef(ID.BaseModel, id));
         bb = Util.transform(bb, xfrms[0].bTransform, id);
-        bb = Util.visual(ctx, bb, 'ball-and-stick', id, clr);
+        bb = Util.visual(ctx, bb, 'ball-and-stick', id, clr, 0.1);
 
         return { rmsd: xfrms[0].rmsd, b: bb };
     }
