@@ -135,7 +135,7 @@ export namespace Util {
         return params;
     }
 
-    function makeVisualParams(ctx: PluginContext, repr: SRR.BuiltIn, color?: Color) {
+    function makeVisualParams(ctx: PluginContext, repr: SRR.BuiltIn, color?: Color, sizeFactor?: number) {
         const colorTheme = color ? 'uniform' : repr === 'ball-and-stick' ? 'element-symbol' : 'unit-index';
 
         return createStructureRepresentationParams(
@@ -143,6 +143,9 @@ export namespace Util {
             void 0,
             {
                 type: repr,
+                typeParams: {
+                    sizeFactor,
+                },
                 color: colorTheme,
                 colorParams: (() => {
                     if (color !== undefined)
@@ -432,7 +435,7 @@ export namespace Util {
         b.update(createStructureRepresentationParams(ctx, void 0, { type: repr })).commit();
     }
 
-    export function visual(ctx: PluginContext, b: StateBuilder.To<PSO.Molecule.Structure>, repr: SRR.BuiltIn, tag: string, color?: Color) {
+    export function visual(ctx: PluginContext, b: StateBuilder.To<PSO.Molecule.Structure>, repr: SRR.BuiltIn, tag: string, color?: Color, sizeFactor?: number) {
         b = b.apply(
             StateTransforms.Model.StructureComplexElement,
             { type: 'nucleic' },
@@ -441,7 +444,7 @@ export namespace Util {
 
         return b.apply(
             StateTransforms.Representation.StructureRepresentation3D,
-            makeVisualParams(ctx, repr, color),
+            makeVisualParams(ctx, repr, color, sizeFactor),
             { ref: ID.mkRef(ID.Visual, tag) }
         );
     }
