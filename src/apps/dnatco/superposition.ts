@@ -27,7 +27,7 @@ export namespace Superposition {
     function addReference(b: StateBuilder.To<PSO.Root>, ref: References, id: string) {
         const pdb = ReferencePdbs.data[ref];
         const model = Util.getModelFromRawData(b, pdb, 'pdb', 0, id);
-        return Util.structure(model, undefined, id);
+        return Util.structure(model, id);
     }
 
     async function addReferenceStructures(ctx: PluginContext, prevLoci: StructureElement.Loci|undefined, prevRef: References|undefined, currRef: References, nextLoci: StructureElement.Loci|undefined, nextRef: References|undefined) {
@@ -48,11 +48,11 @@ export namespace Superposition {
         /* Check if the step backbone is sensible */
         const info = Steps.lociToStepInfo(loci);
 
-        const structure: PSO.Molecule.Structure = Util.getBaseAssembly(ctx);
+        const structure: PSO.Molecule.Structure = Util.getBaseModel(ctx);
         const refRings = CUtil.referenceRingTypes(ref);
 
         /* Select reference conformer backbone */
-        const refStructure: PSO.Molecule.Structure = ctx.state.data.select(ID.mkRef(ID.Assembly, id))[0].obj!;
+        const refStructure: PSO.Molecule.Structure = ctx.state.data.select(ID.mkRef(ID.BaseModel, id))[0].obj!;
         const refBackbone = Selecting.selectBackbone(refStructure, refRings[0], refRings[1], 1, 2, null, null, null, null, null);
 
         /* Select step backbone */
@@ -61,7 +61,7 @@ export namespace Superposition {
         const backbone = Selecting.selectBackbone(structure, firstRing, secondRing, info.resnoFirst, info.resnoSecond, info.asymId, info.altIdFirst, info.altIdSecond, info.insCodeFirst, info.insCodeSecond);
 
         const xfrms = superpose([ backbone, refBackbone ]);
-        let bb = b.to(ID.mkRef(ID.Assembly, id));
+        let bb = b.to(ID.mkRef(ID.BaseModel, id));
         bb = Util.transform(bb, xfrms[0].bTransform, id);
         bb = Util.visual(ctx, bb, 'ball-and-stick', id, clr);
 
@@ -91,7 +91,7 @@ export namespace Superposition {
         if (!currRef)
             return 0;
 
-        const structure: PSO.Molecule.Structure = Util.getBaseAssembly(ctx);
+        const structure: PSO.Molecule.Structure = Util.getBaseModel(ctx);
 
         const currLoci = Selecting.selectStep(structure, info);
         const nextLoci = nextInfo ? Selecting.selectStep(structure, nextInfo) : undefined;
@@ -109,7 +109,7 @@ export namespace Superposition {
         ID.mkRef(ID.SCE, ID.NextSuperposed),
         ID.mkRef(ID.Structure, ID.Superposed),
         ID.mkRef(ID.Transformation, ID.Superposed),
-        ID.mkRef(ID.Assembly, ID.Superposed),
+        ID.mkRef(ID.BaseModel, ID.Superposed),
         ID.mkRef(ID.Model, ID.Superposed),
     ];
 
