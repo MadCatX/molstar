@@ -514,6 +514,13 @@ export namespace Util {
         );
     }
 
+    export async function visualiseOtherAltPos(ctx: PluginContext, expr: Expression) {
+        await removeIfPresent(ctx, [ID.mkRef(ID.SCE, ID.OtherAltPos), ID.mkRef(ID.Visual, ID.OtherAltPos)]);
+
+        let b = (await addSelectedStructure(ctx, expr, ID.OtherAltPos));
+        return visual(ctx, b, 'ball-and-stick', ID.OtherAltPos, Color.fromRgb(210, 210, 210), 0.1);
+    }
+
     export function visualProtein(ctx: PluginContext, b: StateBuilder.To<PSO.Molecule.Structure>, repr: SRR.BuiltIn) {
         b = b.apply(
             StateTransforms.Model.StructureComplexElement,
@@ -564,7 +571,11 @@ export namespace Util {
     }
 
     export async function visualiseSelected(ctx: PluginContext, expr: Expression) {
-        await removeIfPresent(ctx, [ID.mkRef(ID.SCE, ID.Selected), ID.mkRef(ID.Visual, ID.Selected)]);
+        await removeIfPresent(
+            ctx,
+            [ID.mkRef(ID.SCE, ID.Selected), ID.mkRef(ID.Visual, ID.Selected),
+             ID.mkRef(ID.SCE, ID.OtherAltPos), ID.mkRef(ID.SCE, ID.OtherAltPos)],
+        );
 
         let b = (await addSelectedStructure(ctx, expr, ID.Selected));
         return visual(ctx, b, 'ball-and-stick', ID.Selected);

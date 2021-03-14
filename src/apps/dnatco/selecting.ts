@@ -86,6 +86,16 @@ export namespace Selecting {
         return makeHalfStepTest(resno, altId, insCode, ignoreAltPos, backbone);
     }
 
+    function makeResidueOtherAltPosTest(asymId: string, resno: number, altId: string) {
+        let conds: string[] = [];
+
+        conds.push(`= atom.chain \`${asymId}\``);
+        conds.push(`= atom.resno ${resno}`);
+        conds.push(`not (= atom.altloc ${altId})`);
+
+        return conditionsToStatement('and', conds);
+    }
+
     function makeStepTest(info: StepInfo, ignoreDetails: boolean, ringFirst?: RingTypes, ringSecond?: RingTypes) {
         const firstResidue = makeResidueTest(info.resnoFirst, info.altIdFirst, info.insCodeFirst, ignoreDetails, ringFirst, true);
         const secondResidue = makeResidueTest(info.resnoSecond, info.altIdSecond, info.insCodeSecond, ignoreDetails, ringSecond, false);
@@ -111,6 +121,21 @@ export namespace Selecting {
         code = conditionsToStatement('and', [`= atom.chain \`${info.asymId}\``, code]);
 
         return Script(`(sel.atom.atom-groups :atom-test (${code}))`, 'mol-script');
+    }
+
+    export function selectStepOtherAltPos(info: StepInfo) {
+        const conds: string[] = [];
+
+        if (info.altIdFirst !== null)
+            conds.push(makeResidueOtherAltPosTest(info.asymId, info.resnoFirst, info.altIdFirst));
+        if (info.altIdSecond !== null)
+            conds.push(makeResidueOtherAltPosTest(info.asymId, info.resnoSecond, info.altIdSecond));
+
+        if (conds.length === 0)
+            return Script('', 'mol-script');
+
+        const code = `(sel.atom.atom-groups :atom-test (${conditionsToStatement('and', conds)}))`;
+        return Script(code, 'mol-script');
     }
 
     export function selectStep(structure: PSO.Molecule.Structure, info: StepInfo, firstRing?: RingTypes, secondRing?: RingTypes) {

@@ -29,6 +29,7 @@ export namespace Identifiers {
     export const Hetero: string = 'hetero';
     export const NextSuperposed: string = 'next-superposed';
     export const NotSelected: string = 'not-selected';
+    export const OtherAltPos: string = 'other-alt-pos';
     export const PreviousSuperposed: string = 'previous-superposed';
     export const Protein: string = 'protein';
     export const Pyramid: string = 'pyramid';
