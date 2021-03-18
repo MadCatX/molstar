@@ -152,7 +152,6 @@ export const DnatcoPluginSpec: DnatcoPluginSpec = {
         PluginSpec.Behavior(PluginBehaviors.Representation.HighlightLoci),
         PluginSpec.Behavior(DnatcoSelectLociBehaviors),
         PluginSpec.Behavior(PluginBehaviors.Representation.DefaultLociLabelProvider),
-        PluginSpec.Behavior(PluginBehaviors.Camera.FocusLoci),
         PluginSpec.Behavior(PluginBehaviors.CustomProps.AccessibleSurfaceArea),
         PluginSpec.Behavior(PluginBehaviors.CustomProps.Interactions),
         PluginSpec.Behavior(PluginBehaviors.CustomProps.SecondaryStructure),
