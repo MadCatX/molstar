@@ -28,6 +28,8 @@ import { Script } from '../../mol-script/script';
 import { Color } from '../../mol-util/color';
 import { ObjectKeys } from '../../mol-util/type-helpers';
 
+type SelectionMode = 'step' | 'residue';
+
 type LoadParams = {
     url: string,
     code: string,
@@ -35,9 +37,9 @@ type LoadParams = {
     gzipped: boolean
 };
 
-type DnatcoEventHandlers = {
-    id: 'loci-selected', func: (_: string) => void } | { id: 'dummy', func: () => void
-};
+type DnatcoEventHandlers =
+    { id: 'loci-selected', func: (stepId: string) => void } |
+    { id: 'dummy', func: () => void };
 
 const Extensions = {
     'ntc-balls-pyramids-prop': PluginSpec.Behavior(DnatcoNtcBalls),
@@ -137,9 +139,16 @@ class DnatcoWrapper {
             this.lociSelectedHandler(stepId);
     }
 
-    private makePrevNextInfo(prevId: string, nextId: string): [StepInfo|null, StepInfo|null] {
-        const prevInfo = prevId === '' ? null : Steps.makeStepInfo(prevId);
-        const nextInfo = nextId === '' ? null : Steps.makeStepInfo(nextId);
+    private makeSuperpostionStep(info: StepInfo|undefined, reference: References|undefined) {
+        if (info === undefined || reference === undefined)
+            return undefined;
+
+        return { info, reference };
+    }
+
+    private makePrevNextInfo(prevId: string, nextId: string): [StepInfo|undefined, StepInfo|undefined] {
+        const prevInfo = prevId === '' ? undefined : Steps.makeStepInfo(prevId);
+        const nextInfo = nextId === '' ? undefined : Steps.makeStepInfo(nextId);
 
         return [prevInfo, nextInfo];
     }
@@ -387,7 +396,7 @@ class DnatcoWrapper {
         )).commit();
     }
 
-    async superpose(prevId: string|undefined, nextId: string|undefined, prevRef: string, currRef: string, nextRef: string) {
+    async superposeTetra(prevId: string|undefined, nextId: string|undefined, prevRef: string, currRef: string, nextRef: string) {
         if (this.currentSelectedStepInfo === null)
             return;
 
@@ -403,9 +412,36 @@ class DnatcoWrapper {
         if (nextInfo)
             nextInfo.modelIndex = this.currentModelIndex;
 
-        const rmsd = await Superposition.superposeReferenceConformer(this.plugin, prevInfo, this.currentSelectedStepInfo, nextInfo, prev, curr, next);
+        const rmsd = await Superposition.superposePrevCurrNextConformers(
+            this.plugin,
+            this.makeSuperpostionStep(prevInfo, prev),
+            this.makeSuperpostionStep(this.currentSelectedStepInfo, curr)!,
+            this.makeSuperpostionStep(nextInfo, next)
+        );
 
         return rmsd;
+    }
+
+    async superposeTri(prevId: string|undefined, nextId: string|undefined, prevRef: string, nextRef: string) {
+        if (this.currentSelectedStepInfo === null)
+            return;
+
+        const prev = prevRef === '' ? undefined : (prevRef as References);
+        const next = nextRef === '' ? undefined : (nextRef as References);
+
+        const [prevInfo, nextInfo] = this.makePrevNextInfo(prevId === undefined ? '' : prevId, nextId === undefined ? '' : nextId);
+
+        // HAKZ
+        if (prevInfo)
+            prevInfo.modelIndex = this.currentModelIndex;
+        if (nextInfo)
+            nextInfo.modelIndex = this.currentModelIndex;
+
+        await Superposition.superposePrevNextConformers(
+            this.plugin,
+            this.makeSuperpostionStep(prevInfo, prev),
+            this.makeSuperpostionStep(nextInfo, next)
+        );
     }
 
     async setBallsColors(colors: { which: string, color: string }[]) {
@@ -425,6 +461,23 @@ class DnatcoWrapper {
             this.customPyramidsVisibleMap,
             this.pyramidsTransparent
         );
+    }
+
+    async setSelectionMode(mode: SelectionMode) {
+        const props: Partial<InteractivityManager.Props> = {};
+
+        await this.deselectStep();
+
+        switch (mode) {
+        case 'step':
+            props['granularity'] = 'two-residues';
+            break;
+        case 'residue':
+            props['granularity'] = 'residue';
+            break;
+        }
+
+        this.plugin.managers.interactivity.setProps(props);
     }
 
     async showHideAllBalls(show: boolean) {
