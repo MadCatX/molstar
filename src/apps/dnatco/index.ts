@@ -68,6 +68,8 @@ class DnatcoWrapper {
     private densityMapLoc: string = '';
     private densityMapSigma: number = 1.5;
     private densityMapAlpha: number = 0.5;
+    private densityMapSigmaDiff: number = 1.5;
+    private densityMapAlphaDiff: number = 0.5;
     private densityMapAsWireframe: boolean = true;
     private showDensityDiffMap: boolean = false;
     private notSelectedRepr: SRR.BuiltIn = 'cartoon';
@@ -276,6 +278,8 @@ class DnatcoWrapper {
                 this.plugin,
                 this.densityMapSigma,
                 this.densityMapAlpha,
+                this.densityMapSigmaDiff,
+                this.densityMapAlphaDiff,
                 this.showDensityDiffMap,
                 this.densityMapAsWireframe
             );
@@ -347,11 +351,13 @@ class DnatcoWrapper {
         )).commit();
     }
 
-    async setDensityMapAppearance(sigma: number, alpha: number, asWireframe: boolean) {
+    async setDensityMapAppearance(sigma: number, alpha: number, sigma_diff: number, alpha_diff: number, asWireframe: boolean) {
         this.densityMapSigma = sigma;
         this.densityMapAlpha = alpha;
+        this.densityMapSigmaDiff = sigma_diff;
+        this.densityMapAlphaDiff = alpha_diff;
         this.densityMapAsWireframe = asWireframe;
-        Util.updateDensityMapVisual(this.plugin, sigma, alpha, this.densityMapAsWireframe);
+        Util.updateDensityMapVisual(this.plugin, sigma, alpha, sigma_diff, alpha_diff, this.densityMapAsWireframe);
     }
 
     setDensityMapLocator(loc: string) {
@@ -582,7 +588,7 @@ class DnatcoWrapper {
     async toggleDensityDifferenceMap(show: boolean) {
         this.showDensityDiffMap = show;
         if (show) {
-            Util.densityMapDiffVisual(this.plugin, this.densityMapSigma, this.densityMapAlpha, this.densityMapAsWireframe);
+            Util.densityMapDiffVisual(this.plugin, this.densityMapSigmaDiff, this.densityMapAlphaDiff, this.densityMapAsWireframe);
         } else {
             Util.removeDensityMapDiffVisual(this.plugin);
         }

@@ -75,7 +75,14 @@ export namespace Util {
         return VolumeRepresentation3DHelpers.getDefaultParamsStatic(
             ctx,
             'isosurface',
-            { isoValue: Volume.IsoValue.relative(sigma), alpha, visuals: [ asWireframe ? 'wireframe' : 'solid' ] },
+            {
+                isoValue: Volume.IsoValue.relative(sigma),
+                alpha,
+                visuals: [
+                    asWireframe ? 'wireframe' : 'solid',
+                ],
+                sizeFactor: 1.5,
+            },
             'uniform',
             { value: color }
         );
@@ -224,7 +231,7 @@ export namespace Util {
         await b.commit();
     }
 
-    export async function densityMapVisual(ctx: PluginContext, sigma: number, alpha: number, showDiff: boolean, asWireframe: boolean) {
+    export async function densityMapVisual(ctx: PluginContext, sigma: number, alpha: number, sigma_diff: number, alpha_diff: number, showDiff: boolean, asWireframe: boolean) {
         const tree = ctx.build();
 
         if (!tree.currentTree.children.has(ID.DensityMap))
@@ -237,10 +244,10 @@ export namespace Util {
 
         if (tree.currentTree.children.has(ID.DensityDifference) && showDiff) {
             // We have difference map
-            const posParams = makeDensityMapVisualParams(ctx, sigma, alpha * 0.5, ColorNames.blue, asWireframe);
+            const posParams = makeDensityMapVisualParams(ctx, sigma_diff, alpha_diff, ColorNames.blue, asWireframe);
             tree.to(ID.DensityDifference).apply(StateTransforms.Representation.VolumeRepresentation3D, posParams, { ref: ID.DensityPosDifVisual });
 
-            const negParams = makeDensityMapVisualParams(ctx, -sigma, alpha * 0.5, ColorNames.red, asWireframe);
+            const negParams = makeDensityMapVisualParams(ctx, -sigma_diff, alpha_diff, ColorNames.red, asWireframe);
             tree.to(ID.DensityDifference).apply(StateTransforms.Representation.VolumeRepresentation3D, negParams, { ref: ID.DensityNegDifVisual });
         }
 
@@ -387,7 +394,7 @@ export namespace Util {
         b.update(params).commit();
     }
 
-    export async function updateDensityMapVisual(ctx: PluginContext, sigma: number, alpha: number, asWireframe: boolean) {
+    export async function updateDensityMapVisual(ctx: PluginContext, sigma: number, alpha: number, sigma_diff: number, alpha_diff: number, asWireframe: boolean) {
         if (ctx === undefined)
             return;
 
@@ -405,11 +412,11 @@ export namespace Util {
 
         if (cells.has(ID.DensityPosDifVisual)) {
             const pos = b.to(ID.DensityPosDifVisual);
-            b = pos.update(makeDensityMapVisualParams(ctx, sigma, alpha * 0.5, ColorNames.blue, asWireframe));
+            b = pos.update(makeDensityMapVisualParams(ctx, sigma_diff, alpha_diff, ColorNames.blue, asWireframe));
         }
         if (cells.has(ID.DensityNegDifVisual)) {
             const neg = b.to(ID.DensityNegDifVisual);
-            b = neg.update(makeDensityMapVisualParams(ctx, -sigma, alpha * 0.5, ColorNames.red, asWireframe));
+            b = neg.update(makeDensityMapVisualParams(ctx, -sigma_diff, alpha_diff, ColorNames.red, asWireframe));
         }
 
         PluginCommands.State.Update(ctx, { state, tree: b });
