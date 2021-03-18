@@ -43,13 +43,13 @@ export namespace Selecting {
         return conditionsToStatement('and', conds);
     }
 
-    function makeBlockTest(prevStep: StepInfo|null, currentStep: StepInfo, nextStep: StepInfo|null, ignoreDetails: boolean) {
+    function makeBlockTest(prevStep: StepInfo|undefined, currentStep: StepInfo, nextStep: StepInfo|undefined, ignoreDetails: boolean) {
         const conds: string[] = [];
 
-        if (prevStep !== null)
+        if (prevStep !== undefined)
             conds.push(makeResidueTest(prevStep.resnoFirst, prevStep.altIdFirst, prevStep.insCodeFirst, ignoreDetails));
         conds.push(makeStepTest(currentStep, ignoreDetails));
-        if (nextStep !== null)
+        if (nextStep !== undefined)
             conds.push(makeResidueTest(nextStep.resnoSecond, nextStep.altIdSecond, nextStep.insCodeSecond, ignoreDetails));
 
         let code = conditionsToStatement('or', conds);
@@ -148,12 +148,12 @@ export namespace Selecting {
         return Script.toLoci(SelectAllScript, structure.data);
     }
 
-    export function selectBlock(prevStep: StepInfo|null, currentStep: StepInfo, nextStep: StepInfo|null, surroundings: number, ignoreDetails: boolean = false) {
+    export function selectBlock(prevStep: StepInfo|undefined, currentStep: StepInfo, nextStep: StepInfo|undefined, surroundings: number, ignoreDetails: boolean = false) {
         let code = makeBlockTest(prevStep, currentStep, nextStep, ignoreDetails);
         const entireBlock = Script.toExpression(Script(`(sel.atom.atom-groups :atom-test (${code}))`, 'mol-script'));
 
         if (surroundings > 0) {
-            const middle = Script(`(sel.atom.atom-groups :atom-test (${makeBlockTest(null, currentStep, null, false)}))`, 'mol-script');
+            const middle = Script(`(sel.atom.atom-groups :atom-test (${makeBlockTest(undefined, currentStep, undefined, false)}))`, 'mol-script');
             const middleSurr = MS.struct.modifier.includeSurroundings(
                 { 0: Script.toExpression(middle),
                     radius: surroundings,
@@ -165,7 +165,7 @@ export namespace Selecting {
         return entireBlock;
     }
 
-    export function selectBlockInverse(prevStep: StepInfo|null, currentStep: StepInfo, nextStep: StepInfo|null, ignoreDetails: boolean = false) {
+    export function selectBlockInverse(prevStep: StepInfo|undefined, currentStep: StepInfo, nextStep: StepInfo|undefined, ignoreDetails: boolean = false) {
         const code = makeBlockTest(prevStep, currentStep, nextStep, ignoreDetails);
         return Script(`(sel.atom.atom-groups :atom-test (not (${code})))`, 'mol-script');
     }

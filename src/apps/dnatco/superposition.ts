@@ -24,19 +24,25 @@ const DarkBlue = Color(0x0000FF);
 const Cyan = Color(0x00FFFF);
 
 export namespace Superposition {
+    export type Step = {
+        info: StepInfo;
+        reference: References;
+    };
+
     function addReference(b: StateBuilder.To<PSO.Root>, ref: References, id: string) {
         const pdb = ReferencePdbs.data[ref];
         const model = Util.getModelFromRawData(b, pdb, 'pdb', 0, id);
         return Util.structure(model, id);
     }
 
-    async function addReferenceStructures(ctx: PluginContext, prevLoci: StructureElement.Loci|undefined, prevRef: References|undefined, currRef: References, nextLoci: StructureElement.Loci|undefined, nextRef: References|undefined) {
+    async function addReferenceStructures(ctx: PluginContext, prevLoci: StructureElement.Loci|undefined, prevRef: References|undefined, currRef: References|undefined, nextLoci: StructureElement.Loci|undefined, nextRef: References|undefined) {
         let b = ctx.state.data.build().toRoot();
 
         if (prevLoci && prevRef)
             b = addReference(b, prevRef, ID.PreviousSuperposed);
 
-        b = addReference(b, currRef, ID.Superposed);
+        if (currRef)
+            b = addReference(b, currRef, ID.Superposed);
 
         if (nextLoci && nextRef)
             b = addReference(b, nextRef, ID.NextSuperposed);
@@ -68,38 +74,54 @@ export namespace Superposition {
         return { rmsd: xfrms[0].rmsd, b: bb };
     }
 
-    async function addSuperposedStructures(ctx: PluginContext, prevLoci: StructureElement.Loci|undefined, prevRef: References|undefined, currLoci: StructureElement.Loci, currRef: References, nextLoci: StructureElement.Loci|undefined, nextRef: References|undefined) {
+    async function addSuperposedStructures(ctx: PluginContext, prevLoci: StructureElement.Loci|undefined, prevRef: References|undefined, currLoci: StructureElement.Loci|undefined, currRef: References|undefined, nextLoci: StructureElement.Loci|undefined, nextRef: References|undefined) {
         let b = ctx.state.data.build().toRoot();
 
         if (prevLoci && prevRef)
             b = addSuperposed(ctx, b, prevLoci, prevRef, ID.PreviousSuperposed, DarkBlue).b.toRoot();
 
-        const ret = addSuperposed(ctx, b, currLoci, currRef, ID.Superposed, Green);
-        b = ret.b.toRoot();
+        let rmsd = 0;
+        if (currLoci && currRef) {
+            const ret = addSuperposed(ctx, b, currLoci, currRef, ID.Superposed, Green);
+            b = ret.b.toRoot();
+            rmsd = ret.rmsd;
+        }
 
         if (nextLoci && nextRef)
             b = addSuperposed(ctx, b, nextLoci, nextRef, ID.NextSuperposed, Cyan).b;
 
         await PluginCommands.State.Update(ctx, { state: ctx.state.data, tree: b });
 
-        return ret.rmsd;
+        return rmsd;
     }
 
-    export async function superposeReferenceConformer(ctx: PluginContext, prevInfo: StepInfo|null, info: StepInfo, nextInfo: StepInfo|null, prevRef?: References, currRef?: References, nextRef?: References) {
+    export async function superposePrevCurrNextConformers(ctx: PluginContext, prev: Step|undefined, curr: Step, next: Step|undefined) {
         await removeSuperposed(ctx);
 
-        if (!currRef)
+        if (curr === undefined)
             return 0;
 
         const structure: PSO.Molecule.Structure = Util.getBaseModel(ctx);
 
-        const currLoci = Selecting.selectStep(structure, info);
-        const nextLoci = nextInfo ? Selecting.selectStep(structure, nextInfo) : undefined;
-        const prevLoci = prevInfo ? Selecting.selectStep(structure, prevInfo) : undefined;
+        const currLoci = Selecting.selectStep(structure, curr.info);
+        const nextLoci = next ? Selecting.selectStep(structure, next.info) : undefined;
+        const prevLoci = prev ? Selecting.selectStep(structure, prev.info) : undefined;
 
-        await addReferenceStructures(ctx, prevLoci, prevRef, currRef, nextLoci, nextRef);
+        await addReferenceStructures(ctx, prevLoci, prev?.reference, curr.reference, nextLoci, next?.reference);
 
-        return (await addSuperposedStructures(ctx, prevLoci, prevRef, currLoci, currRef, nextLoci, nextRef));
+        return (await addSuperposedStructures(ctx, prevLoci, prev?.reference, currLoci, curr.reference, nextLoci, next?.reference));
+    }
+
+    export async function superposePrevNextConformers(ctx: PluginContext, prev: Step|undefined, next: Step|undefined) {
+        await removeSuperposed(ctx);
+
+        const structure: PSO.Molecule.Structure = Util.getBaseModel(ctx);
+
+        const nextLoci = next ? Selecting.selectStep(structure, next.info) : undefined;
+        const prevLoci = prev ? Selecting.selectStep(structure, prev.info) : undefined;
+
+        await addReferenceStructures(ctx, prevLoci, prev?.reference, undefined, nextLoci, next?.reference);
+        await addSuperposedStructures(ctx, prevLoci, prev?.reference, undefined, undefined, nextLoci, next?.reference);
     }
 
     export const superposedRefs = [

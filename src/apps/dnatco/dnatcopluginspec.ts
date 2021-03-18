@@ -46,25 +46,23 @@ const DnatcoSelectLociBehaviors = PluginBehavior.create({
                 return;
             }
 
-            let lociFirst: StructureElement.Loci = Loci.normalize(interactionLoci.loci) as StructureElement.Loci;
-            let lociSecond = StepSlider.forward(lociFirst);
+            const spec: DnatcoPluginSpec = this.ctx.spec;
+            if (!spec.lociSelectedCallback)
+                return;
 
+            const lociFirst: StructureElement.Loci = Loci.normalize(interactionLoci.loci) as StructureElement.Loci;
             const locationFirst = Util.lociToLocation(lociFirst);
+            const lociSecond = StepSlider.forward(lociFirst);
             const locationSecond = lociSecond ? Util.lociToLocation(lociSecond) : undefined;
 
-            if (!locationSecond) {
+            if (!locationSecond)
                 return;
-            }
 
             const idFirst = DnatcoNaming.makeResidueId(locationFirst);
             const idSecond = locationSecond ? DnatcoNaming.makeResidueId(locationSecond) : '';
 
             const stepId = DnatcoNaming.makeStepId(locationFirst, idFirst, idSecond, this.ctx);
-
-            let spec: DnatcoPluginSpec = this.ctx.spec;
-            if (spec.lociSelectedCallback) {
-                spec.lociSelectedCallback(stepId);
-            }
+            spec.lociSelectedCallback(stepId);
         }
 
         register() {
@@ -107,7 +105,7 @@ const DnatcoSelectLociBehaviors = PluginBehavior.create({
 });
 
 interface DnatcoPluginSpec extends PluginSpec {
-    lociSelectedCallback?: (_: string) => void,
+    lociSelectedCallback?: (stepId: string) => void,
 }
 
 export const DnatcoPluginSpec: DnatcoPluginSpec = {
