@@ -33,6 +33,7 @@ export namespace Identifiers {
     export const PreviousSuperposed: string = 'previous-superposed';
     export const Protein: string = 'protein';
     export const Pyramid: string = 'pyramid';
+    export const RMSD: string = 'rmsd';
     export const Selected: string = 'selected';
     export const Superposed: string = 'superposed';
     export const Water: string = 'water';

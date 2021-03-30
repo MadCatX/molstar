@@ -53,6 +53,9 @@ const DefaultViewerOptions = {
 const BMRef = ID.mkRef(ID.BaseModel);
 const MinimumRadiusRatio = 0.30;
 
+/* MEGAHAKZ */
+let SuperposeRmsdCallLock = false;
+
 class DnatcoWrapper {
     private DnatcoPluginSpecImpl = { ...DnatcoPluginSpec, lociSelectedCallback: (stepId: string) => { this.lociSelectedHandlerInternal(stepId); } };
     private currentSelectedStepInfo: StepInfo | null;
@@ -418,14 +421,12 @@ class DnatcoWrapper {
         if (nextInfo)
             nextInfo.modelIndex = this.currentModelIndex;
 
-        const rmsd = await Superposition.superposePrevCurrNextConformers(
+        Superposition.superposePrevCurrNextConformers(
             this.plugin,
             this.makeSuperpostionStep(prevInfo, prev),
             this.makeSuperpostionStep(this.currentSelectedStepInfo, curr)!,
             this.makeSuperpostionStep(nextInfo, next)
         );
-
-        return rmsd;
     }
 
     async superposeTri(prevId: string|undefined, nextId: string|undefined, prevRef: string, nextRef: string) {
@@ -443,11 +444,37 @@ class DnatcoWrapper {
         if (nextInfo)
             nextInfo.modelIndex = this.currentModelIndex;
 
-        await Superposition.superposePrevNextConformers(
+        Superposition.superposePrevNextConformers(
             this.plugin,
             this.makeSuperpostionStep(prevInfo, prev),
             this.makeSuperpostionStep(nextInfo, next)
         );
+    }
+
+    async superposeRmsd(currRef: string) {
+        if (SuperposeRmsdCallLock)
+            return undefined;
+
+        SuperposeRmsdCallLock = true;
+
+        if (this.currentSelectedStepInfo === null)
+            return;
+
+        const curr = currRef === '' ? undefined : (currRef as References);
+
+        let ret: number|undefined = undefined;
+        try {
+            ret = await Superposition.superposedRmsd(
+                this.plugin,
+                this.makeSuperpostionStep(this.currentSelectedStepInfo, curr)!,
+                currRef as References
+            );
+        } catch (e) {
+        } finally {
+            SuperposeRmsdCallLock = true;
+        }
+
+        return ret;
     }
 
     async setBallsColors(colors: { which: string, color: string }[]) {
