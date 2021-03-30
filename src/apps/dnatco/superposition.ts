@@ -50,7 +50,7 @@ export namespace Superposition {
         await PluginCommands.State.Update(ctx, { state: ctx.state.data, tree: b });
     }
 
-    function addSuperposed(ctx: PluginContext, b: StateBuilder.To<PSO.Root>, loci: StructureElement.Loci, ref: References, id: string, clr: Color) {
+    function getBackbones(ctx: PluginContext, b: StateBuilder.To<PSO.Root>, loci: StructureElement.Loci, ref: References, id: string): { backbone: StructureElement.Loci, refBackbone: StructureElement.Loci } {
         /* Check if the step backbone is sensible */
         const info = Steps.lociToStepInfo(loci);
 
@@ -58,7 +58,7 @@ export namespace Superposition {
         const refRings = CUtil.referenceRingTypes(ref);
 
         /* Select reference conformer backbone */
-        const refStructure: PSO.Molecule.Structure = ctx.state.data.select(ID.mkRef(ID.BaseModel, id))[0].obj!;
+        const refStructure: PSO.Molecule.Structure = b.to(ID.mkRef(ID.BaseModel, id)).selector.obj! as PSO.Molecule.Structure;
         const refBackbone = Selecting.selectBackbone(refStructure, refRings[0], refRings[1], 1, 2, null, null, null, null, null);
 
         /* Select step backbone */
@@ -66,33 +66,62 @@ export namespace Superposition {
         const secondRing = compoundRingTypes.get(info.compoundSecond)!;
         const backbone = Selecting.selectBackbone(structure, firstRing, secondRing, info.resnoFirst, info.resnoSecond, info.asymId, info.altIdFirst, info.altIdSecond, info.insCodeFirst, info.insCodeSecond);
 
-        const xfrms = superpose([ backbone, refBackbone ]);
+        return { backbone, refBackbone };
+    }
+
+    function addSuperposed(ctx: PluginContext, b: StateBuilder.To<PSO.Root>, loci: StructureElement.Loci, ref: References, id: string, clr: Color) {
+        const { backbone, refBackbone } = getBackbones(ctx, b, loci, ref, id);
+
+        const sup = superpose([ backbone, refBackbone ]);
         let bb = b.to(ID.mkRef(ID.BaseModel, id));
-        bb = Util.transform(bb, xfrms[0].bTransform, id);
+        bb = Util.transform(bb, sup[0].bTransform, id);
         bb = Util.visual(ctx, bb, 'ball-and-stick', id, clr, 0.1);
 
-        return { rmsd: xfrms[0].rmsd, b: bb };
+        return bb;
+    }
+
+    export async function superposedRmsd(ctx: PluginContext, step: Step, ref: References) {
+        /* The sheer ridiculousness of this code did dawn on me when I wrote it... */
+        const structure: PSO.Molecule.Structure = Util.getBaseModel(ctx);
+        const loci = Selecting.selectStep(structure, step.info);
+
+        let b = ctx.state.data.build().toRoot();
+        b = addReference(b, ref, ID.RMSD).toRoot();
+        await b.commit();
+
+        const { backbone, refBackbone } = getBackbones(ctx, b, loci, ref, ID.RMSD);
+
+        const sup = superpose([ backbone, refBackbone ]);
+        const rmsd = sup[0].rmsd;
+
+        b = ctx.state.data.build().toRoot();
+        const toRemove = [
+            ID.mkRef(ID.Model, ID.RMSD),
+            ID.mkRef(ID.BaseModel, ID.RMSD),
+        ];
+
+        for (const o of toRemove)
+            b.delete(o);
+        await b.commit();
+
+        return rmsd;
     }
 
     async function addSuperposedStructures(ctx: PluginContext, prevLoci: StructureElement.Loci|undefined, prevRef: References|undefined, currLoci: StructureElement.Loci|undefined, currRef: References|undefined, nextLoci: StructureElement.Loci|undefined, nextRef: References|undefined) {
         let b = ctx.state.data.build().toRoot();
 
         if (prevLoci && prevRef)
-            b = addSuperposed(ctx, b, prevLoci, prevRef, ID.PreviousSuperposed, DarkBlue).b.toRoot();
+            b = addSuperposed(ctx, b, prevLoci, prevRef, ID.PreviousSuperposed, DarkBlue).toRoot();
 
-        let rmsd = 0;
         if (currLoci && currRef) {
             const ret = addSuperposed(ctx, b, currLoci, currRef, ID.Superposed, Green);
-            b = ret.b.toRoot();
-            rmsd = ret.rmsd;
+            b = ret.toRoot();
         }
 
         if (nextLoci && nextRef)
-            b = addSuperposed(ctx, b, nextLoci, nextRef, ID.NextSuperposed, Cyan).b;
+            b = addSuperposed(ctx, b, nextLoci, nextRef, ID.NextSuperposed, Cyan);
 
         await PluginCommands.State.Update(ctx, { state: ctx.state.data, tree: b });
-
-        return rmsd;
     }
 
     export async function superposePrevCurrNextConformers(ctx: PluginContext, prev: Step|undefined, curr: Step, next: Step|undefined) {
