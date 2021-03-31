@@ -409,9 +409,9 @@ class DnatcoWrapper {
         if (this.currentSelectedStepInfo === null)
             return;
 
-        const prev = prevRef === '' ? undefined : (prevRef as References);
-        const next = nextRef === '' ? undefined : (nextRef as References);
-        const curr = currRef === '' ? undefined : (currRef as References);
+        const prev = (prevRef === '' || prevRef === 'NANT') ? undefined : (prevRef as References);
+        const next = (nextRef === '' || nextRef === 'NANT') ? undefined : (nextRef as References);
+        const curr = (currRef === '' || currRef === 'NANT') ? undefined : (currRef as References);
 
         const [prevInfo, nextInfo] = this.makePrevNextInfo(prevId === undefined ? '' : prevId, nextId === undefined ? '' : nextId);
 
@@ -433,8 +433,8 @@ class DnatcoWrapper {
         if (this.currentSelectedStepInfo === null)
             return;
 
-        const prev = prevRef === '' ? undefined : (prevRef as References);
-        const next = nextRef === '' ? undefined : (nextRef as References);
+        const prev = (prevRef === '' || prevRef === 'NANT') ? undefined : (prevRef as References);
+        const next = (nextRef === '' || nextRef === 'NANT') ? undefined : (nextRef as References);
 
         const [prevInfo, nextInfo] = this.makePrevNextInfo(prevId === undefined ? '' : prevId, nextId === undefined ? '' : nextId);
 
