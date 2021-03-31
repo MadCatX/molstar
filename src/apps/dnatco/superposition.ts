@@ -128,7 +128,7 @@ export namespace Superposition {
         await removeSuperposed(ctx);
 
         if (curr === undefined)
-            return 0;
+            return;
 
         const structure: PSO.Molecule.Structure = Util.getBaseModel(ctx);
 
@@ -137,8 +137,7 @@ export namespace Superposition {
         const prevLoci = prev ? Selecting.selectStep(structure, prev.info) : undefined;
 
         await addReferenceStructures(ctx, prevLoci, prev?.reference, curr.reference, nextLoci, next?.reference);
-
-        return (await addSuperposedStructures(ctx, prevLoci, prev?.reference, currLoci, curr.reference, nextLoci, next?.reference));
+        await addSuperposedStructures(ctx, prevLoci, prev?.reference, currLoci, curr.reference, nextLoci, next?.reference);
     }
 
     export async function superposePrevNextConformers(ctx: PluginContext, prev: Step|undefined, next: Step|undefined) {
