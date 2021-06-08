@@ -1,6 +1,6 @@
 import './index.html';
 import { WebMmbViewerPluginSpec } from './spec';
-import { createPlugin } from '../../mol-plugin';
+import { createPlugin } from '../../mol-plugin-ui';
 import { Asset } from '../../mol-util/assets';
 import { PluginCommands } from '../../mol-plugin/commands';
 import { PluginContext } from '../../mol-plugin/context';
