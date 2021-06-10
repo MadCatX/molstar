@@ -18,7 +18,7 @@ import { StructureElement, StructureProperties } from '../../mol-model/structure
 import { ElementIndex } from '../../mol-model/structure/model';
 import { StateBuilder } from '../../mol-state';
 import { Color } from '../../mol-util/color';
-import {OrderedSet} from '../../mol-data/int';
+import { OrderedSet } from '../../mol-data/int';
 import { SymmetryOperator } from '../../mol-math/geometry/symmetry-operator';
 import { MinimizeRmsd } from '../../mol-math/linear-algebra/3d/minimize-rmsd';
 
@@ -117,28 +117,36 @@ export namespace Superposition {
         const firstAtoms = [ ...BackboneAtoms.firstResidue, ...BackboneAtoms.ringDependent.get(firstRing)! ];
         const secondAtoms = [ ...BackboneAtoms.secondResidue, ...BackboneAtoms.ringDependent.get(secondRing)! ];
 
+        const elem = backbone.elements[0];
+        const indicesToCheck: number[] = [];
+        for (let idx = 0; idx < OrderedSet.size(elem.indices); idx++)
+            indicesToCheck.push(idx);
+
+        const checkAtom = (idx: number, name: string, resno: number) => {
+            const index = OrderedSet.getAt(elem.indices, indicesToCheck[idx]);
+            const loc = Util.lociToLocation(StructureElement.Loci(backbone.structure, [{ unit: elem.unit, indices: OrderedSet.ofSortedArray([index]) }]));
+            if (StructureProperties.atom.auth_atom_id(loc) === name &&
+                StructureProperties.residue.auth_seq_id(loc) === resno) {
+                reordered.push(elem.unit.elements[index]);
+                indicesToCheck.splice(idx, 1);
+                return true;
+            }
+            return false;
+        }
+
+
         for (const atomName of firstAtoms) {
-            const elem = backbone.elements[0];
-            OrderedSet.forEach(elem.indices, index => {
-                const loc = Util.lociToLocation(StructureElement.Loci(backbone.structure, [{ unit: elem.unit, indices: OrderedSet.ofSortedArray([index]) }]));
-                if (StructureProperties.atom.auth_atom_id(loc) === atomName &&
-                    StructureProperties.residue.auth_seq_id(loc) === resnoFirst) {
-                    reordered.push(elem.unit.elements[index]);
-                    return;
-                }
-            });
+            for (let idx = 0; idx < indicesToCheck.length; idx++) {
+                if (checkAtom(idx, atomName, resnoFirst))
+                    break;
+            }
         }
 
         for (const atomName of secondAtoms) {
-            const elem = backbone.elements[0];
-            OrderedSet.forEach(elem.indices, index => {
-                const loc = Util.lociToLocation(StructureElement.Loci(backbone.structure, [{ unit: elem.unit, indices: OrderedSet.ofSortedArray([index]) }]));
-                if (StructureProperties.atom.auth_atom_id(loc) === atomName &&
-                    StructureProperties.residue.auth_seq_id(loc) === resnoSecond) {
-                    reordered.push(elem.unit.elements[index]);
-                    return;
-                }
-            });
+            for (let idx = 0; idx < indicesToCheck.length; idx++) {
+                if (checkAtom(idx, atomName, resnoSecond))
+                    break;
+            }
         }
 
         return reordered;
