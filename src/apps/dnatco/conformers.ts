@@ -202,11 +202,11 @@ export const compoundRingTypes: Map<Compounds, RingTypes> = new Map([
 ]);
 
 export namespace BackboneAtoms {
-    export const commonFirstResidue = ".`C5'` .`C4'` .`C3'` .`O3'` .`O4'` .`C1'`";
-    export const commonSecondResidue = ".`P` .`O5'` .`C5'` .`C4'` .`C3'` .`O3'` .`O4'` .`C1'`";
-    export const ringDependent: Map<RingTypes, string> = new Map([
-        ['purine', '.N9 .C4'],
-        ['pyrimidine', '.N1 .C2']
+    export const firstResidue = [ "C5'", "C4'", "O4'", "C3'", "O3'", "C1'" ];
+    export const secondResidue = [ "P", "O5'", "C5'", "C4'", "O4'", "C3'", "O3'", "C1'" ];
+    export const ringDependent: Map<RingTypes, string[]> = new Map([
+        ['purine', [ 'N9',  'C4' ] ],
+        ['pyrimidine', [ 'N1',  'C2' ] ]
     ]);
 }
 

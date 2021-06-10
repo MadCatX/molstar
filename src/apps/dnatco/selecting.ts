@@ -12,6 +12,10 @@ import { MolScriptBuilder as MS } from '../../mol-script/language/builder';
 import { Script } from '../../mol-script/script';
 
 export namespace Selecting {
+    function reduceElemList(list: string[]) {
+        return list.reduce((a, c) => a + " .`" + c + "`", '');
+    }
+
     function conditionsToStatement(op: string, conditions: string[]) {
         if (conditions.length < 1)
             return '';
@@ -29,9 +33,9 @@ export namespace Selecting {
     function makeBackboneTest(ring: RingTypes, resno: number, isFirst: boolean, altId: string|null, insCode: string|null, ignoreDetails: boolean) {
         let conds: string[] = [];
 
-        const dependent = BackboneAtoms.ringDependent.get(ring)!;
-        let atoms = isFirst ? BackboneAtoms.commonFirstResidue : BackboneAtoms.commonSecondResidue;
-        atoms += ` ${dependent}`;
+        const dependent = reduceElemList(BackboneAtoms.ringDependent.get(ring)!);
+        let atoms = reduceElemList(isFirst ? BackboneAtoms.firstResidue : BackboneAtoms.secondResidue);
+        atoms += `${dependent}`;
 
         conds.push(`set.has (set ${atoms}) atom.label_atom_id`);
         conds.push(`= atom.resno ${resno}`);
