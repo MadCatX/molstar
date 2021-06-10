@@ -471,7 +471,7 @@ class DnatcoWrapper {
             );
         } catch (e) {
         } finally {
-            SuperposeRmsdCallLock = true;
+            SuperposeRmsdCallLock = false;
         }
 
         return ret;

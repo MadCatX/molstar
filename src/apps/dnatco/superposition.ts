@@ -5,19 +5,22 @@
  * @author Jiří Černý (jiri.cerny@ibt.cas.cz)
  */
 
-import { References, Util as CUtil,  compoundRingTypes } from './conformers';
+import { References, Util as CUtil,  compoundRingTypes, RingTypes, BackboneAtoms } from './conformers';
 import { Identifiers as ID } from './identifiers';
 import { Util } from './util';
 import { ReferencePdbs } from './reference-pdbs';
 import { Selecting } from './selecting';
 import { Steps, StepInfo } from './steps';
-import { superpose } from '../../mol-model/structure/structure/util/superposition';
 import { PluginCommands } from '../../mol-plugin/commands';
 import { PluginContext } from '../../mol-plugin/context';
 import { PluginStateObject as PSO } from '../../mol-plugin-state/objects';
-import { StructureElement } from '../../mol-model/structure';
+import { StructureElement, StructureProperties } from '../../mol-model/structure';
+import { ElementIndex } from '../../mol-model/structure/model';
 import { StateBuilder } from '../../mol-state';
 import { Color } from '../../mol-util/color';
+import {OrderedSet} from '../../mol-data/int';
+import { SymmetryOperator } from '../../mol-math/geometry/symmetry-operator';
+import { MinimizeRmsd } from '../../mol-math/linear-algebra/3d/minimize-rmsd';
 
 const Green =  Color(0x008000);
 const DarkBlue = Color(0x0000FF);
@@ -50,7 +53,19 @@ export namespace Superposition {
         await PluginCommands.State.Update(ctx, { state: ctx.state.data, tree: b });
     }
 
-    function getBackbones(ctx: PluginContext, b: StateBuilder.To<PSO.Root>, loci: StructureElement.Loci, ref: References, id: string): { backbone: StructureElement.Loci, refBackbone: StructureElement.Loci } {
+    function addSuperposed(ctx: PluginContext, b: StateBuilder.To<PSO.Root>, loci: StructureElement.Loci, ref: References, id: string, clr: Color) {
+        const backbones = getBackbones(ctx, b, loci, ref, id);
+
+        const { bTransform } = MinimizeRmsd.compute({ a: backbones[0], b: backbones[1] });
+
+        let bb = b.to(ID.mkRef(ID.BaseModel, id));
+        bb = Util.transform(bb, bTransform, id);
+        bb = Util.visual(ctx, bb, 'ball-and-stick', id, clr, 0.1);
+
+        return bb;
+    }
+
+    function getBackbones(ctx: PluginContext, b: StateBuilder.To<PSO.Root>, loci: StructureElement.Loci, ref: References, id: string) {
         /* Check if the step backbone is sensible */
         const info = Steps.lociToStepInfo(loci);
 
@@ -59,25 +74,74 @@ export namespace Superposition {
 
         /* Select reference conformer backbone */
         const refStructure: PSO.Molecule.Structure = b.to(ID.mkRef(ID.BaseModel, id)).selector.obj! as PSO.Molecule.Structure;
-        const refBackbone = Selecting.selectBackbone(refStructure, refRings[0], refRings[1], 1, 2, null, null, null, null, null);
+        const refBackboneLoci = Selecting.selectBackbone(refStructure, refRings[0], refRings[1], 1, 2, null, null, null, null, null);
 
         /* Select step backbone */
         const firstRing = compoundRingTypes.get(info.compoundFirst)!;
         const secondRing = compoundRingTypes.get(info.compoundSecond)!;
-        const backbone = Selecting.selectBackbone(structure, firstRing, secondRing, info.resnoFirst, info.resnoSecond, info.asymId, info.altIdFirst, info.altIdSecond, info.insCodeFirst, info.insCodeSecond);
+        const backboneLoci = Selecting.selectBackbone(structure, firstRing, secondRing, info.resnoFirst, info.resnoSecond, info.asymId, info.altIdFirst, info.altIdSecond, info.insCodeFirst, info.insCodeSecond);
 
-        return { backbone, refBackbone };
+        const backboneIndices = reorderAtoms(backboneLoci, info.resnoFirst, info.resnoSecond, firstRing, secondRing);
+        const refBackboneIndices = OrderedSet.toArray(refBackboneLoci.elements[0].indices).map(index => refBackboneLoci.elements[0].unit.elements[index]);
+
+        return makePositions(
+            [
+                { points: backboneIndices, conformation: backboneLoci.elements[0].unit.conformation },
+                { points: refBackboneIndices, conformation: refBackboneLoci.elements[0].unit.conformation },
+            ]
+        );
     }
 
-    function addSuperposed(ctx: PluginContext, b: StateBuilder.To<PSO.Root>, loci: StructureElement.Loci, ref: References, id: string, clr: Color) {
-        const { backbone, refBackbone } = getBackbones(ctx, b, loci, ref, id);
+    function makePositions(sets: {points: ElementIndex[], conformation: SymmetryOperator.ArrayMapping<ElementIndex>}[]) {
+        const positionsSets: MinimizeRmsd.Positions[] = [];
 
-        const sup = superpose([ backbone, refBackbone ]);
-        let bb = b.to(ID.mkRef(ID.BaseModel, id));
-        bb = Util.transform(bb, sup[0].bTransform, id);
-        bb = Util.visual(ctx, bb, 'ball-and-stick', id, clr, 0.1);
+        for (const s of sets) {
+            const pos =  MinimizeRmsd.Positions.empty(s.points.length);
 
-        return bb;
+            const { x, y, z } = s.conformation;
+            s.points.forEach((v, idx) => {
+                pos.x[idx] = x(v);
+                pos.y[idx] = y(v);
+                pos.z[idx] = z(v);
+            });
+
+            positionsSets.push(pos);
+        }
+
+        return positionsSets;
+    }
+
+    function reorderAtoms(backbone: StructureElement.Loci, resnoFirst: number, resnoSecond: number, firstRing: RingTypes, secondRing: RingTypes) {
+        const reordered: ElementIndex[] = [];
+
+        const firstAtoms = [ ...BackboneAtoms.firstResidue, ...BackboneAtoms.ringDependent.get(firstRing)! ];
+        const secondAtoms = [ ...BackboneAtoms.secondResidue, ...BackboneAtoms.ringDependent.get(secondRing)! ];
+
+        for (const atomName of firstAtoms) {
+            const elem = backbone.elements[0];
+            OrderedSet.forEach(elem.indices, index => {
+                const loc = Util.lociToLocation(StructureElement.Loci(backbone.structure, [{ unit: elem.unit, indices: OrderedSet.ofSortedArray([index]) }]));
+                if (StructureProperties.atom.auth_atom_id(loc) === atomName &&
+                    StructureProperties.residue.auth_seq_id(loc) === resnoFirst) {
+                    reordered.push(elem.unit.elements[index]);
+                    return;
+                }
+            });
+        }
+
+        for (const atomName of secondAtoms) {
+            const elem = backbone.elements[0];
+            OrderedSet.forEach(elem.indices, index => {
+                const loc = Util.lociToLocation(StructureElement.Loci(backbone.structure, [{ unit: elem.unit, indices: OrderedSet.ofSortedArray([index]) }]));
+                if (StructureProperties.atom.auth_atom_id(loc) === atomName &&
+                    StructureProperties.residue.auth_seq_id(loc) === resnoSecond) {
+                    reordered.push(elem.unit.elements[index]);
+                    return;
+                }
+            });
+        }
+
+        return reordered;
     }
 
     export async function superposedRmsd(ctx: PluginContext, step: Step, ref: References) {
@@ -89,10 +153,8 @@ export namespace Superposition {
         b = addReference(b, ref, ID.RMSD).toRoot();
         await b.commit();
 
-        const { backbone, refBackbone } = getBackbones(ctx, b, loci, ref, ID.RMSD);
-
-        const sup = superpose([ backbone, refBackbone ]);
-        const rmsd = sup[0].rmsd;
+        const backbones = getBackbones(ctx, b, loci, ref, ID.RMSD);
+        const { rmsd } = MinimizeRmsd.compute({ a: backbones[0], b: backbones[1] });
 
         b = ctx.state.data.build().toRoot();
         const toRemove = [
