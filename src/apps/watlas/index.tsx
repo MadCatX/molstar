@@ -283,6 +283,12 @@ export class WatlasApp extends React.Component<{}, WatlasAppState> {
         this.loadedFragments = [];
     }
 
+    private densityMapData(base: string, kind: Resources.DensityMaps) {
+        const frag = this.state.fragments.get(base)!
+
+        return frag.densityMaps.get(kind)!;
+    }
+
     private async dispose(ntc: NtC, seq: Sequence, disposer: (ref: string) => Promise<void>) {
         if (!this.viewer)
             return;
@@ -507,20 +513,16 @@ export class WatlasApp extends React.Component<{}, WatlasAppState> {
                 <List
                     fragments={this.state.fragments}
                     onDensityMapIsoChanged={(iso, kind, base) => {
-                        const frag = this.state.fragments.get(base)!
                         const ref = baseRefToResRef(base, kind, 'density-map');
-
-                        const dm = frag.densityMaps.get(kind)!;
+                        const dm = this.densityMapData(base, kind);
 
                         this.viewer!.setDensityMapAppearance(iso, dm.style, ref);
 
                         this.updateFragmentDensityMap({ ...dm, iso }, base, kind);
                     }}
                     onDensityMapStyleChanged={(style, kind, base) => {
-                        const frag = this.state.fragments.get(base)!
                         const ref = baseRefToResRef(base, kind, 'density-map');
-
-                        const dm = frag.densityMaps.get(kind)!;
+                        const dm = this.densityMapData(base, kind);
 
                         this.viewer!.setDensityMapAppearance(dm.iso, style, ref);
 
