@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-eval' 'unsafe-inline'; script-src 'self' 'unsafe-eval' 'unsafe-inline'">
+        <link href="watlas.css" rel="stylesheet" type="text/css">
+        <link href="watlas-viewer.css" rel="stylesheet" type="text/css">
+        <link href="molstar.css" rel="stylesheet" type="text/css">
+        <title>Watlas app</title>
+    </head>
+
+    <body>
+        <div id="data-loading">Please wait until the viewer loads all data...</div>
+        <div id="container">
+            <div class="fragments-container">
+                <div class="fragment" onClick="toggle(this, 'AA00', 'A_A')">AA00 A_A</div>
+                <div class="fragment" onClick="toggle(this, 'AA00', 'T_T')">AA00 T_T</div>
+            </div>
+            <div id="watlas-app"></div>
+        </div>
+
+        <script type="text/javascript" src="molstar.js"></script>
+        <script type="text/javascript">
+            let allLoaded = false;
+
+            async function toggle(elem, ntc, seq) {
+                if (!allLoaded)
+                    return;
+
+                if (WVApi.has(ntc, seq)) {
+                    elem.classList.remove('fragment-added');
+                    await WVApi.remove(ntc, seq);
+                } else {
+                    elem.classList.add('fragment-added');
+                    try {
+                        await WVApi.add(ntc, seq, [ 'reference' ], [ 'base' ]);
+                    } catch (e) {
+                        console.log(e);
+                    }
+                }
+            }
+
+            async function loadAll() {
+                try {
+                    await WVApi.load(
+                        [
+                            { ntc: 'AA00', seq: 'A_A' },
+                            { ntc: 'AA00', seq: 'T_T' },
+                        ]
+                    );
+
+                    allLoaded = true;
+                    document.getElementById('data-loading').innerHTML = 'Data loaded';
+                } catch (errors) {
+                    document.getElementById('data-loading').innerHTML = `Failed to load data:<br />${errors.join('<br />')}`;
+                }
+            }
+
+            loadAll();
+        </script>
+    </body>
+</html>
