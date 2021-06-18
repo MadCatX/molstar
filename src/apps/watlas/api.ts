@@ -11,7 +11,7 @@ import { NtC, Resources, Sequence } from './resources';
 
 /**
  * This class represents the public API of the Watlas Viewer Molstar plugin.
- * The API globally available through `WVApi` global variable.
+ * The API is globally available through `WVApi` global variable.
  */
 export class Api {
     private app: WatlasApp;
