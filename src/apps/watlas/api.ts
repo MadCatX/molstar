@@ -1,4 +1,9 @@
 /**
+ * Copyright (c) 2018-2021 mol* contributors, licensed under MIT, See LICENSE file for more info.
+ *
+ * @author Lada Biedermannová <Lada.Biedermannova@ibt.cas.cz>
+ * @author Jiří Černý <jiri.cerny@ibt.cas.cz>
+ * @author Michal Malý <michal.maly@ibt.cas.cz>
  */
 
 import { WatlasApp } from './index';
