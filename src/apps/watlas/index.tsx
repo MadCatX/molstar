@@ -141,6 +141,15 @@ class WatlasViewer {
         return { value: color };
     }
 
+    private densityMapColors(color: Color) {
+        return { value: color };
+    }
+
+    private densityMapParams(iso: number, style: NtCDescription.MapStyle) {
+        const isoValue = Volume.IsoValue.absolute(iso);
+        return { isoValue, alpha: DefaultDensityMapAlpha, visuals: mapStyleToVisuals(style), quality: 'highest' };
+    }
+
     private async remove(cells: any[]) {
         const state = this.plugin.state.data;
         const b = state.build();
@@ -194,8 +203,7 @@ class WatlasViewer {
         if (!cell)
             return;
 
-        const isoValue = Volume.IsoValue.absolute(iso);
-        const type = { name: 'isosurface', params: { isoValue, alpha: DefaultDensityMapAlpha, visuals: mapStyleToVisuals(style) } };
+        const type = { name: 'isosurface', params: this.densityMapParams(iso, style) };
         const b = state.build().to(cell)
             .update(StateTransforms.Representation.VolumeRepresentation3D, old => ({...old, type }));
 
@@ -209,9 +217,8 @@ class WatlasViewer {
             return;
 
         const cell = state.cells.get(parent)!;
-        const isoValue = Volume.IsoValue.absolute(iso);
-        const type = { name: 'isosurface', params: { isoValue, alpha: DefaultDensityMapAlpha, visuals: mapStyleToVisuals(style) } };
-        const colorTheme = { name: 'uniform', params: { value: color } };
+        const type = { name: 'isosurface', params: this.densityMapParams(iso, style) };
+        const colorTheme = { name: 'uniform', params: this.densityMapColors(color) };
         const b = this.plugin.state.data.build().to(cell)
             .apply(StateTransforms.Representation.VolumeRepresentation3D, { colorTheme, type }, { ref: ref + '_visual' });
 
