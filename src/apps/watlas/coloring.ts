@@ -24,10 +24,14 @@ export namespace Coloring {
     }
 
     export function phosColor(hue: number) {
-        return hsvToColor((hue + 80) % 360, 0.6, 1);
+        return hsvToColor((hue + 30) % 360, 0.95, 0.75);
     }
 
     export function stepColor(hue: number) {
-        return hsvToColor((hue + 40) % 360, 0.8, 0.5);
+        return hsvToColor((hue + 60) % 360, 0.38, 0.75);
+    }
+
+    export function nextHue(hue: number) {
+        return (hue + 77) % 360;
     }
 }

@@ -321,7 +321,7 @@ export class WatlasApp extends React.Component<{}, WatlasAppState> {
             nextHue = this.state.hue;
         } else {
             hue = this.state.hue;
-            nextHue = (hue + 95) % 360;
+            nextHue = Coloring.nextHue(hue);
 
             this.assignedHues.set(base, hue);
         }
