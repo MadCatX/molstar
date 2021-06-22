@@ -10,6 +10,26 @@
     margin-bottom: 2em;
 }
 
+.watlas-wapp-ctrl-panel {
+    display: grid;
+    grid-template-rows: 1fr auto;
+}
+
+.watlas-wapp-ctrl-item {
+    padding-bottom: 0.1em;
+    padding-top: 0.1em;
+}
+
+.watlas-wapp-ctrl-item:hover {
+    transition-duration: 100ms;
+    background: rgb(211, 211, 211);
+}
+
+.watlas-wapp-ctrl-line {
+    display: grid;
+    grid-template-columns: 1fr auto;
+}
+
 .hideshow-pushbutton {
     width: 8em;
 }
@@ -48,25 +68,10 @@
     width: 100%;
 }
 
-.ntc-fragment-item {
-    padding-bottom: 0.1em;
-    padding-top: 0.1em;
-}
-
-.ntc-fragment-item:hover {
-    transition-duration: 100ms;
-    background: rgb(211, 211, 211);
-}
-
 .ntc-fragment-name {
     font-size: 14pt;
     font-weight: bold;
     width: 100%;
-}
-
-.ntc-fragment-structure {
-    display: grid;
-    grid-template-columns: 1fr auto;
 }
 
 .ntc-fragments-list {

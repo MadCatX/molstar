@@ -19,7 +19,7 @@ export class NtCFragment extends React.Component<NtCFragment.Props> {
         const bounds = Util.isoBounds(dm.isoRange.min, dm.isoRange.max);
         return (
             <div className='ntc-fragment-densitymap'>
-                <div className='ntc-fragment-densitymap-firstrow ntc-fragment-item'>
+                <div className='ntc-fragment-densitymap-firstrow watlas-wapp-ctrl-item'>
                     <div>{caption} σ</div>
                     <select
                         value={dm.style}
@@ -35,7 +35,7 @@ export class NtCFragment extends React.Component<NtCFragment.Props> {
                         onChange={evt => this.props.onHideShowResource(evt.target.checked, kind, 'density-map')}
                     />
                 </div>
-                <div className='ntc-fragment-densitymap-secondrow ntc-fragment-item'>
+                <div className='ntc-fragment-densitymap-secondrow watlas-wapp-ctrl-item'>
                     <input
                         type='range'
                         value={dm.iso}
@@ -60,7 +60,7 @@ export class NtCFragment extends React.Component<NtCFragment.Props> {
     private renderStructureControl(caption: string, kind: Resources.Structures) {
         const stru = this.props.structures.get(kind)!;
         return (
-            <div className='ntc-fragment-structure ntc-fragment-item'>
+            <div className='watlas-wapp-ctrl-line watlas-wapp-ctrl-item'>
                 <div>{caption}</div>
                 <input
                     type='checkbox'
@@ -78,12 +78,12 @@ export class NtCFragment extends React.Component<NtCFragment.Props> {
                     {this.renderStructureControl('Reference', 'reference')}
                     {this.renderStructureControl('Base waters', 'base')}
                     {this.renderStructureControl('Phosphate waters', 'phos')}
-                    {this.renderStructureControl('Step waters', 'step')}
+                    {this.props.showStepWaters ? this.renderStructureControl('Step waters', 'step') : undefined}
                 </div>
                 <div className='ntc-fragment-densitymaps-block'>
                     {this.renderDensityMapControl('Base waters', 'base')}
                     {this.renderDensityMapControl('Phosphate waters', 'phos')}
-                    {this.renderDensityMapControl('Step waters', 'step')}
+                    {this.props.showStepWaters ? this.renderDensityMapControl('Step waters', 'step') : undefined}
                 </div>
             </>
         );
@@ -97,8 +97,16 @@ export class NtCFragment extends React.Component<NtCFragment.Props> {
                     <div className='ntc-color-box' style={{background: Color.toStyle(this.props.colors.get('base')!)}}>B</div>
                     <div className='ntc-color-box' style={{background: Color.toStyle(this.props.colors.get('phos')!)}}>P</div>
                     <div className='ntc-color-spacer'></div>
-                    <div className='ntc-color-box' style={{background: Color.toStyle(this.props.colors.get('step')!)}}>S</div>
-                    <div className='ntc-color-spacer'></div>
+                    {
+                        this.props.showStepWaters
+                        ?
+                            <>
+                                <div className='ntc-color-box' style={{background: Color.toStyle(this.props.colors.get('step')!)}}>S</div>
+                                <div className='ntc-color-spacer'></div>
+                            </>
+                        :
+                            undefined
+                    }
                     <PushButton
                         className='hideshow-pushbutton pushbutton-common pushbutton-default pushbutton-clr-default pushbutton-hclr-default'
                         value={this.props.expanded ? 'Hide ▼' : 'Show ▲'}
@@ -130,6 +138,7 @@ export namespace NtCFragment {
 
     export interface Props extends NtCDescription.Description {
         expanded: boolean;
+        showStepWaters: boolean;
         onDensityMapIsoChanged: OnDensityMapIsoChanged;
         onDensityMapStyleChanged: OnDensityMapStyleChanged;
         onHideShowClicked: OnHideShowClicked;

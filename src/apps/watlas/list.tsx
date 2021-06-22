@@ -32,6 +32,7 @@ export class List extends React.Component<List.Props, State> {
                     const props: NtCFragment.Props = {
                         ...v,
                         expanded,
+                        showStepWaters: this.props.showStepWaters,
                         onDensityMapIsoChanged: (iso, kind) => this.props.onDensityMapIsoChanged(iso, kind, base),
                         onDensityMapStyleChanged: (style, kind) => this.props.onDensityMapStyleChanged(style, kind, base),
                         onHideShowResource: (show, kind, type) => this.props.onHideShowResource(show, kind, type, base),
@@ -72,6 +73,7 @@ export namespace List {
 
     export interface Props {
         fragments: Map<string, NtCDescription.Description>;
+        showStepWaters: boolean;
         onDensityMapIsoChanged: OnDensityMapIsoChanged;
         onDensityMapStyleChanged: OnDensityMapStyleChanged;
         onHideShowResource: OnHideShowResource;

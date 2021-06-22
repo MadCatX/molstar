@@ -9,6 +9,8 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { Api } from './api';
+import { Coloring } from './coloring';
+import { Controls } from './controls';
 import { List } from './list';
 import { NtCDescription } from './ntc-description';
 import { NtC, Sequence, Resources } from './resources';
@@ -41,16 +43,6 @@ function mkResRef(ntc: NtC, seq: Sequence, kind: Resources.AllKinds, type: Resou
 
 function baseRefToResRef(base: string, kind: Resources.AllKinds, type: Resources.Type) {
     return `${base}_${kind}_${type}`;
-}
-
-function hsv2rgb(h: number, s: number, v: number): { r: number, g: number, b: number } {
-  const f = (n: number, k = (n + h / 60 ) % 6) => v - v * s * Math.max( Math.min(k, 4 - k, 1), 0);
-  return { r: f(5) * 255, g: f(3) * 255, b: f(1) * 255 };
-}
-
-function hsvToColor(h: number, s: number, v: number) {
-    const { r, g, b } = hsv2rgb(h, s, v)
-    return Color.fromRgb(r, g, b);
 }
 
 function mapStyleToVisuals(style: NtCDescription.MapStyle) {
@@ -263,9 +255,11 @@ type FragmentMap = Map<string, NtCDescription.Description>;
 interface WatlasAppState {
     fragments: FragmentMap;
     hue: number;
+    showStepWaters: boolean;
 }
 
 export class WatlasApp extends React.Component<{}, WatlasAppState> {
+    private assignedHues: Map<string, number>;
     private viewer: WatlasViewer | null;
     private loadedFragments: string[];
 
@@ -275,8 +269,10 @@ export class WatlasApp extends React.Component<{}, WatlasAppState> {
         this.state = {
             fragments: new Map(),
             hue: 0,
+            showStepWaters: false,
         };
 
+        this.assignedHues = new Map();
         this.loadedFragments = [];
     }
 
@@ -314,6 +310,30 @@ export class WatlasApp extends React.Component<{}, WatlasAppState> {
                 fragments: newFragments,
             }
         );
+    }
+
+    private fragmentColors(base: string): { colors: Map<Resources.AllKinds, Color>, nextHue: number } {
+        let hue;
+        let nextHue;
+
+        if (this.assignedHues.has(base)) {
+            hue = this.assignedHues.get(base)!;
+            nextHue = this.state.hue;
+        } else {
+            hue = this.state.hue;
+            nextHue = (hue + 95) % 360;
+
+            this.assignedHues.set(base, hue);
+        }
+
+        const colors = new Map<Resources.AllKinds, Color>([
+            [ 'reference', Coloring.baseColor(hue) ],
+            [ 'base', Coloring.baseColor(hue) ],
+            [ 'step', Coloring.stepColor(hue) ],
+            [ 'phos', Coloring.phosColor(hue) ]
+        ]);
+
+        return { colors, nextHue };
     }
 
     private isLoaded(ntc: NtC, seq: Sequence) {
@@ -390,7 +410,6 @@ export class WatlasApp extends React.Component<{}, WatlasAppState> {
         if (this.state.fragments.has(ref))
             return;
 
-        const hue = this.state.hue;
         const baseWaterMapIsoRange = this.viewer.isoRange(baseRefToResRef(ref, 'base', 'density-map'));
         const stepWaterMapIsoRange = this.viewer.isoRange(baseRefToResRef(ref, 'step', 'density-map'));
         const phosWaterMapIsoRange = this.viewer.isoRange(baseRefToResRef(ref, 'phos', 'density-map'));
@@ -421,12 +440,7 @@ export class WatlasApp extends React.Component<{}, WatlasAppState> {
                 style: DefaultDensityMapStyle,
             }],
         ]);
-        const colors: Map<Resources.AllKinds, Color> = new Map([
-            [ 'reference', hsvToColor(hue, 1, 1) ],
-            [ 'base', hsvToColor(hue, 1, 1) ],
-            [ 'step', hsvToColor((hue + 40) % 360, 0.8, 0.5) ],
-            [ 'phos', hsvToColor((hue + 80) % 360, 0.6, 1) ]
-        ]);
+        const { colors, nextHue } = this.fragmentColors(ref);
 
         const frag: NtCDescription.Description = {
             ntc,
@@ -448,7 +462,7 @@ export class WatlasApp extends React.Component<{}, WatlasAppState> {
                         ...Array.from(newFragments.entries())
                     ]
                 ),
-                hue: (hue + 95) % 360,
+                hue: nextHue,
             }
         );
     }
@@ -507,49 +521,81 @@ export class WatlasApp extends React.Component<{}, WatlasAppState> {
         return (
             <div id='watlas-app-container'>
                 <div id='watlas-viewer'></div>
-                <List
-                    fragments={this.state.fragments}
-                    onDensityMapIsoChanged={(iso, kind, base) => {
-                        const ref = baseRefToResRef(base, kind, 'density-map');
-                        const dm = this.densityMapData(base, kind);
+                <div className='watlas-wapp-ctrl-panel'>
+                    <List
+                        fragments={this.state.fragments}
+                        showStepWaters={this.state.showStepWaters}
+                        onDensityMapIsoChanged={(iso, kind, base) => {
+                            const ref = baseRefToResRef(base, kind, 'density-map');
+                            const dm = this.densityMapData(base, kind);
 
-                        this.viewer!.setDensityMapAppearance(iso, dm.style, ref);
+                            this.viewer!.setDensityMapAppearance(iso, dm.style, ref);
 
-                        this.updateFragmentDensityMap({ ...dm, iso }, base, kind);
-                    }}
-                    onDensityMapStyleChanged={(style, kind, base) => {
-                        const ref = baseRefToResRef(base, kind, 'density-map');
-                        const dm = this.densityMapData(base, kind);
+                            this.updateFragmentDensityMap({ ...dm, iso }, base, kind);
+                        }}
+                        onDensityMapStyleChanged={(style, kind, base) => {
+                            const ref = baseRefToResRef(base, kind, 'density-map');
+                            const dm = this.densityMapData(base, kind);
 
-                        this.viewer!.setDensityMapAppearance(dm.iso, style, ref);
+                            this.viewer!.setDensityMapAppearance(dm.iso, style, ref);
 
-                        this.updateFragmentDensityMap({ ...dm, style }, base, kind);
-                    }}
-                    onHideShowResource={(show, kind, type, base) => {
-                        const frag = this.state.fragments.get(base)!;
-                        const ref = baseRefToResRef(base, kind, type);
+                            this.updateFragmentDensityMap({ ...dm, style }, base, kind);
+                        }}
+                        onHideShowResource={(show, kind, type, base) => {
+                            const frag = this.state.fragments.get(base)!;
+                            const ref = baseRefToResRef(base, kind, type);
 
-                        if (type === 'density-map') {
-                            const dm = frag.densityMaps.get(kind as Resources.DensityMaps)!;
-                            if (show) {
-                                const color = frag.colors.get(kind)!;
-                                this.viewer!.showDensityMap(ref, dm.iso, dm.style, color);
-                            } else
-                                this.viewer!.hide(ref);
+                            if (type === 'density-map') {
+                                const dm = frag.densityMaps.get(kind as Resources.DensityMaps)!;
+                                if (show) {
+                                    const color = frag.colors.get(kind)!;
+                                    this.viewer!.showDensityMap(ref, dm.iso, dm.style, color);
+                                } else
+                                    this.viewer!.hide(ref);
 
-                            this.updateFragmentDensityMap({ ...dm, shown: show }, base, kind as Resources.DensityMaps);
-                        } else {
-                            const stru = frag.structures.get(kind)!;
-                            if (show) {
-                                const color = frag.colors.get(kind)!;
-                                this.viewer!.showStructure(ref, color, kind === 'reference' ? 'element-symbol' : 'uniform');
-                            } else
-                                this.viewer!.hide(ref);
+                                this.updateFragmentDensityMap({ ...dm, shown: show }, base, kind as Resources.DensityMaps);
+                            } else {
+                                const stru = frag.structures.get(kind)!;
+                                if (show) {
+                                    const color = frag.colors.get(kind)!;
+                                    this.viewer!.showStructure(ref, color, kind === 'reference' ? 'element-symbol' : 'uniform');
+                                } else
+                                    this.viewer!.hide(ref);
 
-                            this.updateFragmentStructure({ ...stru, shown: show }, base, kind);
-                        }
-                    }}
-                />
+                                this.updateFragmentStructure({ ...stru, shown: show }, base, kind);
+                            }
+                        }}
+                    />
+                    <Controls
+                        showStepWaters={this.state.showStepWaters}
+                        onHideShowStepWaters={show => {
+                            if (!show) {
+                                for (const [base, frag] of Array.from(this.state.fragments.entries())) {
+                                    const stru = frag.structures.get('step')!;
+                                    if (stru.shown)
+                                        this.viewer!.hide(baseRefToResRef(base, 'step', 'structure'));
+
+                                    const dm = frag.densityMaps.get('step')!;
+                                    if (dm.shown)
+                                        this.viewer!.hide(baseRefToResRef(base, 'step', 'density-map'));
+                                }
+                            } else {
+                                for (const [base, frag] of Array.from(this.state.fragments.entries())) {
+                                    const color = frag.colors.get('step')!;
+                                    const stru = frag.structures.get('step')!;
+                                    if (stru.shown)
+                                        this.viewer!.showStructure(baseRefToResRef(base, 'step', 'structure'), color, 'uniform');
+
+                                    const dm = frag.densityMaps.get('step')!;
+                                    if (dm.shown)
+                                        this.viewer!.showDensityMap(baseRefToResRef(base, 'step', 'density-map'), dm.iso, dm.style, color);
+                                }
+                            }
+
+                            this.setState({ ...this.state, showStepWaters: show });
+                        }}
+                    />
+                </div>
             </div>
         );
     }
