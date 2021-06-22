@@ -9,14 +9,14 @@
 import * as React from 'react';
 import { PushButton } from './push-button';
 import { Resources }  from './resources';
+import { Util } from './util';
 import { NtCDescription } from './ntc-description';
 import { Color } from '../../mol-util/color';
-
-const IsoStep = 0.01;
 
 export class NtCFragment extends React.Component<NtCFragment.Props> {
     private renderDensityMapControl(caption: string, kind: Resources.DensityMaps ) {
         const dm = this.props.densityMaps.get(kind)!;
+        const bounds = Util.isoBounds(dm.isoRange.min, dm.isoRange.max);
         return (
             <div className='ntc-fragment-densitymap'>
                 <div className='ntc-fragment-densitymap-firstrow ntc-fragment-item'>
@@ -39,17 +39,17 @@ export class NtCFragment extends React.Component<NtCFragment.Props> {
                     <input
                         type='range'
                         value={dm.iso}
-                        min={dm.isoRange.min}
-                        max={dm.isoRange.max}
-                        step={IsoStep}
+                        min={bounds.min}
+                        max={bounds.max}
+                        step={bounds.step}
                         onChange={evt => this.props.onDensityMapIsoChanged(parseFloat(evt.target.value), kind)}
                     />
                     <input
                         type='number'
                         value={dm.iso}
-                        min={dm.isoRange.min}
-                        max={dm.isoRange.max}
-                        step={IsoStep}
+                        min={bounds.min}
+                        max={bounds.max}
+                        step={bounds.step}
                         onChange={evt => this.props.onDensityMapIsoChanged(parseFloat(evt.target.value), kind)}
                     />
                 </div>

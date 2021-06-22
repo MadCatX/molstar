@@ -10,8 +10,9 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { Api } from './api';
 import { List } from './list';
-import { NtCDescription, Range } from './ntc-description';
+import { NtCDescription } from './ntc-description';
 import { NtC, Sequence, Resources } from './resources';
+import { Util } from './util';
 import { Volume } from '../../mol-model/volume';
 import { PluginBehaviors } from '../../mol-plugin/behavior';
 import { PluginCommands } from '../../mol-plugin/commands';
@@ -29,10 +30,6 @@ const DefaultDensityMapStyle = 'solid';
 
 export const WatlasViewerApi = new Api();
 (window as any).WVApi = WatlasViewerApi;
-
-function mid(range: Range<number>) {
-    return (range.max - range.min) / 2 + range.min;
-}
 
 function mkBaseRef(ntc: NtC, seq: Sequence) {
     return `${ntc}_${seq}`;
@@ -407,19 +404,19 @@ export class WatlasApp extends React.Component<{}, WatlasAppState> {
         const densityMaps: Map<Resources.DensityMaps, NtCDescription.DensityMap> = new Map([
             [ 'base', {
                 shown: shownDensityMaps.includes('base'),
-                iso: mid(baseWaterMapIsoRange),
+                iso: Util.prettyIso(Util.mid(baseWaterMapIsoRange), Util.isoBounds(baseWaterMapIsoRange.min, baseWaterMapIsoRange.max).step),
                 isoRange: baseWaterMapIsoRange,
                 style: DefaultDensityMapStyle,
             }],
             [ 'step', {
                 shown: shownDensityMaps.includes('step'),
-                iso: mid(stepWaterMapIsoRange),
+                iso: Util.prettyIso(Util.mid(stepWaterMapIsoRange), Util.isoBounds(stepWaterMapIsoRange.min, stepWaterMapIsoRange.max).step),
                 isoRange: stepWaterMapIsoRange,
                 style: DefaultDensityMapStyle,
             }],
             [ 'phos', {
                 shown: shownDensityMaps.includes('phos'),
-                iso: mid(phosWaterMapIsoRange),
+                iso: Util.prettyIso(Util.mid(phosWaterMapIsoRange), Util.isoBounds(phosWaterMapIsoRange.min, phosWaterMapIsoRange.max).step),
                 isoRange: phosWaterMapIsoRange,
                 style: DefaultDensityMapStyle,
             }],
