@@ -12,15 +12,24 @@
     <body>
         <div id="data-loading">Please wait until the viewer loads all data...</div>
         <div id="container">
-            <div class="fragments-container">
-                <div class="fragment" onClick="toggle(this, 'AA00', 'A_A')">AA00 A_A</div>
-                <div class="fragment" onClick="toggle(this, 'AA00', 'T_T')">AA00 T_T</div>
+            <div class="fragments-container" id="fragments-container">
             </div>
             <div id="watlas-app"></div>
         </div>
 
         <script type="text/javascript" src="molstar.js"></script>
         <script type="text/javascript">
+            const NtCs = [
+                'AA00', 'AA02', 'AA03', 'AA04', 'AA08', 'AA09', 'AA01', 'AA05', 'AA06', 'AA10', 'AA11', 'AA07', 'AA12', 'AA13',
+                'AB01', 'AB02', 'AB03', 'AB04', 'AB05', 'BA01', 'BA05', 'BA09', 'BA08', 'BA10', 'BA13', 'BA16', 'BA17',
+                'BB00', 'BB01', 'BB17', 'BB02', 'BB03', 'BB11', 'BB16', 'BB04', 'BB05', 'BB07', 'BB08', 'BB10', 'BB12', 'BB13', 'BB14', 'BB15', 'BB20',
+                'IC01', 'IC02', 'IC03', 'IC04', 'IC05', 'IC06', 'IC07',
+                'OP01', 'OP02', 'OP03', 'OP04', 'OP05', 'OP06', 'OP07', 'OP08', 'OP09', 'OP10', 'OP11', 'OP12', 'OP13', 'OP14', 'OP15', 'OP16', 'OP17', 'OP18', 'OP19', 'OP20', 'OP21' , 'OP22' , 'OP23' , 'OP24' , 'OP25' , 'OP26' , 'OP27' , 'OP28' , 'OP29' , 'OP30' , 'OP31' , 'OPS1' , 'OP1S' ,
+                'AAS1' , 'AB1S' , 'AB2S' ,
+                'BB1S' , 'BB2S' , 'BBS1' ,
+                'ZZ01' , 'ZZ02' , 'ZZ1S' , 'ZZ2S' , 'ZZS1' , 'ZZS2'
+            ];
+            const Bases = [ 'A', 'C', 'G', 'T' ];
             let allLoaded = false;
 
             async function toggle(elem, ntc, seq) {
@@ -35,19 +44,24 @@
                     try {
                         await WVApi.add(ntc, seq, [ 'reference' ], [ 'base' ]);
                     } catch (e) {
-                        console.log(e);
+                        elem.onClick="";
+                        elem.classList.add('fragment-bad');
                     }
                 }
             }
 
             async function loadAll() {
+                const toLoad = [];
+                for (const ntc of [ 'AA00', 'AA01' ]) {
+                    for (const ba of Bases) {
+                        for (const bb of Bases) {
+                            toLoad.push({ ntc, seq: ba + '_' + bb });
+                        }
+                    }
+                }
+
                 try {
-                    await WVApi.load(
-                        [
-                            { ntc: 'AA00', seq: 'A_A' },
-                            { ntc: 'AA00', seq: 'T_T' },
-                        ]
-                    );
+                    await WVApi.load(toLoad);
 
                     allLoaded = true;
                     document.getElementById('data-loading').innerHTML = 'Data loaded';
@@ -56,7 +70,24 @@
                 }
             }
 
+            function renderControls() {
+                const elem = document.getElementById('fragments-container');
+
+                let ctrlsCode = '';
+                for (const ntc of NtCs) {
+                    for (const ba of Bases) {
+                        for (const bb of Bases) {
+                            const seq = `${ba}_${bb}`;
+                            ctrlsCode += `<div class="fragment" onClick="toggle(this, '${ntc}', '${seq}')">${ntc} ${seq}</div>`;
+                        }
+                    }
+                }
+
+                elem.innerHTML = ctrlsCode;
+            }
+
             loadAll();
+            renderControls();
         </script>
     </body>
 </html>

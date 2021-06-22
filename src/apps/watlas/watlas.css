@@ -2,11 +2,12 @@
     display: grid;
     grid-column-gap: 1em;
     grid-template-columns: auto 1fr;
+    height: 95vh;
 }
 
 .fragment {
     border: 1px solid black;
-    padding: 6px;
+    padding: 4px;
 }
 .fragment:hover {
     background: rgb(189, 255, 189);
@@ -15,4 +16,14 @@
 
 .fragment-added {
     background-color: rgb(211, 211, 211);
+}
+
+.fragment-bad {
+    background-color: red;
+}
+
+.fragments-container {
+    display: grid;
+    grid-template-columns: auto auto auto auto auto auto;
+    overflow: scroll;
 }

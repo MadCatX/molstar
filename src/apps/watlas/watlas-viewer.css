@@ -1,12 +1,13 @@
 #watlas-app-container {
     display: flex;
     flex-direction: row;
+    height: 90vh;;
 }
 
 #watlas-viewer {
     position: relative;
     width: 100%;
-    height: 80vh;
+    height: 100%;
     margin-bottom: 2em;
 }
 
@@ -77,6 +78,7 @@
 .ntc-fragments-list {
     margin: 0 0 0 1em;
     min-width: 18em;
+    overflow: scroll;
 }
 
 .pushbutton-default {
