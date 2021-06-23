@@ -11,6 +11,11 @@ import { NtCFragment } from './ntc-fragment';
 import { NtCDescription } from './ntc-description';
 import { Resources } from './resources';
 
+function cmpStr(s1: string, s2: string) {
+    const r = s1 < s2;
+    return (!r ? 1 : 0) - (r ? 1 : 0);
+}
+
 interface State {
     fragmentsState: Map<string, boolean>;
 }
@@ -27,7 +32,7 @@ export class List extends React.Component<List.Props, State> {
     render() {
         return (
             <div className='ntc-fragments-list'>
-                {Array.from(this.props.fragments.entries()).map(([base, v]) => {
+                {Array.from(this.props.fragments.entries()).sort((a, b) => cmpStr(a[0], b[0])).map(([base, v]) => {
                     const expanded = this.state.fragmentsState.get(base) ?? true;
                     const props: NtCFragment.Props = {
                         ...v,
