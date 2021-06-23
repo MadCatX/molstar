@@ -11,8 +11,8 @@ import * as React from 'react';
 export class Controls extends React.Component<Controls.Props> {
     render() {
         return (
-            <div className='watlas-wapp-ctrls'>
-                <div className='watlas-wapp-ctrl-line watlas-wapp-ctrl-item'>
+            <div className='wva-ctrls'>
+                <div className='wva-ctrl-line wva-ctrl-item'>
                     <div>Show step waters</div>
                     <input
                         type='checkbox'

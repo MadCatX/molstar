@@ -436,7 +436,7 @@ export class WatlasApp extends React.Component<{}, WatlasAppState> {
     }
 
     componentDidMount() {
-        const elem = document.getElementById('watlas-viewer');
+        const elem = document.getElementById('wva-viewer');
         if (!elem)
             throw new Error('No element to render viewer');
 
@@ -604,9 +604,9 @@ export class WatlasApp extends React.Component<{}, WatlasAppState> {
 
     render() {
         return (
-            <div id='watlas-app-container'>
-                <div id='watlas-viewer'></div>
-                <div className='watlas-wapp-ctrl-panel'>
+            <div id='wva-app-container'>
+                <div id='wva-viewer'></div>
+                <div className='wva-ctrl-panel'>
                     <List
                         fragments={this.state.fragments}
                         showStepWaters={this.state.showStepWaters}
@@ -690,4 +690,4 @@ export class WatlasApp extends React.Component<{}, WatlasAppState> {
     }
 }
 
-ReactDOM.render(<WatlasApp />, document.getElementById('watlas-app'));
+ReactDOM.render(<WatlasApp />, document.getElementById('wva-app'));

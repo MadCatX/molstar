@@ -31,7 +31,7 @@ export class List extends React.Component<List.Props, State> {
 
     render() {
         return (
-            <div className='ntc-fragments-list'>
+            <div className='wva-ntc-fragments-list'>
                 {Array.from(this.props.fragments.entries()).sort((a, b) => cmpStr(a[0], b[0])).map(([base, v]) => {
                     const expanded = this.state.fragmentsState.get(base) ?? true;
                     const props: NtCFragment.Props = {

@@ -28,8 +28,8 @@ export class NtCFragment extends React.Component<NtCFragment.Props> {
         const bounds = Util.isoBounds(dm.isoRange.min, dm.isoRange.max);
         const isoFixed = Util.isoToFixed(dm.iso, bounds.step);
         return (
-            <div className='ntc-fragment-densitymap'>
-                <div className='ntc-fragment-densitymap-firstrow watlas-wapp-ctrl-item'>
+            <div className='wva-ntc-fragment-densitymap'>
+                <div className='wva-ntc-fragment-densitymap-firstrow wva-ctrl-item'>
                     <div>{caption} σ</div>
                     <select
                         value={dm.style}
@@ -45,7 +45,7 @@ export class NtCFragment extends React.Component<NtCFragment.Props> {
                         onChange={evt => this.props.onHideShowResource(evt.target.checked, kind, 'density-map')}
                     />
                 </div>
-                <div className='ntc-fragment-densitymap-secondrow watlas-wapp-ctrl-item'>
+                <div className='wva-ntc-fragment-densitymap-secondrow wva-ctrl-item'>
                     <input
                         type='range'
                         value={isoFixed}
@@ -70,7 +70,7 @@ export class NtCFragment extends React.Component<NtCFragment.Props> {
     private renderStructureControl(caption: string, kind: Resources.Structures) {
         const stru = this.props.structures.get(kind)!;
         return (
-            <div className='watlas-wapp-ctrl-line watlas-wapp-ctrl-item'>
+            <div className='wva-ctrl-line wva-ctrl-item'>
                 <div>{caption}</div>
                 <input
                     type='checkbox'
@@ -84,13 +84,13 @@ export class NtCFragment extends React.Component<NtCFragment.Props> {
     private renderControls() {
         return (
             <>
-                <div className='ntc-fragment-structures-block'>
+                <div className='wva-ntc-fragment-structures-block'>
                     {this.renderStructureControl('Reference', 'reference')}
                     {this.renderStructureControl('Base waters', 'base')}
                     {this.renderStructureControl('Phosphate waters', 'phos')}
                     {this.props.showStepWaters ? this.renderStructureControl('Step waters', 'step') : undefined}
                 </div>
-                <div className='ntc-fragment-densitymaps-block'>
+                <div className='wva-ntc-fragment-densitymaps-block'>
                     {this.renderDensityMapControl('Base waters', 'base')}
                     {this.renderDensityMapControl('Phosphate waters', 'phos')}
                     {this.props.showStepWaters ? this.renderDensityMapControl('Step waters', 'step') : undefined}
@@ -101,28 +101,28 @@ export class NtCFragment extends React.Component<NtCFragment.Props> {
 
     render() {
         return (
-            <div className='ntc-fragment-container'>
-                <div className='ntc-fragment-header'>
-                    <div className='ntc-fragment-name'>{this.props.ntc} {this.props.seq}</div>
-                    <div className='ntc-color-box' style={colorBoxStyle(this.props.colors.get('base')!)}>B</div>
-                    <div className='ntc-color-box' style={colorBoxStyle(this.props.colors.get('phos')!)}>P</div>
-                    <div className='ntc-color-spacer'></div>
+            <div className='wva-ntc-fragment-container'>
+                <div className='wva-ntc-fragment-header'>
+                    <div className='wva-ntc-fragment-name'>{this.props.ntc} {this.props.seq}</div>
+                    <div className='wva-ntc-color-box' style={colorBoxStyle(this.props.colors.get('base')!)}>B</div>
+                    <div className='wva-ntc-color-box' style={colorBoxStyle(this.props.colors.get('phos')!)}>P</div>
+                    <div className='wva-ntc-color-spacer'></div>
                     {
                         this.props.showStepWaters
                         ?
                             <>
-                                <div className='ntc-color-box' style={colorBoxStyle(this.props.colors.get('step')!)}>S</div>
-                                <div className='ntc-color-spacer'></div>
+                                <div className='wva-ntc-color-box' style={colorBoxStyle(this.props.colors.get('step')!)}>S</div>
+                                <div className='wva-ntc-color-spacer'></div>
                             </>
                         :
                             undefined
                     }
                     <PushButton
-                        className='hideshow-pushbutton pushbutton-common pushbutton-default pushbutton-clr-default pushbutton-hclr-default'
+                        className='wva-hideshow-pushbutton pushbutton-common pushbutton-default pushbutton-clr-default pushbutton-hclr-default'
                         value={this.props.expanded ? '▼' : '▲'}
                         onClick={() => this.props.onHideShowClicked()}
                     />
-                    <div className='ntc-color-spacer'></div>
+                    <div className='wva-ntc-color-spacer'></div>
                     <PushButton
                         className='wva-remove-fragment-pushbutton pushbutton-common pushbutton-default pushbutton-clr-default pushbutton-hclr-default'
                         value='X'
