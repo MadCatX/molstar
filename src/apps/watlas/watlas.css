@@ -10,12 +10,8 @@
     padding: 4px;
 }
 .fragment:hover {
-    background: rgb(189, 255, 189);
+    border: 1px solid rgb(189, 255, 189);
     transition-duration: 333ms;
-}
-
-.fragment-added {
-    background-color: rgb(211, 211, 211);
 }
 
 .fragment-bad {

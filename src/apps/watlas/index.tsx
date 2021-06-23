@@ -319,7 +319,7 @@ export class WatlasApp extends React.Component<{}, WatlasAppState> {
         );
     }
 
-    private fragmentColors(base: string): { colors: Map<Resources.AllKinds, Color>, nextHue: number } {
+    private fragmentColorsInternal(base: string): { colors: Map<Resources.AllKinds, Color>, nextHue: number } {
         let hue;
         let nextHue;
 
@@ -447,7 +447,7 @@ export class WatlasApp extends React.Component<{}, WatlasAppState> {
                 style: DefaultDensityMapStyle,
             }],
         ]);
-        const { colors, nextHue } = this.fragmentColors(ref);
+        const { colors, nextHue } = this.fragmentColorsInternal(ref);
 
         const frag: NtCDescription.Description = {
             ntc,
@@ -472,6 +472,19 @@ export class WatlasApp extends React.Component<{}, WatlasAppState> {
                 hue: nextHue,
             }
         );
+    }
+
+    fragmentColors(ntc: NtC, seq: Sequence): { base: string, phos: string, step: string } | undefined {
+        const ref = mkBaseRef(ntc, seq);
+        if (!this.assignedHues.has(ref))
+            return undefined;
+
+        const { colors } = this.fragmentColorsInternal(ref);
+        return {
+            base: Color.toStyle(colors.get('base')!),
+            phos: Color.toStyle(colors.get('phos')!),
+            step: Color.toStyle(colors.get('step')!),
+        };
     }
 
     has(ntc: NtC, seq: Sequence) {

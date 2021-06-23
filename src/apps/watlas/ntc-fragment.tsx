@@ -7,11 +7,22 @@
  */
 
 import * as React from 'react';
+import { Coloring } from './coloring';
 import { PushButton } from './push-button';
 import { Resources }  from './resources';
 import { Util } from './util';
 import { NtCDescription } from './ntc-description';
 import { Color } from '../../mol-util/color';
+
+function colorBoxStyle(color: Color) {
+    const lum = Coloring.luminance(color);
+    const fg = lum < 0.57 ? 'white' : 'black';
+    const bg = Color.toStyle(color);
+
+    console.log(Color.toRgb(color), lum);
+
+    return { background: bg, color: fg };
+}
 
 export class NtCFragment extends React.Component<NtCFragment.Props> {
     private renderDensityMapControl(caption: string, kind: Resources.DensityMaps ) {
@@ -95,14 +106,14 @@ export class NtCFragment extends React.Component<NtCFragment.Props> {
             <div className='ntc-fragment-container'>
                 <div className='ntc-fragment-header'>
                     <div className='ntc-fragment-name'>{this.props.ntc} {this.props.seq}</div>
-                    <div className='ntc-color-box' style={{background: Color.toStyle(this.props.colors.get('base')!)}}>B</div>
-                    <div className='ntc-color-box' style={{background: Color.toStyle(this.props.colors.get('phos')!)}}>P</div>
+                    <div className='ntc-color-box' style={colorBoxStyle(this.props.colors.get('base')!)}>B</div>
+                    <div className='ntc-color-box' style={colorBoxStyle(this.props.colors.get('phos')!)}>P</div>
                     <div className='ntc-color-spacer'></div>
                     {
                         this.props.showStepWaters
                         ?
                             <>
-                                <div className='ntc-color-box' style={{background: Color.toStyle(this.props.colors.get('step')!)}}>S</div>
+                                <div className='ntc-color-box' style={colorBoxStyle(this.props.colors.get('step')!)}>S</div>
                                 <div className='ntc-color-spacer'></div>
                             </>
                         :

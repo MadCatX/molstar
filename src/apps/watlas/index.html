@@ -37,12 +37,14 @@
                     return;
 
                 if (WVApi.has(ntc, seq)) {
-                    elem.classList.remove('fragment-added');
                     await WVApi.remove(ntc, seq);
+                    elem.style.backgroundColor = 'white';
                 } else {
-                    elem.classList.add('fragment-added');
                     try {
                         await WVApi.add(ntc, seq, [ 'reference' ], [ 'base' ]);
+                        const colors = WVApi.fragmentColors(ntc, seq);
+                        if (colors)
+                            elem.style.backgroundColor = colors.base;
                     } catch (e) {
                         elem.onClick="";
                         elem.classList.add('fragment-bad');

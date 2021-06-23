@@ -31,20 +31,32 @@ export class Api {
      * If the function needs to load resources and some resources fail to load, an array of strings
      * with appropriate error messages will be thrown.
      *
-     * @param NtC NtC class of the fragment
-     * @param seq Nucleotide sequence of the fragment. Syntax is `M_N` where `M` and `N` are nucleotide identifiers (A, T, U, C)
-     * @param shownStructures List of structures that will be initially shown. Valid options are `reference`, `base`, `phos` and `dinu`
-     * @param shownDensityMaps List of density maps that will be initially shown. Valid options are `base`, `phos` and `dinu`.
+     * @param ntc NtC class of the fragment
+     * @param seq Nucleotide sequence of the fragment. Syntax is `M_N` where `M` and `N` are nucleotide identifiers (A, T, G, C)
+     * @param shownStructures List of structures that will be initially shown. Valid options are `reference`, `base`, `phos` and `step`
+     * @param shownDensityMaps List of density maps that will be initially shown. Valid options are `base`, `phos` and `step`.
      */
     async add(ntc: NtC, seq: Sequence, shownStructures: Resources.Structures[], shownDensityMaps: Resources.DensityMaps[]) {
         await this.app.add(ntc, seq, shownStructures, shownDensityMaps);
     }
 
     /**
+     * Returns colors assigned to a given fragment or undefined if the fragment does not have any colors assigned yet.
+     *
+     * @param ntc NtC class of the fragment
+     * @param seq Nucleotide sequence of the fragment. Syntax is `M_N` where `M` and `N` are nucleotide identifiers (A, T, G, C)
+     *
+     * @return { base: string, phos: string, step: string } - base: Hex color string of reference structure, base waters and density map, phos: Hex color string of phosphate waters and density map, step: Hex color string of step waters and density map
+     */
+    fragmentColors(ntc: NtC, seq: Sequence): { base: string, phos: string, step: string } | undefined {
+        return this.app.fragmentColors(ntc, seq);
+    }
+
+    /**
      * Returns `true` if the given fragment is currently displayed in the viewer, false otherwise
      *
-     * @param NtC NtC class of the fragment
-     * @param seq Sequence of the fragment. Syntax is `M_N` where `M` and `N` are nucleotide identifiers (A, T, U, C)
+     * @param ntc NtC class of the fragment
+     * @param seq Sequence of the fragment. Syntax is `M_N` where `M` and `N` are nucleotide identifiers (A, T, G, C)
      */
     has(ntc: NtC, seq: Sequence) {
         return this.app.has(ntc, seq);
@@ -66,8 +78,8 @@ export class Api {
     /**
      * Removes fragment from the viewer
      *
-     * @param NtC NtC class of the fragment
-     * @param seq Nucleotide sequence of the fragment. Syntax is `M_N` where `M` and `N` are nucleotide identifiers (A, T, U, C)
+     * @param ntc NtC class of the fragment
+     * @param seq Nucleotide sequence of the fragment. Syntax is `M_N` where `M` and `N` are nucleotide identifiers (A, T, G, C)
      */
     async remove(ntc: NtC, seq: Sequence) {
         await this.app.remove(ntc, seq);
@@ -76,8 +88,8 @@ export class Api {
     /**
      * Removes fragment from the viewer and releases all corresponding resources
      *
-     * @param NtC NtC class of the fragment
-     * @param seq Nucleotide sequence of the fragment. Syntax is `M_N` where `M` and `N` are nucleotide identifiers (A, T, U, C)
+     * @param ntc NtC class of the fragment
+     * @param seq Nucleotide sequence of the fragment. Syntax is `M_N` where `M` and `N` are nucleotide identifiers (A, T, G, C)
      */
     async unload(ntc: NtC, seq: Sequence) {
         await this.app.unload(ntc, seq);
