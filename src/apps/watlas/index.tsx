@@ -263,6 +263,10 @@ class WatlasViewer {
     }
 }
 
+export interface OnFragmentStateChanged {
+    (ntc: NtC, seq: Sequence): void;
+}
+
 type FragmentMap = Map<string, NtCDescription.Description>;
 
 interface WatlasAppState {
@@ -275,6 +279,9 @@ export class WatlasApp extends React.Component<{}, WatlasAppState> {
     private assignedHues: Map<string, number>;
     private viewer: WatlasViewer | null;
     private loadedFragments: string[];
+    private onFragmentAdded: OnFragmentStateChanged | null = null;
+    private onFragmentRemoved: OnFragmentStateChanged | null = null;
+
 
     constructor(props: {}) {
         super(props);
@@ -478,6 +485,8 @@ export class WatlasApp extends React.Component<{}, WatlasAppState> {
                 hue: nextHue,
             }
         );
+        if (this.onFragmentAdded)
+            this.onFragmentAdded(ntc, seq);
     }
 
     fragmentColors(ntc: NtC, seq: Sequence, format: 'style' | 'rgb'): ColorInfo | undefined {
@@ -543,6 +552,16 @@ export class WatlasApp extends React.Component<{}, WatlasAppState> {
 
     async remove(ntc: NtC, seq: Sequence) {
         await this.dispose(ntc, seq, ref => this.viewer!.hide(ref));
+        if (this.onFragmentRemoved)
+            this.onFragmentRemoved(ntc, seq);
+    }
+
+    setOnFragmentAddedCallback(callback: OnFragmentStateChanged) {
+        this.onFragmentAdded = callback;
+    }
+
+    setOnFragmentRemovedCallback(callback: OnFragmentStateChanged) {
+        this.onFragmentRemoved = callback;
     }
 
     async unload(ntc: NtC, seq: Sequence) {
@@ -550,6 +569,9 @@ export class WatlasApp extends React.Component<{}, WatlasAppState> {
 
         const base = mkBaseRef(ntc, seq);
         this.loadedFragments = this.loadedFragments.filter(v => v !== base);
+
+        if (this.onFragmentRemoved)
+            this.onFragmentRemoved(ntc, seq);
     }
 
     render() {

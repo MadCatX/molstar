@@ -44,14 +44,16 @@
                 return luminance(r, g, b) < 0.57 ? 'white' : ' black';
             }
 
+            function fragmentButtonId(ntc, seq) {
+                return `fragment-button-${ntc}-${seq}`;
+            }
+
             async function toggle(elem, ntc, seq) {
                 if (!allLoaded)
                     return;
 
                 if (WVApi.has(ntc, seq)) {
                     await WVApi.remove(ntc, seq);
-                    elem.style.backgroundColor = 'white';
-                    elem.style.color = 'black';
                 } else {
                     try {
                         await WVApi.add(ntc, seq, [ 'reference' ], [ 'base' ]);
@@ -96,13 +98,21 @@
                     for (const ba of Bases) {
                         for (const bb of Bases) {
                             const seq = `${ba}_${bb}`;
-                            ctrlsCode += `<div class="fragment" onClick="toggle(this, '${ntc}', '${seq}')">${ntc} ${seq}</div>`;
+                            ctrlsCode += `<div class="fragment" id="${fragmentButtonId(ntc, seq)}" onClick="toggle(this, '${ntc}', '${seq}')">${ntc} ${seq}</div>`;
                         }
                     }
                 }
 
                 elem.innerHTML = ctrlsCode;
             }
+
+            WVApi.setOnFragmentRemovedCallback((ntc, seq) => {
+                const elem = document.getElementById(fragmentButtonId(ntc, seq));
+                if (elem) {
+                    elem.style.backgroundColor = 'white';
+                    elem.style.color = 'black';
+                }
+            });
 
             loadAll();
             renderControls();

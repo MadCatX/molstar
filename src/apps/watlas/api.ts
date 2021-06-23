@@ -6,7 +6,7 @@
  * @author Michal Malý <michal.maly@ibt.cas.cz>
  */
 
-import { ColorInfo, WatlasApp } from './index';
+import { ColorInfo, OnFragmentStateChanged, WatlasApp } from './index';
 import { NtC, Resources, Sequence } from './resources';
 
 /**
@@ -84,6 +84,24 @@ export class Api {
      */
     async remove(ntc: NtC, seq: Sequence) {
         await this.app.remove(ntc, seq);
+    }
+
+    /**
+     * Sets custom callback that gets called when a fragment is added to display
+     *
+     * @param callback Callback function to be called
+     */
+    setOnFragmentAddedCallback(callback: OnFragmentStateChanged) {
+        this.app.setOnFragmentAddedCallback(callback);
+    }
+
+    /**
+     * Sets custom callback that gets called when a fragment is removed from display
+     *
+     * @param callback Callback function to be called
+     */
+    setOnFragmentRemovedCallback(callback: OnFragmentStateChanged) {
+        this.app.setOnFragmentRemovedCallback(callback);
     }
 
     /**
