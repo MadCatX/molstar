@@ -28,7 +28,7 @@ import { Color } from '../../mol-util/color';
 import { ColorTheme } from '../../mol-theme/color';
 
 const DefaultDensityMapAlpha = 0.5;
-const DefaultDensityMapStyle = 'solid';
+const DefaultDensityMapStyle = 'wireframe';
 
 export const WatlasViewerApi = new Api();
 (window as any).WVApi = WatlasViewerApi;
