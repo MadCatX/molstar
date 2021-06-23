@@ -17,6 +17,7 @@ export class NtCFragment extends React.Component<NtCFragment.Props> {
     private renderDensityMapControl(caption: string, kind: Resources.DensityMaps ) {
         const dm = this.props.densityMaps.get(kind)!;
         const bounds = Util.isoBounds(dm.isoRange.min, dm.isoRange.max);
+        const isoFixed = Util.isoToFixed(dm.iso, bounds.step);
         return (
             <div className='ntc-fragment-densitymap'>
                 <div className='ntc-fragment-densitymap-firstrow watlas-wapp-ctrl-item'>
@@ -38,7 +39,7 @@ export class NtCFragment extends React.Component<NtCFragment.Props> {
                 <div className='ntc-fragment-densitymap-secondrow watlas-wapp-ctrl-item'>
                     <input
                         type='range'
-                        value={dm.iso}
+                        value={isoFixed}
                         min={bounds.min}
                         max={bounds.max}
                         step={bounds.step}
@@ -46,7 +47,7 @@ export class NtCFragment extends React.Component<NtCFragment.Props> {
                     />
                     <input
                         type='number'
-                        value={dm.iso}
+                        value={isoFixed}
                         min={bounds.min}
                         max={bounds.max}
                         step={bounds.step}

@@ -29,6 +29,13 @@ export namespace Util {
         return (range.max - range.min) / 2 + range.min;
     }
 
+    export function isoToFixed(iso: number, step: number) {
+        const d = Math.log10(step);
+        if (d >= 0)
+            return iso.toFixed(0);
+        return iso.toFixed(-d);
+    }
+
     export function prettyIso(iso: number, step: number) {
         return Math.floor((iso - step) / step) * step + step;
     }
