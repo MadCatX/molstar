@@ -30,6 +30,12 @@ import { ColorTheme } from '../../mol-theme/color';
 const DefaultDensityMapAlpha = 0.5;
 const DefaultDensityMapStyle = 'wireframe';
 
+export type ColorInfo = {
+    base: string | [ number, number, number ],
+    phos: string | [ number, number, number ],
+    step: string | [ number, number, number ],
+}
+
 export const WatlasViewerApi = new Api();
 (window as any).WVApi = WatlasViewerApi;
 
@@ -474,17 +480,26 @@ export class WatlasApp extends React.Component<{}, WatlasAppState> {
         );
     }
 
-    fragmentColors(ntc: NtC, seq: Sequence): { base: string, phos: string, step: string } | undefined {
+    fragmentColors(ntc: NtC, seq: Sequence, format: 'style' | 'rgb'): ColorInfo | undefined {
         const ref = mkBaseRef(ntc, seq);
         if (!this.assignedHues.has(ref))
             return undefined;
 
         const { colors } = this.fragmentColorsInternal(ref);
-        return {
-            base: Color.toStyle(colors.get('base')!),
-            phos: Color.toStyle(colors.get('phos')!),
-            step: Color.toStyle(colors.get('step')!),
-        };
+        switch (format) {
+            case 'style':
+                return {
+                    base: Color.toStyle(colors.get('base')!),
+                    phos: Color.toStyle(colors.get('phos')!),
+                    step: Color.toStyle(colors.get('step')!),
+                };
+            case 'rgb':
+                return {
+                    base: Color.toRgb(colors.get('base')!),
+                    phos: Color.toRgb(colors.get('phos')!),
+                    step: Color.toRgb(colors.get('step')!),
+                };
+        }
     }
 
     has(ntc: NtC, seq: Sequence) {

@@ -19,8 +19,6 @@ function colorBoxStyle(color: Color) {
     const fg = lum < 0.57 ? 'white' : 'black';
     const bg = Color.toStyle(color);
 
-    console.log(Color.toRgb(color), lum);
-
     return { background: bg, color: fg };
 }
 

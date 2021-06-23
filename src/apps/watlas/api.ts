@@ -6,7 +6,7 @@
  * @author Michal Malý <michal.maly@ibt.cas.cz>
  */
 
-import { WatlasApp } from './index';
+import { ColorInfo, WatlasApp } from './index';
 import { NtC, Resources, Sequence } from './resources';
 
 /**
@@ -45,11 +45,12 @@ export class Api {
      *
      * @param ntc NtC class of the fragment
      * @param seq Nucleotide sequence of the fragment. Syntax is `M_N` where `M` and `N` are nucleotide identifiers (A, T, G, C)
+     * @param format Return type format. `style` for CSS-formatted color string or `rgb` for array of RGB values in 0 - 255 range
      *
-     * @return { base: string, phos: string, step: string } - base: Hex color string of reference structure, base waters and density map, phos: Hex color string of phosphate waters and density map, step: Hex color string of step waters and density map
+     * @return ColorInfo - base: Hex color string of reference structure, base waters and density map, phos: Hex color string of phosphate waters and density map, step: Hex color string of step waters and density map
      */
-    fragmentColors(ntc: NtC, seq: Sequence): { base: string, phos: string, step: string } | undefined {
-        return this.app.fragmentColors(ntc, seq);
+    fragmentColors(ntc: NtC, seq: Sequence, format: 'style' | 'rgb'): ColorInfo | undefined {
+        return this.app.fragmentColors(ntc, seq, format);
     }
 
     /**

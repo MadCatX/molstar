@@ -32,6 +32,18 @@
             const Bases = [ 'A', 'C', 'G', 'T' ];
             let allLoaded = false;
 
+            /* https://alienryderflex.com/hsp.html */
+            function luminance(r, g, b) {
+                r /= 255.0;
+                g /= 255.0;
+                b /= 255.0;
+                return Math.sqrt(0.299 * r * r + 0.587 * g * g + 0.114 * b * b);
+            }
+
+            function fgColor(r, g, b) {
+                return luminance(r, g, b) < 0.57 ? 'white' : ' black';
+            }
+
             async function toggle(elem, ntc, seq) {
                 if (!allLoaded)
                     return;
@@ -39,12 +51,16 @@
                 if (WVApi.has(ntc, seq)) {
                     await WVApi.remove(ntc, seq);
                     elem.style.backgroundColor = 'white';
+                    elem.style.color = 'black';
                 } else {
                     try {
                         await WVApi.add(ntc, seq, [ 'reference' ], [ 'base' ]);
-                        const colors = WVApi.fragmentColors(ntc, seq);
-                        if (colors)
-                            elem.style.backgroundColor = colors.base;
+                        const colors = WVApi.fragmentColors(ntc, seq, 'rgb');
+                        if (colors) {
+                            const [ r, g, b ] = colors.base;
+                            elem.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+                            elem.style.color = fgColor(r, g, b);
+                        }
                     } catch (e) {
                         elem.onClick="";
                         elem.classList.add('fragment-bad');
