@@ -53,6 +53,7 @@ export class List extends React.Component<List.Props, State> {
                                 }
                             );
                         },
+                        onRemoveClicked: () => this.props.onRemoveClicked(base),
                     };
                     return (
                         <NtCFragment {...props} key={base} />
@@ -76,11 +77,16 @@ export namespace List {
         (show: boolean, kind: Resources.AllKinds, type: Resources.Type, base: string): void;
     }
 
+    export interface OnRemoveClicked {
+        (base: string): void;
+    }
+
     export interface Props {
         fragments: Map<string, NtCDescription.Description>;
         showStepWaters: boolean;
         onDensityMapIsoChanged: OnDensityMapIsoChanged;
         onDensityMapStyleChanged: OnDensityMapStyleChanged;
         onHideShowResource: OnHideShowResource;
+        onRemoveClicked: OnRemoveClicked;
     }
 }

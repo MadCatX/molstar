@@ -122,6 +122,12 @@ export class NtCFragment extends React.Component<NtCFragment.Props> {
                         value={this.props.expanded ? '▼' : '▲'}
                         onClick={() => this.props.onHideShowClicked()}
                     />
+                    <div className='ntc-color-spacer'></div>
+                    <PushButton
+                        className='wva-remove-fragment-pushbutton pushbutton-common pushbutton-default pushbutton-clr-default pushbutton-hclr-default'
+                        value='X'
+                        onClick={() => this.props.onRemoveClicked()}
+                    />
                 </div>
                 {this.props.expanded ? this.renderControls() : undefined}
             </div>
@@ -146,6 +152,10 @@ export namespace NtCFragment {
         (show: boolean, kind: Resources.AllKinds, type: Resources.Type): void;
     }
 
+    export interface OnRemoveClicked {
+        (): void;
+    }
+
     export interface Props extends NtCDescription.Description {
         expanded: boolean;
         showStepWaters: boolean;
@@ -153,5 +163,6 @@ export namespace NtCFragment {
         onDensityMapStyleChanged: OnDensityMapStyleChanged;
         onHideShowClicked: OnHideShowClicked;
         onHideShowResource: OnHideShowResource;
+        onRemoveClicked: OnRemoveClicked;
     }
 }

@@ -622,6 +622,10 @@ export class WatlasApp extends React.Component<{}, WatlasAppState> {
                                 this.updateFragmentStructure({ ...stru, shown: show }, base, kind);
                             }
                         }}
+                        onRemoveClicked={base => {
+                            const frag = this.state.fragments.get(base)!
+                            this.remove(frag.ntc, frag.seq);
+                        }}
                     />
                     <Controls
                         showStepWaters={this.state.showStepWaters}

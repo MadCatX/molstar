@@ -98,3 +98,9 @@
     text-align: center;
     white-space: nowrap;
 }
+
+.wva-remove-fragment-pushbutton {
+    color: red;
+    font-weight: bold;
+    width: 3em;
+}
