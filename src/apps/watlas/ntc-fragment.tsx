@@ -110,7 +110,7 @@ export class NtCFragment extends React.Component<NtCFragment.Props> {
                     }
                     <PushButton
                         className='hideshow-pushbutton pushbutton-common pushbutton-default pushbutton-clr-default pushbutton-hclr-default'
-                        value={this.props.expanded ? 'Hide ▼' : 'Show ▲'}
+                        value={this.props.expanded ? '▼' : '▲'}
                         onClick={() => this.props.onHideShowClicked()}
                     />
                 </div>
