@@ -15,10 +15,13 @@ import { List } from './list';
 import { NtCDescription } from './ntc-description';
 import { NtC, Sequence, Resources } from './resources';
 import { Util } from './util';
+import { Loci } from '../../mol-model/loci';
 import { Volume } from '../../mol-model/volume';
-import { PluginBehaviors } from '../../mol-plugin/behavior';
+import { PluginBehavior, PluginBehaviors } from '../../mol-plugin/behavior';
 import { PluginCommands } from '../../mol-plugin/commands';
+import { PluginContext } from '../../mol-plugin/context';
 import { PluginSpec } from '../../mol-plugin/spec';
+import { LociLabel } from '../../mol-plugin-state/manager/loci-label';
 import { createPlugin } from '../../mol-plugin-ui';
 import { PluginUIContext } from '../../mol-plugin-ui/context';
 import { DefaultPluginUISpec, PluginUISpec } from '../../mol-plugin-ui/spec';
@@ -26,6 +29,7 @@ import { StateTransforms } from '../../mol-plugin-state/transforms';
 import { RawData } from '../../mol-plugin-state/transforms/data';
 import { Color } from '../../mol-util/color';
 import { ColorTheme } from '../../mol-theme/color';
+import { lociLabel } from '../../mol-theme/label';
 
 const DefaultDensityMapAlpha = 0.5;
 const DefaultDensityMapStyle = 'wireframe';
@@ -105,6 +109,30 @@ async function download(srcs: { url: string, kind: Resources.AllKinds, type: Res
     return resources;
 }
 
+const WatlasLociLabelProvider = PluginBehavior.create({
+    name: 'watlas-loci-label-provider',
+    category: 'interaction',
+    ctor: class implements PluginBehavior<undefined> {
+        private f = {
+            label: (loci: Loci) => {
+                switch (loci.kind) {
+                    case 'structure-loci':
+                    case 'element-loci':
+                        return lociLabel(loci);
+                    default:
+                        return '';
+                }
+            },
+            group: (label: LociLabel) => label.toString().replace(/Model [0-9]+/g, 'Models'),
+            priority: 100
+        };
+        register() { this.ctx.managers.lociLabels.addProvider(this.f); }
+        unregister() { this.ctx.managers.lociLabels.removeProvider(this.f); }
+        constructor(protected ctx: PluginContext) { }
+    },
+    display: { name: 'Watlas labeling' }
+});
+
 class WatlasViewer {
     plugin: PluginUIContext;
 
@@ -114,7 +142,7 @@ class WatlasViewer {
             ...defaultSpec,
             behaviors: [
                 PluginSpec.Behavior(PluginBehaviors.Representation.HighlightLoci),
-                PluginSpec.Behavior(PluginBehaviors.Representation.DefaultLociLabelProvider),
+                PluginSpec.Behavior(WatlasLociLabelProvider),
             ],
             components: {
                 ...defaultSpec.components,
