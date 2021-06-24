@@ -56,6 +56,15 @@ export class Api {
     }
 
     /**
+     * Calls `forceUpdate()` on the underlying React component
+     *
+     * @param id WatlasApp instance id
+     */
+    forceRerender(id: string) {
+        this.instance(id).forceRerender();
+    }
+
+    /**
      * Returns colors assigned to a given fragment or undefined if the fragment does not have any colors assigned yet.
      *
      * @param id WatlasApp instance id

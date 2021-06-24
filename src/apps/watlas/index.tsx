@@ -440,7 +440,7 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
     }
 
     componentDidMount() {
-        const elem = document.getElementById('wva-viewer');
+        const elem = document.getElementById(this.props.elemId + '-viewer');
         if (!elem)
             throw new Error('No element to render viewer');
 
@@ -519,6 +519,10 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
         );
         if (this.onFragmentAdded)
             this.onFragmentAdded(ntc, seq);
+    }
+
+    forceRerender() {
+        this.forceUpdate();
     }
 
     fragmentColors(ntc: NtC, seq: Sequence, format: 'style' | 'rgb'): ColorInfo | undefined {
@@ -608,8 +612,8 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
 
     render() {
         return (
-            <div id='wva-app-container'>
-                <div id='wva-viewer'></div>
+            <div className='wva-app-container'>
+                <div id={this.props.elemId + '-viewer'} className='wva-viewer'></div>
                 <div className='wva-ctrl-panel'>
                     <List
                         fragments={this.state.fragments}
