@@ -47,7 +47,7 @@ export class Api {
      * @param seq Nucleotide sequence of the fragment. Syntax is `M_N` where `M` and `N` are nucleotide identifiers (A, T, G, C)
      * @param format Return type format. `style` for CSS-formatted color string or `rgb` for array of RGB values in 0 - 255 range
      *
-     * @return ColorInfo - base: Hex color string of reference structure, base waters and density map, phos: Hex color string of phosphate waters and density map, step: Hex color string of step waters and density map
+     * @return ColorInfo
      */
     fragmentColors(ntc: NtC, seq: Sequence, format: 'style' | 'rgb'): ColorInfo | undefined {
         return this.app.fragmentColors(ntc, seq, format);
