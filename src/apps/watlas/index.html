@@ -14,7 +14,7 @@
         <div id="container">
             <div class="fragments-container" id="fragments-container">
             </div>
-            <div id="wva-app"></div>
+            <div id="wva-test-app"></div>
         </div>
 
         <script type="text/javascript" src="molstar.js"></script>
@@ -52,12 +52,12 @@
                 if (!allLoaded)
                     return;
 
-                if (WVApi.has(ntc, seq)) {
-                    await WVApi.remove(ntc, seq);
+                if (WVApi.has('wva-test-app', ntc, seq)) {
+                    await WVApi.remove('wva-test-app', ntc, seq);
                 } else {
                     try {
-                        await WVApi.add(ntc, seq, [ 'reference' ], [ 'base' ]);
-                        const colors = WVApi.fragmentColors(ntc, seq, 'rgb');
+                        await WVApi.add('wva-test-app', ntc, seq, [ 'reference' ], [ 'base' ]);
+                        const colors = WVApi.fragmentColors('wva-test-app', ntc, seq, 'rgb');
                         if (colors) {
                             const [ r, g, b ] = colors.base;
                             elem.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
@@ -81,7 +81,7 @@
                 }
 
                 try {
-                    await WVApi.load(toLoad);
+                    await WVApi.load('wva-test-app', toLoad);
 
                     allLoaded = true;
                     document.getElementById('data-loading').innerHTML = 'Data loaded';
@@ -106,7 +106,9 @@
                 elem.innerHTML = ctrlsCode;
             }
 
-            WVApi.setOnFragmentRemovedCallback((ntc, seq) => {
+            WVApi.init('wva-test-app');
+
+            WVApi.setOnFragmentRemovedCallback('wva-test-app', (ntc, seq) => {
                 const elem = document.getElementById(fragmentButtonId(ntc, seq));
                 if (elem) {
                     elem.style.backgroundColor = 'white';

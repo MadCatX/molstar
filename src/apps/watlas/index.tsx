@@ -297,13 +297,17 @@ export interface OnFragmentStateChanged {
 
 type FragmentMap = Map<string, NtCDescription.Description>;
 
+interface WatlasAppProps {
+    elemId: string;
+}
+
 interface WatlasAppState {
     fragments: FragmentMap;
     hue: number;
     showStepWaters: boolean;
 }
 
-export class WatlasApp extends React.Component<{}, WatlasAppState> {
+export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
     private assignedHues: Map<string, number>;
     private viewer: WatlasViewer | null;
     private loadedFragments: string[];
@@ -311,7 +315,7 @@ export class WatlasApp extends React.Component<{}, WatlasAppState> {
     private onFragmentRemoved: OnFragmentStateChanged | null = null;
 
 
-    constructor(props: {}) {
+    constructor(props: WatlasAppProps) {
         super(props);
 
         this.state = {
@@ -443,7 +447,7 @@ export class WatlasApp extends React.Component<{}, WatlasAppState> {
         if (!this.viewer)
             this.viewer = new WatlasViewer(elem);
 
-        WatlasViewerApi.bind(this);
+        WatlasViewerApi.bind(this, this.props.elemId);
     }
 
     async add(ntc: NtC, seq: Sequence, shownStructures: Resources.Structures[], shownDensityMaps: Resources.DensityMaps[]) {
@@ -690,4 +694,12 @@ export class WatlasApp extends React.Component<{}, WatlasAppState> {
     }
 }
 
-ReactDOM.render(<WatlasApp />, document.getElementById('wva-app'));
+export namespace WatlasApp {
+    export function init(elemId: string) {
+        const elem = document.getElementById(elemId);
+        if (!elem)
+            throw new Error(`Element ${elemId} does not exist`);
+
+        ReactDOM.render(<WatlasApp elemId={elemId} />, elem);
+    }
+}

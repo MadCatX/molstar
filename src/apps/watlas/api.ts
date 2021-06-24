@@ -14,13 +14,26 @@ import { NtC, Resources, Sequence } from './resources';
  * The API is globally available through `WVApi` global variable.
  */
 export class Api {
-    private app: WatlasApp;
+    private instances: Map<string, WatlasApp>;
+
+    constructor() {
+        this.instances = new Map();
+    }
+
+    private instance(id: string) {
+        if (!this.instances.has(id))
+            throw new Error(`WatlasApp instance with id ${id} is not bound`);
+        return this.instances.get(id)!;
+    }
 
     /**
      * For internal use only.
      */
-    bind(app: WatlasApp) {
-        this.app = app;
+    bind(app: WatlasApp, id: string) {
+        if (this.instances.has(id))
+            throw new Error(`WatlasApp with id ${id} is already bound`);
+
+        this.instances.set(id, app);
     }
 
     /**
@@ -31,36 +44,52 @@ export class Api {
      * If the function needs to load resources and some resources fail to load, an array of strings
      * with appropriate error messages will be thrown.
      *
+     * @param id WatlasApp instance id
      * @param ntc NtC class of the fragment
      * @param seq Nucleotide sequence of the fragment. Syntax is `M_N` where `M` and `N` are nucleotide identifiers (A, T, G, C)
      * @param shownStructures List of structures that will be initially shown. Valid options are `reference`, `base`, `phos` and `step`
      * @param shownDensityMaps List of density maps that will be initially shown. Valid options are `base`, `phos` and `step`.
      */
-    async add(ntc: NtC, seq: Sequence, shownStructures: Resources.Structures[], shownDensityMaps: Resources.DensityMaps[]) {
-        await this.app.add(ntc, seq, shownStructures, shownDensityMaps);
+    async add(id: string, ntc: NtC, seq: Sequence, shownStructures: Resources.Structures[], shownDensityMaps: Resources.DensityMaps[]) {
+        const inst = this.instance(id);
+        await inst.add(ntc, seq, shownStructures, shownDensityMaps);
     }
 
     /**
      * Returns colors assigned to a given fragment or undefined if the fragment does not have any colors assigned yet.
      *
+     * @param id WatlasApp instance id
      * @param ntc NtC class of the fragment
      * @param seq Nucleotide sequence of the fragment. Syntax is `M_N` where `M` and `N` are nucleotide identifiers (A, T, G, C)
      * @param format Return type format. `style` for CSS-formatted color string or `rgb` for array of RGB values in 0 - 255 range
      *
      * @return ColorInfo
      */
-    fragmentColors(ntc: NtC, seq: Sequence, format: 'style' | 'rgb'): ColorInfo | undefined {
-        return this.app.fragmentColors(ntc, seq, format);
+    fragmentColors(id: string, ntc: NtC, seq: Sequence, format: 'style' | 'rgb'): ColorInfo | undefined {
+        const inst = this.instance(id);
+        return inst.fragmentColors(ntc, seq, format);
     }
 
     /**
-     * Returns `true` if the given fragment is currently displayed in the viewer, false otherwise
+     * Returns `true` if the given fragment is currently displayed in the viewer, `false` otherwise
      *
+     * @param id WatlasApp instance id
      * @param ntc NtC class of the fragment
      * @param seq Sequence of the fragment. Syntax is `M_N` where `M` and `N` are nucleotide identifiers (A, T, G, C)
      */
-    has(ntc: NtC, seq: Sequence) {
-        return this.app.has(ntc, seq);
+    has(id: string, ntc: NtC, seq: Sequence) {
+        const inst = this.instance(id);
+        return inst.has(ntc, seq);
+    }
+
+    /**
+     * Initializes WatlasApp instance
+     *
+     * @param id Element id of the HTML element where the app should render. This id will also be used to identify the
+     *           app instance within the API
+     */
+    init(id: string) {
+        WatlasApp.init(id);
     }
 
     /**
@@ -70,47 +99,57 @@ export class Api {
      * with appropriate error messages will be thrown. Note that throwing may
      * indicate only a partial failure
      *
+     * @param id WatlasApp instance id
      * @param fragments List of `fragment` objects. `ntc` field denotes NtC class of the fragment, `seq` field denotes nucleotide sequence of the fragment
      */
-    async load(fragments: { ntc: NtC, seq: Sequence }[]) {
-        await this.app.load(fragments);
+    async load(id: string, fragments: { ntc: NtC, seq: Sequence }[]) {
+        const inst = this.instance(id);
+        await inst.load(fragments);
     }
 
     /**
      * Removes fragment from the viewer
      *
+     * @param id WatlasApp instance id
      * @param ntc NtC class of the fragment
      * @param seq Nucleotide sequence of the fragment. Syntax is `M_N` where `M` and `N` are nucleotide identifiers (A, T, G, C)
      */
-    async remove(ntc: NtC, seq: Sequence) {
-        await this.app.remove(ntc, seq);
+    async remove(id: string, ntc: NtC, seq: Sequence) {
+        const inst = this.instance(id);
+        await inst.remove(ntc, seq);
     }
 
     /**
      * Sets custom callback that gets called when a fragment is added to display
      *
+     * @param id WatlasApp instance id
      * @param callback Callback function to be called
      */
-    setOnFragmentAddedCallback(callback: OnFragmentStateChanged) {
-        this.app.setOnFragmentAddedCallback(callback);
+    setOnFragmentAddedCallback(id: string, callback: OnFragmentStateChanged) {
+        const inst = this.instance(id);
+        inst.setOnFragmentAddedCallback(callback);
     }
 
     /**
      * Sets custom callback that gets called when a fragment is removed from display
      *
+     * @param id WatlasApp instance id
      * @param callback Callback function to be called
      */
-    setOnFragmentRemovedCallback(callback: OnFragmentStateChanged) {
-        this.app.setOnFragmentRemovedCallback(callback);
+    setOnFragmentRemovedCallback(id: string, callback: OnFragmentStateChanged) {
+        const inst = this.instance(id);
+        inst.setOnFragmentRemovedCallback(callback);
     }
 
     /**
      * Removes fragment from the viewer and releases all corresponding resources
      *
+     * @param id WatlasApp instance id
      * @param ntc NtC class of the fragment
      * @param seq Nucleotide sequence of the fragment. Syntax is `M_N` where `M` and `N` are nucleotide identifiers (A, T, G, C)
      */
-    async unload(ntc: NtC, seq: Sequence) {
-        await this.app.unload(ntc, seq);
+    async unload(id: string, ntc: NtC, seq: Sequence) {
+        const inst = this.instance(id);
+        await inst.unload(ntc, seq);
     }
 }
