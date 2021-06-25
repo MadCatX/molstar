@@ -250,25 +250,27 @@ class WatlasViewer {
         await PluginCommands.State.Update(this.plugin, { state, tree: b });
     }
 
-    async showDensityMap(ref: string, iso: number, style: NtCDescription.MapStyle, color: Color) {
-        const parent = ref + '_volume';
+    async showDensityMap(base: string, iso: number, style: NtCDescription.MapStyle, color: Color) {
+        const ref = base + '_visual';
+        const parent = base + '_volume';
         let state = this.plugin.state.data;
-        if (!state.transforms.has(parent))
+        if (state.transforms.has(ref) || !state.transforms.has(parent))
             return;
 
         const cell = state.cells.get(parent)!;
         const type = { name: 'isosurface', params: this.densityMapParams(iso, style) };
         const colorTheme = { name: 'uniform', params: this.densityMapColors(color) };
         const b = this.plugin.state.data.build().to(cell)
-            .apply(StateTransforms.Representation.VolumeRepresentation3D, { colorTheme, type }, { ref: ref + '_visual' });
+            .apply(StateTransforms.Representation.VolumeRepresentation3D, { colorTheme, type }, { ref });
 
         await PluginCommands.State.Update(this.plugin, { state, tree: b });
     }
 
-    async showStructure(ref: string, color: Color, theme: ColorTheme.BuiltIn) {
-        const parent = ref + '_structure';
+    async showStructure(base: string, color: Color, theme: ColorTheme.BuiltIn) {
+        const ref = base + '_visual';
+        const parent = base + '_structure';
         const state = this.plugin.state.data;
-        if (!state.transforms.has(parent))
+        if (state.transforms.has(ref) || !state.transforms.has(parent))
             return;
 
         const cell = state.cells.get(parent)!;
@@ -281,7 +283,7 @@ class WatlasViewer {
             params: this.colorThemeParams(color, theme),
         };
         let b = state.build().to(cell)
-            .apply(StateTransforms.Representation.StructureRepresentation3D, { colorTheme, type }, { ref: ref + '_visual' });
+            .apply(StateTransforms.Representation.StructureRepresentation3D, { colorTheme, type }, { ref });
 
         await PluginCommands.State.Update(this.plugin, { state, tree: b });
     }
