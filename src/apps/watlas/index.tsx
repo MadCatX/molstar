@@ -181,7 +181,13 @@ class WatlasViewer {
 
     private densityMapParams(iso: number, style: NtCDescription.MapStyle) {
         const isoValue = Volume.IsoValue.absolute(iso);
-        return { isoValue, alpha: DefaultDensityMapAlpha, visuals: mapStyleToVisuals(style), quality: 'highest' };
+        return {
+            isoValue,
+            alpha: DefaultDensityMapAlpha,
+            visuals: mapStyleToVisuals(style),
+            quality: 'highest',
+            sizeFactor: 2,
+        };
     }
 
     private async remove(cells: any[]) {
