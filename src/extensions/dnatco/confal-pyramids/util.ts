@@ -12,6 +12,7 @@ import { OrderedSet, Segmentation } from '../../../mol-data/int';
 import { Vec3 } from '../../../mol-math/linear-algebra';
 import { Loci } from '../../../mol-model/loci';
 import { ChainIndex, ElementIndex, ResidueIndex, Structure, StructureElement, StructureProperties, Unit } from '../../../mol-model/structure';
+import { MmcifFormat } from '../../../mol-model-formats/structure/mmcif';
 
 export namespace ConfalPyramidsUtil {
     const AllowedO3Names = [ 'O3\'', 'O3*' ];
@@ -41,7 +42,7 @@ export namespace ConfalPyramidsUtil {
         asym_id: string,
         auth_asym_id: string,
         seq_id: number,
-        auth_seq_id: number,
+        auth_seq_id: string,
         comp_id: string,
         alt_id: string,
         ins_code: string,
@@ -50,12 +51,16 @@ export namespace ConfalPyramidsUtil {
     export type Handler = (pyramid: CPT.Pyramid, first: FirstResidueAtoms, second: SecondResidueAtoms, firstLocIndex: number, secondLocIndex: number) => void;
 
     function residueInfoFromLocation(loc: StructureElement.Location): ResidueInfo {
+        const model = loc.unit.model;
+        const idx = model.atomicHierarchy.atomSourceIndex.value(loc.element);
+        const auth_seq_id = (model.sourceData as MmcifFormat).data.frame.categories['atom_site'].getField('auth_seq_id')?.str(idx);
+        if (!auth_seq_id) throw new Error('auth_seq_id is not defined');
         return {
             PDB_model_num: StructureProperties.unit.model_num(loc),
             asym_id: StructureProperties.chain.label_asym_id(loc),
             auth_asym_id: StructureProperties.chain.auth_asym_id(loc),
             seq_id: StructureProperties.residue.label_seq_id(loc),
-            auth_seq_id: StructureProperties.residue.auth_seq_id(loc),
+            auth_seq_id,
             comp_id: StructureProperties.atom.label_comp_id(loc),
             alt_id: StructureProperties.atom.label_alt_id(loc),
             ins_code: StructureProperties.residue.pdbx_PDB_ins_code(loc)
