@@ -6,7 +6,7 @@
  * @author Michal Malý <michal.maly@ibt.cas.cz>
  */
 
-import { ColorInfo, OnFragmentStateChanged, WatlasApp } from './index';
+import { ColorInfo, OnFragmentLoaded, OnFragmentStateChanged, WatlasApp } from './index';
 import { NtC, Resources, Sequence } from './resources';
 
 /**
@@ -110,10 +110,11 @@ export class Api {
      *
      * @param id WatlasApp instance id
      * @param fragments List of `fragment` objects. `ntc` field denotes NtC class of the fragment, `seq` field denotes nucleotide sequence of the fragment
+     * @param callback Called when loading of one fragment is completed
      */
-    async load(id: string, fragments: { ntc: NtC, seq: Sequence }[]) {
+    async load(id: string, fragments: { ntc: NtC, seq: Sequence }[], callback?: OnFragmentLoaded) {
         const inst = this.instance(id);
-        await inst.load(fragments);
+        await inst.load(fragments, callback);
     }
 
     /**

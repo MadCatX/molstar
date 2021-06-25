@@ -291,6 +291,10 @@ class WatlasViewer {
     }
 }
 
+export interface OnFragmentLoaded {
+    (loaded: number, total: number): void;
+}
+
 export interface OnFragmentStateChanged {
     (ntc: NtC, seq: Sequence): void;
 }
@@ -551,7 +555,7 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
         return this.state.fragments.has(mkBaseRef(ntc, seq));
     }
 
-    async load(fragments: { ntc: NtC, seq: Sequence }[]) {
+    async load(fragments: { ntc: NtC, seq: Sequence }[], callback?: OnFragmentLoaded) {
         if (!this.viewer)
             return;
 
@@ -565,6 +569,7 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
         }
 
         let errors: string[] = [];
+        let ctr = 0;
         for (const p of pending) {
             try {
                 const resources = await p.prom;
@@ -579,6 +584,9 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
                 this.loadedFragments.push(mkBaseRef(p.ntc, p.seq));
             } catch (e) {
                 errors = errors.concat(e);
+            } finally {
+                if (callback)
+                    callback(++ctr, fragments.length);
             }
         }
 
