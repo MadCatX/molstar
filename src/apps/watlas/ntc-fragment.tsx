@@ -151,7 +151,7 @@ export class NtCFragment extends React.Component<NtCFragment.Props> {
                     <div className='wva-ntc-color-spacer'></div>
                     <PushButton
                         className='wva-remove-fragment-pushbutton pushbutton-common pushbutton-default pushbutton-clr-default pushbutton-hclr-default'
-                        value='X'
+                        value='❌'
                         onClick={() => this.props.onRemoveClicked()}
                     />
                 </div>
