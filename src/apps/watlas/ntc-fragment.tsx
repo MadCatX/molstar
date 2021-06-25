@@ -23,6 +23,19 @@ function colorBoxStyle(color: Color) {
 }
 
 export class NtCFragment extends React.Component<NtCFragment.Props> {
+    private hideShowAllResources(show: boolean) {
+        const resources: Resources.AllKinds[] = [ 'base', 'phos' ];
+        if (this.props.showStepWaters)
+            resources.push('step');
+
+        for (const r of resources)
+            this.props.onHideShowResource(show, r, 'density-map');
+
+        resources.push('reference');
+        for (const r of resources)
+            this.props.onHideShowResource(show, r, 'structure');
+    }
+
     private renderDensityMapControl(caption: string, kind: Resources.DensityMaps ) {
         const dm = this.props.densityMaps.get(kind)!;
         const bounds = Util.isoBounds(dm.isoRange.min, dm.isoRange.max);
@@ -84,6 +97,19 @@ export class NtCFragment extends React.Component<NtCFragment.Props> {
     private renderControls() {
         return (
             <>
+                <div className='wva-ntc-fragment-hide-show-btns'>
+                    <div></div>
+                    <PushButton
+                        className='pushbutton-common pushbutton-default pushbutton-clr-default pushbutton-hclr-default'
+                        value='Show all'
+                        onClick={() => this.hideShowAllResources(true)}
+                    />
+                    <PushButton
+                        className='pushbutton-common pushbutton-default pushbutton-clr-default pushbutton-hclr-default'
+                        value='Hide all'
+                        onClick={() => this.hideShowAllResources(false)}
+                    />
+                </div>
                 <div className='wva-ntc-fragment-structures-block'>
                     {this.renderStructureControl('Reference', 'reference')}
                     {this.renderStructureControl('Base waters', 'base')}
