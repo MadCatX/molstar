@@ -107,7 +107,6 @@ export class NtCFragment extends React.Component<NtCFragment.Props> {
         return (
             <>
                 <div className='wva-ntc-fragment-hide-show-btns'>
-                    <div></div>
                     <PushButton
                         className='wva-pushbutton'
                         value='Show all'
@@ -118,6 +117,7 @@ export class NtCFragment extends React.Component<NtCFragment.Props> {
                         value='Hide all'
                         onClick={() => this.hideShowAllResources(false)}
                     />
+                    <div></div>
                 </div>
                 <div className='wva-ntc-fragment-structures-block'>
                     {this.renderStructureControl('Reference', 'reference')}
