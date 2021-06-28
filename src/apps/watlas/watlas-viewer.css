@@ -87,26 +87,23 @@
     overflow: scroll;
 }
 
+.wva-pushbutton {
+    background: none;
+    border: 1px solid black;
+    transition-duration: 100ms;
+}
+.wva-pushbutton:hover {
+    background: rgb(211, 211, 211);
+    transition-duration: 100ms;
+}
+
 .wva-remove-fragment-pushbutton {
     color: red;
     font-weight: bold;
     width: 3em;
 }
 
-.pushbutton-default {
-    border: 1px solid black;
-}
-
-.pushbutton-clr-default {
-    background: none;
-    transition-duration: 100ms;
-}
-.pushbutton-hclr-default:hover {
-    background: rgb(211, 211, 211);
-    transition-duration: 100ms;
-}
-
-.pushbutton-text {
+.wva-pushbutton-text {
     font-weight: bold;
     text-align: center;
     white-space: nowrap;

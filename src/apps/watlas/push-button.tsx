@@ -39,7 +39,7 @@ export class PushButton extends AbstractPushButton<PushButton.Props, {}> {
                 id={this.props.id}
                 className={this.clsName()}
                 onClick={this.props.enabled ? this.props.onClick : Noop}>
-                <div className='pushbutton-text'>{this.props.value}</div>
+                <div className='wva-pushbutton-text'>{this.props.value}</div>
             </div>
         );
     }

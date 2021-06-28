@@ -109,12 +109,12 @@ export class NtCFragment extends React.Component<NtCFragment.Props> {
                 <div className='wva-ntc-fragment-hide-show-btns'>
                     <div></div>
                     <PushButton
-                        className='wva-pushbutton pushbutton-common pushbutton-default pushbutton-clr-default pushbutton-hclr-default'
+                        className='wva-pushbutton'
                         value='Show all'
                         onClick={() => this.hideShowAllResources(true)}
                     />
                     <PushButton
-                        className='wva-pushbutton pushbutton-common pushbutton-default pushbutton-clr-default pushbutton-hclr-default'
+                        className='wva-pushbutton'
                         value='Hide all'
                         onClick={() => this.hideShowAllResources(false)}
                     />
@@ -153,13 +153,13 @@ export class NtCFragment extends React.Component<NtCFragment.Props> {
                             undefined
                     }
                     <PushButton
-                        className='wva-hideshow-pushbutton pushbutton-common pushbutton-default pushbutton-clr-default pushbutton-hclr-default'
+                        className='wva-pushbutton wva-hideshow-pushbutton'
                         value={this.props.expanded ? '▼' : '▲'}
                         onClick={() => this.props.onHideShowClicked()}
                     />
                     <div className='wva-ntc-color-spacer'></div>
                     <PushButton
-                        className='wva-remove-fragment-pushbutton pushbutton-common pushbutton-default pushbutton-clr-default pushbutton-hclr-default'
+                        className='wva-pushbutton wva-remove-fragment-pushbutton'
                         value='❌'
                         onClick={() => this.props.onRemoveClicked()}
                     />
