@@ -45,6 +45,7 @@ export class NtCFragment extends React.Component<NtCFragment.Props> {
                 <div className='wva-ntc-fragment-densitymap-firstrow wva-ctrl-item'>
                     <div>{caption} σ</div>
                     <select
+                        className='wva-select'
                         value={dm.style}
                         onChange={evt => this.props.onDensityMapStyleChanged(evt.target.value as NtCDescription.MapStyle, kind)}
                     >
@@ -52,14 +53,18 @@ export class NtCFragment extends React.Component<NtCFragment.Props> {
                         <option value='wireframe'>Wireframe</option>
                         <option value='both'>Both</option>
                     </select>
-                    <input
-                        type='checkbox'
-                        checked={dm.shown}
-                        onChange={evt => this.props.onHideShowResource(evt.target.checked, kind, 'density-map')}
-                    />
+                    <div className='wva-vcenter-box'>
+                        <input
+                            className='wva-checkbox'
+                            type='checkbox'
+                            checked={dm.shown}
+                            onChange={evt => this.props.onHideShowResource(evt.target.checked, kind, 'density-map')}
+                        />
+                    </div>
                 </div>
                 <div className='wva-ntc-fragment-densitymap-secondrow wva-ctrl-item'>
                     <input
+                        className='wva-range-slider'
                         type='range'
                         value={isoFixed}
                         min={bounds.min}
@@ -68,6 +73,7 @@ export class NtCFragment extends React.Component<NtCFragment.Props> {
                         onChange={evt => this.props.onDensityMapIsoChanged(parseFloat(evt.target.value), kind)}
                     />
                     <input
+                        className='wva-spinbox'
                         type='number'
                         value={isoFixed}
                         min={bounds.min}
@@ -85,11 +91,14 @@ export class NtCFragment extends React.Component<NtCFragment.Props> {
         return (
             <div className='wva-ctrl-line wva-ctrl-item'>
                 <div>{caption}</div>
-                <input
-                    type='checkbox'
-                    checked={stru.shown}
-                    onChange={evt => this.props.onHideShowResource(evt.target.checked, kind, 'structure')}
-                />
+                <div className='wva-vcenter-box'>
+                    <input
+                        className='wva-checkbox'
+                        type='checkbox'
+                        checked={stru.shown}
+                        onChange={evt => this.props.onHideShowResource(evt.target.checked, kind, 'structure')}
+                    />
+                </div>
             </div>
         );
     }
@@ -100,12 +109,12 @@ export class NtCFragment extends React.Component<NtCFragment.Props> {
                 <div className='wva-ntc-fragment-hide-show-btns'>
                     <div></div>
                     <PushButton
-                        className='pushbutton-common pushbutton-default pushbutton-clr-default pushbutton-hclr-default'
+                        className='wva-pushbutton pushbutton-common pushbutton-default pushbutton-clr-default pushbutton-hclr-default'
                         value='Show all'
                         onClick={() => this.hideShowAllResources(true)}
                     />
                     <PushButton
-                        className='pushbutton-common pushbutton-default pushbutton-clr-default pushbutton-hclr-default'
+                        className='wva-pushbutton pushbutton-common pushbutton-default pushbutton-clr-default pushbutton-hclr-default'
                         value='Hide all'
                         onClick={() => this.hideShowAllResources(false)}
                     />

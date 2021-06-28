@@ -14,11 +14,14 @@ export class Controls extends React.Component<Controls.Props> {
             <div className='wva-ctrls'>
                 <div className='wva-ctrl-line wva-ctrl-item'>
                     <div>Show step waters</div>
-                    <input
-                        type='checkbox'
-                        checked={this.props.showStepWaters}
-                        onChange={evt => this.props.onHideShowStepWaters(evt.currentTarget.checked)}
-                    />
+                    <div className='wva-vcenter-box'>
+                        <input
+                            className='wva-checkbox'
+                            type='checkbox'
+                            checked={this.props.showStepWaters}
+                            onChange={evt => this.props.onHideShowStepWaters(evt.currentTarget.checked)}
+                        />
+                    </div>
                 </div>
             </div>
         );
