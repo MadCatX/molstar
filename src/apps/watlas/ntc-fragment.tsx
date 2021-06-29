@@ -44,15 +44,17 @@ export class NtCFragment extends React.Component<NtCFragment.Props> {
             <div className='wva-ntc-fragment-densitymap'>
                 <div className='wva-ntc-fragment-densitymap-firstrow wva-ctrl-item'>
                     <div>{caption} σ</div>
-                    <select
-                        className='wva-select'
-                        value={dm.style}
-                        onChange={evt => this.props.onDensityMapStyleChanged(evt.target.value as NtCDescription.MapStyle, kind)}
-                    >
-                        <option value='solid'>Solid</option>
-                        <option value='wireframe'>Wireframe</option>
-                        <option value='both'>Both</option>
-                    </select>
+                    <div className='wva-select-wrapper'>
+                        <select
+                            className='wva-select'
+                            value={dm.style}
+                            onChange={evt => this.props.onDensityMapStyleChanged(evt.target.value as NtCDescription.MapStyle, kind)}
+                        >
+                            <option value='solid'>Solid</option>
+                            <option value='wireframe'>Wireframe</option>
+                            <option value='both'>Both</option>
+                        </select>
+                    </div>
                     <div className='wva-vcenter-box'>
                         <input
                             className='wva-checkbox'
