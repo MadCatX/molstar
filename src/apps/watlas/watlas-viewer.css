@@ -11,6 +11,10 @@
     margin-bottom: 2em;
 }
 
+.wva-ctrl-fullwidth {
+    grid-column: 1 / span 2;
+}
+
 .wva-ctrl-panel {
     display: grid;
     grid-template-rows: 1fr auto;

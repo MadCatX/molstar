@@ -7,11 +7,19 @@
  */
 
 import * as React from 'react';
+import { PushButton } from './push-button';
 
 export class Controls extends React.Component<Controls.Props> {
     render() {
         return (
             <div className='wva-ctrls'>
+                <div className='wva-ctrl-line wva-ctrl-item'>
+                    <PushButton
+                        className='wva-pushbutton wva-ctrl-fullwidth'
+                        value='Reset colors'
+                        onClick={() => this.props.onResetColors()}
+                    />
+                </div>
                 <div className='wva-ctrl-line wva-ctrl-item'>
                     <div>Show step waters</div>
                     <div className='wva-vcenter-box'>
@@ -33,8 +41,13 @@ export namespace Controls {
         (show: boolean): void;
     }
 
+    export interface OnAction {
+        (): void;
+    }
+
     export interface Props {
         showStepWaters: boolean;
         onHideShowStepWaters: OnHideShowStepWaters;
+        onResetColors: OnAction;
     }
 }

@@ -48,6 +48,16 @@
                 return `fragment-button-${ntc}-${seq}`;
             }
 
+            function setFragmentButtonColor(ntc, seq) {
+                const elem = document.getElementById(fragmentButtonId(ntc, seq));
+                const colors = WVApi.fragmentColors('wva-test-app', ntc, seq, 'rgb');
+                if (colors) {
+                    const [ r, g, b ] = colors.base;
+                    elem.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+                    elem.style.color = fgColor(r, g, b);
+                }
+            }
+
             async function toggle(elem, ntc, seq) {
                 if (!allLoaded)
                     return;
@@ -57,12 +67,7 @@
                 } else {
                     try {
                         await WVApi.add('wva-test-app', ntc, seq, [ 'reference' ], [ 'base' ]);
-                        const colors = WVApi.fragmentColors('wva-test-app', ntc, seq, 'rgb');
-                        if (colors) {
-                            const [ r, g, b ] = colors.base;
-                            elem.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
-                            elem.style.color = fgColor(r, g, b);
-                        }
+                        setFragmentButtonColor(ntc, seq);
                     } catch (e) {
                         elem.onClick="";
                         elem.classList.add('fragment-bad');
@@ -114,6 +119,9 @@
                     elem.style.backgroundColor = 'white';
                     elem.style.color = 'black';
                 }
+            });
+            WVApi.setOnFragmentColorsChangedCallback('wva-test-app', (ntc, seq) => {
+                setFragmentButtonColor(ntc, seq);
             });
 
             loadAll();

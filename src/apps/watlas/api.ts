@@ -141,6 +141,17 @@ export class Api {
     }
 
     /**
+     * Sets custom callback that gets called when fragment colors get changed by the viewer
+     *
+     * @param id WatlasApp instance id
+     * @param callback Callback function to be called
+     */
+    setOnFragmentColorsChangedCallback(id: string, callback: OnFragmentStateChanged) {
+        const inst = this.instance(id);
+        inst.setOnFragmentColorsChangedCallback(callback);
+    }
+
+    /**
      * Sets custom callback that gets called when a fragment is removed from display
      *
      * @param id WatlasApp instance id

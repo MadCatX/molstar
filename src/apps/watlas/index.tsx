@@ -236,7 +236,7 @@ class WatlasViewer {
         return { min: stats.min, max: stats.max };
     }
 
-    async setDensityMapAppearance(iso: number, style: NtCDescription.MapStyle, ref: string) {
+    async setDensityMapAppearance(iso: number, style: NtCDescription.MapStyle, color: Color, ref: string) {
         const visualRef = ref + '_visual';
         let state = this.plugin.state.data;
         const cell = state.cells.get(visualRef);
@@ -244,8 +244,31 @@ class WatlasViewer {
             return;
 
         const type = { name: 'isosurface', params: this.densityMapParams(iso, style) };
+        const colorTheme = { name: 'uniform', params: this.densityMapColors(color) };
         const b = state.build().to(cell)
-            .update(StateTransforms.Representation.VolumeRepresentation3D, old => ({...old, type }));
+            .update(StateTransforms.Representation.VolumeRepresentation3D, old => ({...old, colorTheme, type }));
+
+        await PluginCommands.State.Update(this.plugin, { state, tree: b });
+    }
+
+    async setStructureAppearance(color: Color, theme: ColorTheme.BuiltIn, ref: string) {
+        const visualRef = ref + '_visual';
+        const state = this.plugin.state.data;
+        const cell = state.cells.get(visualRef);
+        if (!cell)
+            return;
+
+        const type = {
+            name: 'ball-and-stick',
+            params: {},
+        };
+        const colorTheme = {
+            name: theme,
+            params: this.colorThemeParams(color, theme),
+        };
+
+        const b = state.build().to(cell)
+            .update(StateTransforms.Representation.VolumeRepresentation3D, old => ({...old, colorTheme, type }));
 
         await PluginCommands.State.Update(this.plugin, { state, tree: b });
     }
@@ -324,6 +347,7 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
     private viewer: WatlasViewer | null;
     private loadedFragments: string[];
     private onFragmentAdded: OnFragmentStateChanged | null = null;
+    private onFragmentColorsChanged: OnFragmentStateChanged | null = null;
     private onFragmentRemoved: OnFragmentStateChanged | null = null;
 
 
@@ -402,6 +426,49 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
 
     private isLoaded(ntc: NtC, seq: Sequence) {
         return this.loadedFragments.includes(mkBaseRef(ntc, seq));
+    }
+
+    private resetColors() {
+        this.assignedHues.clear();
+
+        const newFrags = new Map(this.state.fragments);
+        let hue = 0;
+
+        for (const ref of Array.from(newFrags.keys())) {
+            const frag = newFrags.get(ref)!;
+            frag.colors = new Map<Resources.AllKinds, Color>([
+                [ 'reference', Coloring.baseColor(hue) ],
+                [ 'base', Coloring.baseColor(hue) ],
+                [ 'step', Coloring.stepColor(hue) ],
+                [ 'phos', Coloring.phosColor(hue) ],
+            ]);
+
+            for (const struRef of Array.from(frag.structures.keys())) {
+                const stru = frag.structures.get(struRef)!;
+                if (stru.shown) {
+                    const theme = struRef === 'reference' ? 'element-symbol' : 'uniform';
+                    this.viewer!.setStructureAppearance(frag.colors.get(struRef)!, theme, baseRefToResRef(ref, struRef, 'structure'));
+                }
+            }
+
+            for (const dmRef of Array.from(frag.densityMaps.keys())) {
+                const dm = frag.densityMaps.get(dmRef)!;
+                if (dm.shown)
+                    this.viewer!.setDensityMapAppearance(dm.iso, dm.style, frag.colors.get(dmRef)!, baseRefToResRef(ref, dmRef, 'density-map'));
+            }
+
+            this.assignedHues.set(ref, hue);
+            hue = Coloring.nextHue(hue);
+
+            if (this.onFragmentColorsChanged)
+                this.onFragmentColorsChanged(frag.ntc, frag.seq);
+        }
+
+        this.setState({
+            ...this.state,
+            hue,
+            fragments: newFrags,
+        });
     }
 
     private async showFragmentInitial(frag: NtCDescription.Description) {
@@ -612,6 +679,10 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
         this.onFragmentAdded = callback;
     }
 
+    setOnFragmentColorsChangedCallback(callback: OnFragmentStateChanged) {
+        this.onFragmentColorsChanged = callback;
+    }
+
     setOnFragmentRemovedCallback(callback: OnFragmentStateChanged) {
         this.onFragmentRemoved = callback;
     }
@@ -636,17 +707,19 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
                         showStepWaters={this.state.showStepWaters}
                         onDensityMapIsoChanged={(iso, kind, base) => {
                             const ref = baseRefToResRef(base, kind, 'density-map');
+                            const { colors } = this.fragmentColorsInternal(base);
                             const dm = this.densityMapData(base, kind);
 
-                            this.viewer!.setDensityMapAppearance(iso, dm.style, ref);
+                            this.viewer!.setDensityMapAppearance(iso, dm.style, colors.get(kind)!, ref);
 
                             this.updateFragmentDensityMap({ ...dm, iso }, base, kind);
                         }}
                         onDensityMapStyleChanged={(style, kind, base) => {
                             const ref = baseRefToResRef(base, kind, 'density-map');
+                            const { colors } = this.fragmentColorsInternal(base);
                             const dm = this.densityMapData(base, kind);
 
-                            this.viewer!.setDensityMapAppearance(dm.iso, style, ref);
+                            this.viewer!.setDensityMapAppearance(dm.iso, style, colors.get(kind)!, ref);
 
                             this.updateFragmentDensityMap({ ...dm, style }, base, kind);
                         }}
@@ -707,6 +780,7 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
 
                             this.setState({ ...this.state, showStepWaters: show });
                         }}
+                        onResetColors={() => this.resetColors()}
                     />
                 </div>
             </div>
