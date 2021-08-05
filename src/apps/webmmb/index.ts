@@ -1,6 +1,5 @@
 import './index.html';
 import { WebMmbViewerPluginSpec } from './spec';
-import { Volume } from '../../mol-model/volume';
 import { createPlugin } from '../../mol-plugin-ui';
 import { Asset } from '../../mol-util/assets';
 import { Color } from '../../mol-util/color';
@@ -93,11 +92,12 @@ class WebMmbViewer {
             return;
 
         this._locked = true;
+
         try {
             await this.clearDensityMap();
 
             let b = this.plugin.state.data.build().toRoot();
-            b = b.apply(Download, { url: Asset.Url(url) }, { ref: 'dm_data' })
+            b = b.apply(Download, { url: Asset.Url(url), isBinary: true }, { ref: 'dm_data' })
                  .apply(StateTransforms.Data.ParseCcp4)
                  .apply(StateTransforms.Volume.VolumeFromCcp4, {}, { ref: 'dm_volume' })
                  .apply(
@@ -106,8 +106,7 @@ class WebMmbViewer {
                          type: {
                              name: 'isosurface',
                              params: {
-                                 isoValue: Volume.IsoValue.absolute(0.5),
-                                 alpha: 0.5,
+                                 alpha: 0.25,
                                  visuals: 'solid'
                              }
                          },
@@ -120,7 +119,6 @@ class WebMmbViewer {
                  );
 
             await PluginCommands.State.Update(this.plugin, { state: this.plugin.state.data, tree: b });
-            console.log('Your density map should be visible right about now!');
         } catch (e) {
             console.warn(e);
         }
