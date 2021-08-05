@@ -1,7 +1,9 @@
 import './index.html';
 import { WebMmbViewerPluginSpec } from './spec';
+import { Volume } from '../../mol-model/volume';
 import { createPlugin } from '../../mol-plugin-ui';
 import { Asset } from '../../mol-util/assets';
+import { Color } from '../../mol-util/color';
 import { PluginCommands } from '../../mol-plugin/commands';
 import { PluginContext } from '../../mol-plugin/context';
 import { UpdateTrajectory } from '../../mol-plugin-state/actions/structure';
@@ -10,7 +12,8 @@ import { StateTransforms } from '../../mol-plugin-state/transforms';
 import { Download } from '../../mol-plugin-state/transforms/data';
 import { createStructureRepresentationParams } from '../../mol-plugin-state/helpers/structure-representation-params';
 
-export type FileFormat = 'mmcif' | 'pdb';
+export type DensityMapFormat = 'ccp4';
+export type StructureFileFormat = 'mmcif' | 'pdb';
 export type Representation = 'cartoon' | 'ball-and-stick';
 
 class WebMmbViewer {
@@ -20,18 +23,18 @@ class WebMmbViewer {
     private represenation: Representation = 'ball-and-stick';
     private _locked = false;
 
-    private async clear() {
-        /* Get the current dataState of the plugin */
+    private async clearDensityMap() {
         const state = this.plugin.state.data;
+        if (!state.cells.has('dm_data'))
+            return;
+        await PluginCommands.State.RemoveObject(this.plugin, { state, ref: 'dm_data' });
+    }
 
-        /* Remove the current object from the state */
-        await PluginCommands.State.RemoveObject(this.plugin, { state, ref: state.tree.root.ref });
-
-        /* Make a new empty tree */
-        const tree = state.build();
-
-        /* Set the new empty tree */
-        await PluginCommands.State.Update(this.plugin, { state: this.plugin.state.data, tree });
+    private async clearStructure() {
+        const state = this.plugin.state.data;
+        if (!state.cells.has('structure_data'))
+            return;
+        await PluginCommands.State.RemoveObject(this.plugin, { state, ref: 'structure_data' });
     }
 
     private getNumberOfModels() {
@@ -63,16 +66,9 @@ class WebMmbViewer {
         }
     }
 
-    private async removeIfPresent(refs: string[]) {
-        const state = this.plugin.state.data;
-        let b = state.build();
-        for (let ref of refs) {
-            if (state.transforms.has(ref)) {
-                b.delete(ref);
-            }
-        }
-
-        await PluginCommands.State.Update(this.plugin, { state, tree: b });
+    async clear() {
+        await this.clearDensityMap();
+        await this.clearStructure();
     }
 
     init(target: HTMLElement) {
@@ -92,22 +88,61 @@ class WebMmbViewer {
             });
     }
 
-    async load(url: string, format: FileFormat) {
+    async loadDensityMap(url: string, format: DensityMapFormat) {
         if (this._locked === true)
             return;
 
         this._locked = true;
         try {
-            await this.clear();
+            await this.clearDensityMap();
 
             let b = this.plugin.state.data.build().toRoot();
-            b = b.apply(Download, { url: Asset.Url(url) }, { ref: 'data' });
+            b = b.apply(Download, { url: Asset.Url(url) }, { ref: 'dm_data' })
+                 .apply(StateTransforms.Data.ParseCcp4)
+                 .apply(StateTransforms.Volume.VolumeFromCcp4, {}, { ref: 'dm_volume' })
+                 .apply(
+                     StateTransforms.Representation.VolumeRepresentation3D,
+                     {
+                         type: {
+                             name: 'isosurface',
+                             params: {
+                                 isoValue: Volume.IsoValue.absolute(0.5),
+                                 alpha: 0.5,
+                                 visuals: 'solid'
+                             }
+                         },
+                         colorTheme: {
+                             name: 'uniform',
+                             params: { color: Color(0xAAAAAA) },
+                         }
+                     },
+                     { ref: 'dm_visual' }
+                 );
+
+            await PluginCommands.State.Update(this.plugin, { state: this.plugin.state.data, tree: b });
+            console.log('Your density map should be visible right about now!');
+        } catch (e) {
+            console.warn(e);
+        }
+        this._locked = false;
+    }
+
+    async loadStructure(url: string, format: StructureFileFormat) {
+        if (this._locked === true)
+            return;
+
+        this._locked = true;
+        try {
+            await this.clearStructure();
+
+            let b = this.plugin.state.data.build().toRoot();
+            b = b.apply(Download, { url: Asset.Url(url) }, { ref: 'structure_data' });
             b = format === 'pdb' ?
                 b.apply(StateTransforms.Model.TrajectoryFromPDB) :
                 b.apply(StateTransforms.Data.ParseCif).apply(StateTransforms.Model.TrajectoryFromMmCif);
-            b = b.apply(StateTransforms.Model.ModelFromTrajectory, { modelIndex: 0 }, { ref: 'trajectory' });
-            b = b.apply(StateTransforms.Model.StructureFromModel, { type: { name: 'assembly', params: { id: 'deposited' } } }, { ref: 'structure' });
-            b = b.apply(StateTransforms.Representation.StructureRepresentation3D, this.getVisualParams(), { ref: 'visual' });
+            b = b.apply(StateTransforms.Model.ModelFromTrajectory, { modelIndex: 0 }, { ref: 'structure_trajectory' });
+            b = b.apply(StateTransforms.Model.StructureFromModel, { type: { name: 'assembly', params: { id: 'deposited' } } }, { ref: 'structure_structure' });
+            b = b.apply(StateTransforms.Representation.StructureRepresentation3D, this.getVisualParams(), { ref: 'structure_visual' });
 
             await PluginCommands.State.Update(this.plugin, { state: this.plugin.state.data, tree: b });
 
@@ -117,24 +152,30 @@ class WebMmbViewer {
                 action: UpdateTrajectory.create({ action: 'advance', by: numModels - 1 })
             });
         } catch (e) {
+            console.warn(e);
         }
         this._locked = false;
     }
 
     async setRepresentation(repr: Representation) {
+        let state = this.plugin.state.data;
+        const cell = state.cells.get('structure_visual');
+        if (!cell)
+            return;
+
         if (this._locked === true)
             return;
 
         this._locked = true;
         try {
             this.represenation = repr;
-            this.removeIfPresent(['visual']);
 
-            let b = this.plugin.state.data.build().to('structure');
-            b = b.apply(StateTransforms.Representation.StructureRepresentation3D, this.getVisualParams(), { ref: 'visual' });
+            const b = state.build().to(cell)
+                .update(StateTransforms.Representation.StructureRepresentation3D, old => ({...old, repr }));
 
-            await PluginCommands.State.Update(this.plugin, { state: this.plugin.state.data, tree: b });
+            await PluginCommands.State.Update(this.plugin, { state, tree: b });
         } catch (e) {
+            console.warn(e);
         }
         this._locked = false;
     }
