@@ -17,13 +17,13 @@ export type Representation = 'cartoon' | 'ball-and-stick';
 
 class WebMmbViewer {
     private WebMmbPluginSpecImpl = WebMmbViewerPluginSpec;
-    private plugin: PluginContext;
+    private plugin: PluginContext|null;
     private isInited = false;
     private represenation: Representation = 'ball-and-stick';
     private _locked = false;
 
     private getNumberOfModels() {
-        const state = this.plugin.state.data;
+        const state = this.plugin!.state.data;
         const models = state.selectQ(q => q.ofTransformer(StateTransforms.Model.ModelFromTrajectory));
 
         for (const m of models) {
@@ -43,11 +43,11 @@ class WebMmbViewer {
     private getVisualParams() {
         switch (this.represenation) {
             case 'cartoon':
-                let params = createStructureRepresentationParams(this.plugin, void 0, { type: 'cartoon' });
+                let params = createStructureRepresentationParams(this.plugin!, void 0, { type: 'cartoon' });
                 params.type.params.visuals = ['polymer-trace', 'nucleotide-ring'];
                 return params;
             case 'ball-and-stick':
-                return createStructureRepresentationParams(this.plugin, void 0, { type: 'ball-and-stick' });
+                return createStructureRepresentationParams(this.plugin!, void 0, { type: 'ball-and-stick' });
         }
     }
 
@@ -57,17 +57,17 @@ class WebMmbViewer {
     }
 
     async clearDensityMap() {
-        const state = this.plugin.state.data;
+        const state = this.plugin!.state.data;
         if (!state.cells.has('dm_data'))
             return;
-        await PluginCommands.State.RemoveObject(this.plugin, { state, ref: 'dm_data' });
+        await PluginCommands.State.RemoveObject(this.plugin!, { state, ref: 'dm_data' });
     }
 
     async clearStructure() {
-        const state = this.plugin.state.data;
+        const state = this.plugin!.state.data;
         if (!state.cells.has('structure_data'))
             return;
-        await PluginCommands.State.RemoveObject(this.plugin, { state, ref: 'structure_data' });
+        await PluginCommands.State.RemoveObject(this.plugin!, { state, ref: 'structure_data' });
     }
 
     init(target: HTMLElement) {
@@ -105,7 +105,7 @@ class WebMmbViewer {
 
             await clr;
 
-            let b = this.plugin.state.data.build().toRoot();
+            let b = this.plugin!.state.data.build().toRoot();
             b = b.apply(RawData, { data }, { ref: 'dm_data' })
                  .apply(StateTransforms.Data.ParseCcp4)
                  .apply(StateTransforms.Volume.VolumeFromCcp4, {}, { ref: 'dm_volume' })
@@ -127,7 +127,7 @@ class WebMmbViewer {
                      { ref: 'dm_visual' }
                  );
 
-            await PluginCommands.State.Update(this.plugin, { state: this.plugin.state.data, tree: b });
+            await PluginCommands.State.Update(this.plugin!, { state: this.plugin!.state.data, tree: b });
         } catch (e) {
             console.warn(e);
             throw e;
@@ -140,7 +140,7 @@ class WebMmbViewer {
         if (this._locked)
             return;
 
-        const state = this.plugin.state.data;
+        const state = this.plugin!.state.data;
         if (state.cells.has('dm_visual'))
             return;
         else
@@ -155,7 +155,7 @@ class WebMmbViewer {
         try {
             await this.clearStructure();
 
-            let b = this.plugin.state.data.build().toRoot();
+            let b = this.plugin!.state.data.build().toRoot();
             b = b.apply(Download, { url: Asset.Url(url) }, { ref: 'structure_data' });
             b = format === 'pdb' ?
                 b.apply(StateTransforms.Model.TrajectoryFromPDB) :
@@ -164,11 +164,11 @@ class WebMmbViewer {
             b = b.apply(StateTransforms.Model.StructureFromModel, { type: { name: 'assembly', params: { id: 'deposited' } } }, { ref: 'structure_structure' });
             b = b.apply(StateTransforms.Representation.StructureRepresentation3D, this.getVisualParams(), { ref: 'structure_visual' });
 
-            await PluginCommands.State.Update(this.plugin, { state: this.plugin.state.data, tree: b });
+            await PluginCommands.State.Update(this.plugin!, { state: this.plugin!.state.data, tree: b });
 
             const numModels = this.getNumberOfModels();
-            await PluginCommands.State.ApplyAction(this.plugin, {
-                state: this.plugin.state.data,
+            await PluginCommands.State.ApplyAction(this.plugin!, {
+                state: this.plugin!.state.data,
                 action: UpdateTrajectory.create({ action: 'advance', by: numModels - 1 })
             });
         } catch (e) {
@@ -177,8 +177,17 @@ class WebMmbViewer {
         this._locked = false;
     }
 
+    nuke() {
+        if (!this.isInited)
+            return;
+
+        this.plugin = null;
+        this.isInited = false;
+        (window as any).WebMmbViewer = new WebMmbViewer();
+    }
+
     async setRepresentation(repr: Representation) {
-        let state = this.plugin.state.data;
+        let state = this.plugin!.state.data;
         const cell = state.cells.get('structure_visual');
         if (!cell)
             return;
@@ -193,7 +202,7 @@ class WebMmbViewer {
             const b = state.build().to(cell)
                 .update(StateTransforms.Representation.StructureRepresentation3D, old => ({...old, repr }));
 
-            await PluginCommands.State.Update(this.plugin, { state, tree: b });
+            await PluginCommands.State.Update(this.plugin!, { state, tree: b });
         } catch (e) {
             console.warn(e);
         }
