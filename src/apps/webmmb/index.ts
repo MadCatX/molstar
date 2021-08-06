@@ -136,8 +136,19 @@ class WebMmbViewer {
         }
     }
 
+    async loadDensityMapIfNeeded(url: string, format: DensityMapFormat) {
+        if (this._locked)
+            return;
+
+        const state = this.plugin.state.data;
+        if (state.cells.has('dm_visual'))
+            return;
+        else
+            this.loadDensityMap(url, format);
+    }
+
     async loadStructure(url: string, format: StructureFileFormat) {
-        if (this._locked === true)
+        if (this._locked)
             return;
 
         this._locked = true;
