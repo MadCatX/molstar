@@ -22,20 +22,6 @@ class WebMmbViewer {
     private represenation: Representation = 'ball-and-stick';
     private _locked = false;
 
-    private async clearDensityMap() {
-        const state = this.plugin.state.data;
-        if (!state.cells.has('dm_data'))
-            return;
-        await PluginCommands.State.RemoveObject(this.plugin, { state, ref: 'dm_data' });
-    }
-
-    private async clearStructure() {
-        const state = this.plugin.state.data;
-        if (!state.cells.has('structure_data'))
-            return;
-        await PluginCommands.State.RemoveObject(this.plugin, { state, ref: 'structure_data' });
-    }
-
     private getNumberOfModels() {
         const state = this.plugin.state.data;
         const models = state.selectQ(q => q.ofTransformer(StateTransforms.Model.ModelFromTrajectory));
@@ -68,6 +54,20 @@ class WebMmbViewer {
     async clear() {
         await this.clearDensityMap();
         await this.clearStructure();
+    }
+
+    async clearDensityMap() {
+        const state = this.plugin.state.data;
+        if (!state.cells.has('dm_data'))
+            return;
+        await PluginCommands.State.RemoveObject(this.plugin, { state, ref: 'dm_data' });
+    }
+
+    async clearStructure() {
+        const state = this.plugin.state.data;
+        if (!state.cells.has('structure_data'))
+            return;
+        await PluginCommands.State.RemoveObject(this.plugin, { state, ref: 'structure_data' });
     }
 
     init(target: HTMLElement) {
