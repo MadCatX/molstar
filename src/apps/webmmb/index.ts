@@ -8,7 +8,7 @@ import { PluginContext } from '../../mol-plugin/context';
 import { UpdateTrajectory } from '../../mol-plugin-state/actions/structure';
 import { PluginStateObject as PSO } from '../../mol-plugin-state/objects';
 import { StateTransforms } from '../../mol-plugin-state/transforms';
-import { Download } from '../../mol-plugin-state/transforms/data';
+import { Download, RawData } from '../../mol-plugin-state/transforms/data';
 import { createStructureRepresentationParams } from '../../mol-plugin-state/helpers/structure-representation-params';
 
 export type DensityMapFormat = 'ccp4';
@@ -94,10 +94,19 @@ class WebMmbViewer {
         this._locked = true;
 
         try {
-            await this.clearDensityMap();
+            const clr = this.clearDensityMap();
+
+            const resp = await fetch(url);
+            if (!resp.ok)
+                throw new Error(`Cannot download density map: ${resp.status} ${resp.statusText}`);
+
+            const blob = await resp.blob();
+            const data = new Uint8Array(await blob.arrayBuffer());
+
+            await clr;
 
             let b = this.plugin.state.data.build().toRoot();
-            b = b.apply(Download, { url: Asset.Url(url), isBinary: true }, { ref: 'dm_data' })
+            b = b.apply(RawData, { data }, { ref: 'dm_data' })
                  .apply(StateTransforms.Data.ParseCcp4)
                  .apply(StateTransforms.Volume.VolumeFromCcp4, {}, { ref: 'dm_volume' })
                  .apply(
@@ -121,8 +130,10 @@ class WebMmbViewer {
             await PluginCommands.State.Update(this.plugin, { state: this.plugin.state.data, tree: b });
         } catch (e) {
             console.warn(e);
+            throw e;
+        } finally {
+            this._locked = false;
         }
-        this._locked = false;
     }
 
     async loadStructure(url: string, format: StructureFileFormat) {
