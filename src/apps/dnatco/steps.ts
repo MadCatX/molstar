@@ -90,7 +90,7 @@ export namespace Steps {
 
     export function lociToStepInfo(loci: StructureElement.Loci): StepInfo {
         const loc = Util.lociToLocation(loci);
-        const locNext = StepSlider.secondResidueLocation(loci);
+        const locNext = Util.lociToLocation(StepSlider.nextResidue(loci)!);
 
         const asymId = StructureProperties.chain.auth_asym_id(loc);
         const compoundFirst = StructureProperties.atom.auth_comp_id(loc) as Compounds;

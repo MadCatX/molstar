@@ -52,7 +52,7 @@ const DnatcoSelectLociBehaviors = PluginBehavior.create({
 
             const lociFirst: StructureElement.Loci = Loci.normalize(interactionLoci.loci) as StructureElement.Loci;
             const locationFirst = Util.lociToLocation(lociFirst);
-            const lociSecond = StepSlider.forward(lociFirst);
+            const lociSecond = StepSlider.nextResidue(lociFirst);
             const locationSecond = lociSecond ? Util.lociToLocation(lociSecond) : undefined;
 
             if (!locationSecond)

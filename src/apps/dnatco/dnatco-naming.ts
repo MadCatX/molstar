@@ -7,6 +7,7 @@
 
 import { Util } from './util';
 import { StructureElement, StructureProperties } from '../../mol-model/structure';
+import { MmcifFormat } from '../../mol-model-formats/structure/mmcif';
 import { PluginContext } from '../../mol-plugin/context';
 
 export namespace DnatcoNaming {
@@ -21,6 +22,10 @@ export namespace DnatcoNaming {
     }
 
     export function makeResidueId(loc: StructureElement.Location) {
+        const model = loc.unit.model;
+        const idx = model.atomicHierarchy.atomSourceIndex.value(loc.element);
+        const seqId = (model.sourceData as MmcifFormat).data.frame.categories['atom_site'].getField('auth_seq_id')?.str(idx);
+
         const compId = StructureProperties.atom.auth_comp_id(loc);
 
         let labelAlt = StructureProperties.atom.label_alt_id(loc);
@@ -28,8 +33,6 @@ export namespace DnatcoNaming {
 
         let insCode = StructureProperties.residue.pdbx_PDB_ins_code(loc);
         insCode = insCode ? `.${insCode}` : '';
-
-        const seqId = StructureProperties.residue.auth_seq_id(loc);
 
         return `${compId}${labelAlt}_${seqId}${insCode}`;
     }
