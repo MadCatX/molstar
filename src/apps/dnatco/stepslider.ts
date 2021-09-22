@@ -15,17 +15,17 @@ export namespace StepSlider {
          * Here is how this works in Molstar.
          * - A structure is composed of units.
          * - Each unit contains an ordered array of elements.
-         * - Elements are the smallest piece a structure can be divided up to.
+         * - Elements are the smallest pieces a structure can be divided up to.
          * - Array of elements contains items of type "ElementIndex"
          * - The array of elements is implemented as an "OrderedSet"
-         * - "ElementIndex"es are values of that "OrderedSet", the keyes (or indidec, if you want) is of type "UnitIndex"
+         * - "ElementIndex"es are values of that "OrderedSet", the keyes (or indices, if you want) are of type "UnitIndex"
          * - Value of "ElementIndex" is used to query information about a given element.
          * Following the standard structural biology taxonomy, elements can be grouped to residues and chains.
          * Molstar implements this grouping by means of "Segmentation" objects.
-         * A "Segmentation" provides mapping of group index to "ElementIndex". In contains two fields of interest.
-         * - "offset" field maps a group index to "ElementIndex" of the first element that belongs to a given group.
+         * "Segmentation" provides mapping of group index to "ElementIndex". In contains two fields of interest.
+         * - "offset" field maps a group index to "ElementIndex" of the first element that belongs to that group.
          * - "index" field maps "ElementIndex" to a group index.
-         * A concrete example for residues: If you have an ElementIndex and you want to know the corresponding "ResidueIndex",
+         * A concrete example for residues: If you have an "ElementIndex" and you want to know the corresponding "ResidueIndex",
          * use the "index" field from "residueAtomSegments". If you have a "ResidueIndex" rI,
          * use the "offsets" field at offsets[rI] and offsets[rI + 1] to get the range of "ElementIndex"es for the given residue.
          *
