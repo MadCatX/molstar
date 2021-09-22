@@ -58,9 +58,16 @@ let SuperposeRmsdCallLock = false;
 
 class DnatcoWrapper {
     private DnatcoPluginSpecImpl = { ...DnatcoPluginSpec, lociSelectedCallback: (stepId: string) => { this.lociSelectedHandlerInternal(stepId); } };
+
     private currentSelectedStepInfo: StepInfo | null;
-    private shownPrevId: string;
-    private shownNextId: string;
+    private prevId: string;
+    private nextId: string;
+    private prevRef: References|undefined = undefined;
+    private currRef: References|undefined = undefined;
+    private nextRef: References|undefined = undefined;
+    private showNeighbors: boolean = true;
+    private neighborsMode: 'tetra' | 'tri' = 'tetra';
+
     private currentBoundingSphere: Sphere3D | undefined;
     private lociSelectedHandler?: (stepid: string) => void = undefined;
     private currentModelIndex: number;
@@ -165,6 +172,55 @@ class DnatcoWrapper {
         this.baseRadius = sphere !== undefined ? sphere.radius : 1.01;
     }
 
+    private async superposeInternal() {
+        switch (this.neighborsMode) {
+        case 'tetra':
+            this.superposeTetra(this.prevId, this.nextId);
+            break;
+        case 'tri':
+            this.superposeTri(this.prevId, this.nextId);
+        }
+    }
+
+    private async superposeTetra(prevId: string|undefined, nextId: string|undefined) {
+        if (this.currentSelectedStepInfo === null)
+            return;
+
+        const [prevInfo, nextInfo] = this.makePrevNextInfo(prevId === undefined ? '' : prevId, nextId === undefined ? '' : nextId);
+
+        // HAKZ
+        if (prevInfo)
+            prevInfo.modelIndex = this.currentModelIndex;
+        if (nextInfo)
+            nextInfo.modelIndex = this.currentModelIndex;
+
+        Superposition.superposePrevCurrNextConformers(
+            this.plugin,
+            this.showNeighbors ? this.makeSuperpostionStep(prevInfo, this.prevRef) : undefined,
+            this.makeSuperpostionStep(this.currentSelectedStepInfo, this.currRef)!,
+            this.showNeighbors ? this.makeSuperpostionStep(nextInfo, this.nextRef) : undefined
+        );
+    }
+
+    private async superposeTri(prevId: string|undefined, nextId: string|undefined) {
+        if (this.currentSelectedStepInfo === null)
+            return;
+
+        const [prevInfo, nextInfo] = this.makePrevNextInfo(prevId === undefined ? '' : prevId, nextId === undefined ? '' : nextId);
+
+        // HAKZ
+        if (prevInfo)
+            prevInfo.modelIndex = this.currentModelIndex;
+        if (nextInfo)
+            nextInfo.modelIndex = this.currentModelIndex;
+
+        Superposition.superposePrevNextConformers(
+            this.plugin,
+            this.showNeighbors ? this.makeSuperpostionStep(prevInfo, this.prevRef) : undefined,
+            this.showNeighbors ? this.makeSuperpostionStep(nextInfo, this.nextRef) : undefined
+        );
+    }
+
     private async switchModel(newIndex: number) {
         if (newIndex >= this.numberOfModels)
             throw new Error('Invalid model index');
@@ -216,8 +272,11 @@ class DnatcoWrapper {
         this.plugin.managers.interactivity.lociSelects.deselectAll();
         this.currentSelectedStepInfo = null;
         this.currentBoundingSphere = undefined;
-        this.shownPrevId = '';
-        this.shownNextId = '';
+        this.prevId = '';
+        this.nextId = '';
+        this.prevRef = undefined;
+        this.currRef = undefined;
+        this.nextRef = undefined;
 
         const toRemove = [
             ...Superposition.superposedRefs,
@@ -346,7 +405,7 @@ class DnatcoWrapper {
         if (this.currentSelectedStepInfo === null)
             return;
 
-        const [prevInfo, nextInfo] = this.makePrevNextInfo(this.shownPrevId, this.shownNextId);
+        const [prevInfo, nextInfo] = this.makePrevNextInfo(this.prevId, this.nextId);
 
         (await Util.visualiseSelected(
             this.plugin,
@@ -388,10 +447,10 @@ class DnatcoWrapper {
         if (this.currentSelectedStepInfo === null)
             return;
 
-        this.shownPrevId = prevId === undefined ? '' : prevId;
-        this.shownNextId = nextId === undefined ? '' : nextId;
+        this.prevId = prevId === undefined ? '' : prevId;
+        this.nextId = nextId === undefined ? '' : nextId;
 
-        const [prevInfo, nextInfo] = this.makePrevNextInfo(this.shownPrevId, this.shownNextId);
+        const [prevInfo, nextInfo] = this.makePrevNextInfo(this.prevId, this.nextId);
 
         (await Util.visualiseNotSelected(
             this.plugin,
@@ -405,50 +464,12 @@ class DnatcoWrapper {
         )).commit();
     }
 
-    async superposeTetra(prevId: string|undefined, nextId: string|undefined, prevRef: string, currRef: string, nextRef: string) {
-        if (this.currentSelectedStepInfo === null)
-            return;
+    async superpose(prevRef: string, currRef: string, nextRef: string) {
+        this.prevRef = (prevRef === '' || prevRef === 'NANT') ? undefined : prevRef as References;
+        this.currRef = (currRef === '' || currRef === 'NANT') ? undefined : currRef as References;
+        this.nextRef = (nextRef === '' || nextRef === 'NANT') ? undefined : nextRef as References;
 
-        const prev = (prevRef === '' || prevRef === 'NANT') ? undefined : (prevRef as References);
-        const next = (nextRef === '' || nextRef === 'NANT') ? undefined : (nextRef as References);
-        const curr = (currRef === '' || currRef === 'NANT') ? undefined : (currRef as References);
-
-        const [prevInfo, nextInfo] = this.makePrevNextInfo(prevId === undefined ? '' : prevId, nextId === undefined ? '' : nextId);
-
-        // HAKZ
-        if (prevInfo)
-            prevInfo.modelIndex = this.currentModelIndex;
-        if (nextInfo)
-            nextInfo.modelIndex = this.currentModelIndex;
-
-        Superposition.superposePrevCurrNextConformers(
-            this.plugin,
-            this.makeSuperpostionStep(prevInfo, prev),
-            this.makeSuperpostionStep(this.currentSelectedStepInfo, curr)!,
-            this.makeSuperpostionStep(nextInfo, next)
-        );
-    }
-
-    async superposeTri(prevId: string|undefined, nextId: string|undefined, prevRef: string, nextRef: string) {
-        if (this.currentSelectedStepInfo === null)
-            return;
-
-        const prev = (prevRef === '' || prevRef === 'NANT') ? undefined : (prevRef as References);
-        const next = (nextRef === '' || nextRef === 'NANT') ? undefined : (nextRef as References);
-
-        const [prevInfo, nextInfo] = this.makePrevNextInfo(prevId === undefined ? '' : prevId, nextId === undefined ? '' : nextId);
-
-        // HAKZ
-        if (prevInfo)
-            prevInfo.modelIndex = this.currentModelIndex;
-        if (nextInfo)
-            nextInfo.modelIndex = this.currentModelIndex;
-
-        Superposition.superposePrevNextConformers(
-            this.plugin,
-            this.makeSuperpostionStep(prevInfo, prev),
-            this.makeSuperpostionStep(nextInfo, next)
-        );
+        this.superposeInternal()
     }
 
     async superposeRmsd(currRef: string) {
@@ -504,9 +525,11 @@ class DnatcoWrapper {
         switch (mode) {
         case 'step':
             props['granularity'] = 'two-residues';
+            this.neighborsMode = 'tetra';
             break;
         case 'residue':
             props['granularity'] = 'residue';
+            this.neighborsMode = 'tri';
             break;
         }
 
@@ -674,6 +697,14 @@ class DnatcoWrapper {
         } else {
             Util.removeIfPresent(this.plugin, [ ID.mkRef(ID.SCE, ID.Protein), ID.mkRef(ID.Visual, ID.Protein) ]);
         }
+    }
+
+    async toggleNeighbors(show: boolean) {
+        if (show === this.showNeighbors)
+            return;
+
+        this.showNeighbors = show;
+        this.superposeInternal();
     }
 
     async toggleWater(show: boolean) {
