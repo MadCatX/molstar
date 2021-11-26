@@ -12,7 +12,7 @@ import * as ReactDOM from 'react-dom';
 import { Api } from './api';
 import { Measurements } from '../watlas-common/measurements';
 import { Vec3 } from '../../mol-math/linear-algebra/3d/vec3';
-import { Mat3 } from '../../mol-math/linear-algebra/3d/mat3';
+import { Quat } from '../../mol-math/linear-algebra/3d/quat';
 import { Loci } from '../../mol-model/loci';
 import { Structure } from '../../mol-model/structure';
 import { Volume } from '../../mol-model/volume';
@@ -39,10 +39,9 @@ const SPIN_ANIM_PERIOD_MS = 50;
 const SPIN_ANIM_DPS = 20; // Rotation speed in degrees per second
 const SPIN_ANIM_THETA = (SPIN_ANIM_DPS * Math.PI / 180) * (SPIN_ANIM_PERIOD_MS / 1000);
 
-const spinnerRotX = Mat3.zero();
-const spinnerRotY = Mat3.zero();
-const spinnerRotZ = Mat3.zero();
-const spinnerNewPos = Mat3.zero();
+const spinnerAxis = Vec3.zero();
+const spinnerQuat = Quat.zero();
+const spinnerDirection = Vec3.zero();
 
 const WAApi = new Api();
 (window as any).WAApi = WAApi;
@@ -186,11 +185,6 @@ class WatAAViewer {
         this.plugin = createPlugin(target, spec);
 
         this.plugin.managers.interactivity.setProps({ granularity: 'element' });
-
-        // Preinitialize spinner matrices
-        Mat3.setValue(spinnerRotX, 0, 0, 1);
-        Mat3.setValue(spinnerRotY, 1, 1, 1);
-        Mat3.setValue(spinnerRotZ, 2, 2, 1);
     }
 
     private async hide(ref: string) {
@@ -388,47 +382,12 @@ class WatAAViewer {
                 const snapshot = this.plugin.canvas3d?.camera?.getSnapshot();
                 if (!snapshot)
                     return;
-                const [xt, yt, zt] = snapshot.target;
-                const [xc, yc, zc] = snapshot.position;
-                const [upX, upY, upZ] = snapshot.up;
 
-                const x0 = xc - xt;
-                const y0 = yc - yt;
-                const z0 = zc - zt;
-
-                const thetaX = upX * SPIN_ANIM_THETA;
-                const thetaY = upY * SPIN_ANIM_THETA;
-                const thetaZ = upZ * SPIN_ANIM_THETA;
-
-                Mat3.setValue(spinnerRotX, 1, 1, Math.cos(thetaX));
-                Mat3.setValue(spinnerRotX, 2, 1, -Math.sin(thetaX));
-                Mat3.setValue(spinnerRotX, 1, 2, Math.sin(thetaX));
-                Mat3.setValue(spinnerRotX, 2, 2, Math.cos(thetaX));
-
-                Mat3.setValue(spinnerRotY, 0, 0, Math.cos(thetaY));
-                Mat3.setValue(spinnerRotY, 2, 0, Math.sin(thetaY));
-                Mat3.setValue(spinnerRotY, 0, 2, -Math.sin(thetaY));
-                Mat3.setValue(spinnerRotY, 2, 2, Math.cos(thetaY));
-
-                Mat3.setValue(spinnerRotZ, 0, 0, Math.cos(thetaZ));
-                Mat3.setValue(spinnerRotZ, 1, 0, -Math.sin(thetaZ));
-                Mat3.setValue(spinnerRotZ, 0, 1, Math.sin(thetaZ));
-                Mat3.setValue(spinnerRotZ, 1, 1, Math.cos(thetaZ));
-
-                Mat3.setValue(spinnerNewPos, 0, 0, x0);
-                Mat3.setValue(spinnerNewPos, 0, 1, y0);
-                Mat3.setValue(spinnerNewPos, 0, 2, z0);
-
-                Mat3.mul(spinnerNewPos, spinnerNewPos, spinnerRotX);
-                Mat3.mul(spinnerNewPos, spinnerNewPos, spinnerRotY);
-                Mat3.mul(spinnerNewPos, spinnerNewPos, spinnerRotZ);
-
-                Vec3.set(
-                    snapshot.position,
-                    spinnerNewPos.at(0)! + xt,
-                    spinnerNewPos.at(3)! + yt,
-                    spinnerNewPos.at(6)! + zt
-                );
+                Vec3.sub(spinnerDirection, snapshot.position, snapshot.target);
+                Vec3.normalize(spinnerAxis, snapshot.up);
+                Quat.setAxisAngle(spinnerQuat, spinnerAxis, SPIN_ANIM_THETA);
+                Vec3.transformQuat(spinnerDirection, spinnerDirection, spinnerQuat);
+                Vec3.add(snapshot.position, spinnerDirection, snapshot.target);
 
                 PluginCommands.Camera.SetSnapshot(this.plugin, { snapshot, durationMs: 0 });
             },
