@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-eval' 'unsafe-inline'; script-src 'self' 'unsafe-eval' 'unsafe-inline'">
+        <link href="watlas.css" rel="stylesheet" type="text/css">
+        <link href="watlas-viewer-common.css" rel="stylesheet" type="text/css">
+        <link href="watna-viewer.css" rel="stylesheet" type="text/css">
+        <link href="molstar.css" rel="stylesheet" type="text/css">
+        <title>Watlas app</title>
+    </head>
+
+    <body>
+        <div id="data-loading">Please wait until the viewer loads all data...</div>
+        <div id="container">
+            <div class="fragments-container" id="fragments-container">
+            </div>
+            <div id="wnav-test-app"></div>
+        </div>
+
+        <script type="text/javascript" src="molstar.js"></script>
+        <script type="text/javascript">
+            const NtCs = [
+                'AA00', 'AA02', 'AA03', 'AA04', 'AA08', 'AA09', 'AA01', 'AA05', 'AA06', 'AA10', 'AA11', 'AA07', 'AA12', 'AA13',
+                'AB01', 'AB02', 'AB03', 'AB04', 'AB05', 'BA01', 'BA05', 'BA09', 'BA08', 'BA10', 'BA13', 'BA16', 'BA17',
+                'BB00', 'BB01', 'BB17', 'BB02', 'BB03', 'BB11', 'BB16', 'BB04', 'BB05', 'BB07', 'BB08', 'BB10', 'BB12', 'BB13', 'BB14', 'BB15', 'BB20',
+                'IC01', 'IC02', 'IC03', 'IC04', 'IC05', 'IC06', 'IC07',
+                'OP01', 'OP02', 'OP03', 'OP04', 'OP05', 'OP06', 'OP07', 'OP08', 'OP09', 'OP10', 'OP11', 'OP12', 'OP13', 'OP14', 'OP15', 'OP16', 'OP17', 'OP18', 'OP19', 'OP20', 'OP21' , 'OP22' , 'OP23' , 'OP24' , 'OP25' , 'OP26' , 'OP27' , 'OP28' , 'OP29' , 'OP30' , 'OP31' , 'OPS1' , 'OP1S' ,
+                'AAS1' , 'AB1S' , 'AB2S' ,
+                'BB1S' , 'BB2S' , 'BBS1' ,
+                'ZZ01' , 'ZZ02' , 'ZZ1S' , 'ZZ2S' , 'ZZS1' , 'ZZS2'
+            ];
+            const Bases = [ 'A', 'C', 'G', 'T' ];
+            let allLoaded = false;
+
+            /* https://alienryderflex.com/hsp.html */
+            function luminance(r, g, b) {
+                r /= 255.0;
+                g /= 255.0;
+                b /= 255.0;
+                return Math.sqrt(0.299 * r * r + 0.587 * g * g + 0.114 * b * b);
+            }
+
+            function fgColor(r, g, b) {
+                return luminance(r, g, b) < 0.57 ? 'white' : ' black';
+            }
+
+            function fragmentButtonId(ntc, seq) {
+                return `fragment-button-${ntc}-${seq}`;
+            }
+
+            function setFragmentButtonColor(ntc, seq) {
+                const elem = document.getElementById(fragmentButtonId(ntc, seq));
+                const colors = WVApi.fragmentColors('wva-test-app', ntc, seq, 'rgb');
+                if (colors) {
+                    const [ r, g, b ] = colors.base;
+                    elem.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+                    elem.style.color = fgColor(r, g, b);
+                }
+            }
+
+            async function toggle(elem, ntc, seq) {
+                if (!allLoaded)
+                    return;
+
+                if (WVApi.has('wva-test-app', ntc, seq)) {
+                    await WVApi.remove('wva-test-app', ntc, seq);
+                } else {
+                    try {
+                        await WVApi.add('wva-test-app', ntc, seq, [ 'reference' ], [ 'base' ]);
+                        setFragmentButtonColor(ntc, seq);
+                    } catch (e) {
+                        elem.onClick="";
+                        elem.classList.add('fragment-bad');
+                    }
+                }
+            }
+
+            async function loadAll() {
+                const toLoad = [];
+                for (const ntc of [ 'AA00', 'AA01' ]) {
+                    for (const ba of Bases) {
+                        for (const bb of Bases) {
+                            toLoad.push({ ntc, seq: ba + '_' + bb });
+                        }
+                    }
+                }
+
+                try {
+                    await WVApi.load('wva-test-app', toLoad);
+
+                    allLoaded = true;
+                    document.getElementById('data-loading').innerHTML = 'Data loaded';
+                } catch (errors) {
+                    document.getElementById('data-loading').innerHTML = `Failed to load data:<br />${errors.join('<br />')}`;
+                }
+            }
+
+            function renderControls() {
+                const elem = document.getElementById('fragments-container');
+
+                let ctrlsCode = '';
+                for (const ntc of NtCs) {
+                    for (const ba of Bases) {
+                        for (const bb of Bases) {
+                            const seq = `${ba}_${bb}`;
+                            ctrlsCode += `<div class="fragment" id="${fragmentButtonId(ntc, seq)}" onClick="toggle(this, '${ntc}', '${seq}')">${ntc} ${seq}</div>`;
+                        }
+                    }
+                }
+
+                elem.innerHTML = ctrlsCode;
+            }
+
+            WVApi.init('wva-test-app');
+
+            WVApi.setOnFragmentRemovedCallback('wva-test-app', (ntc, seq) => {
+                const elem = document.getElementById(fragmentButtonId(ntc, seq));
+                if (elem) {
+                    elem.style.backgroundColor = 'white';
+                    elem.style.color = 'black';
+                }
+            });
+            WVApi.setOnFragmentColorsChangedCallback('wva-test-app', (ntc, seq) => {
+                setFragmentButtonColor(ntc, seq);
+            });
+
+            loadAll();
+            renderControls();
+        </script>
+    </body>
+</html>

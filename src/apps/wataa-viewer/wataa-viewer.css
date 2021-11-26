@@ -1,0 +1,12 @@
+/* vim: set sw=4 ts=4 sts=4 expandtab : */
+
+.waav-app-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.waav-ms-viewer {
+    flex: 1;
+    position: relative;
+}

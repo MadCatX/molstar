@@ -1,0 +1,633 @@
+/**
+ * Copyright (c) 2018-2021 mol* contributors, licensed under MIT, See LICENSE file for more info.
+ *
+ * @author Lada Biedermannová <Lada.Biedermannova@ibt.cas.cz>
+ * @author Jiří Černý <jiri.cerny@ibt.cas.cz>
+ * @author Michal Malý <michal.maly@ibt.cas.cz>
+ * @author Bohdan Schneider <Bohdan.Schneider@ibt.cas.cz>
+ */
+
+import * as React from 'react';
+import * as ReactDOM from 'react-dom';
+import { Api } from './api';
+import { Measurements } from '../watlas-common/measurements';
+import { Vec3 } from '../../mol-math/linear-algebra/3d/vec3';
+import { Mat3 } from '../../mol-math/linear-algebra/3d/mat3';
+import { Loci } from '../../mol-model/loci';
+import { Structure } from '../../mol-model/structure';
+import { Volume } from '../../mol-model/volume';
+import { PluginBehavior, PluginBehaviors } from '../../mol-plugin/behavior';
+import { PluginCommands } from '../../mol-plugin/commands';
+import { PluginContext } from '../../mol-plugin/context';
+import { PluginSpec } from '../../mol-plugin/spec';
+import { PluginStateObject as PSO } from '../../mol-plugin-state/objects';
+import { StateTransforms } from '../../mol-plugin-state/transforms';
+import { createPlugin } from '../../mol-plugin-ui';
+import { PluginUIContext } from '../../mol-plugin-ui/context';
+import { DefaultPluginUISpec, PluginUISpec } from '../../mol-plugin-ui/spec';
+import { Representation } from '../../mol-repr/representation';
+import { StateSelection } from '../../mol-state';
+import { StateTreeSpine } from '../../mol-state/tree/spine';
+import { arrayMax } from '../../mol-util/array';
+import { Color } from '../../mol-util/color';
+import { Binding } from '../../mol-util/binding';
+import { ButtonsType, ModifiersKeys } from '../../mol-util/input/input-observer';
+import { MarkerAction } from '../../mol-util/marker-action';
+import { ParamDefinition as PD } from '../../mol-util/param-definition';
+
+const SPIN_ANIM_PERIOD_MS = 50;
+const SPIN_ANIM_DPS = 20; // Rotation speed in degrees per second
+const SPIN_ANIM_THETA = (SPIN_ANIM_DPS * Math.PI / 180) * (SPIN_ANIM_PERIOD_MS / 1000);
+
+const spinnerRotX = Mat3.zero();
+const spinnerRotY = Mat3.zero();
+const spinnerRotZ = Mat3.zero();
+const spinnerNewPos = Mat3.zero();
+
+const WAApi = new Api();
+(window as any).WAApi = WAApi;
+
+function viewerId(baseId: string) {
+    return baseId + '-viewer';
+}
+
+function occupancyToIso(occupancy: number, stats: { min: number, max: number, sigma: number }) {
+    return stats.min + occupancy * stats.sigma * 50;
+}
+
+const WatAALociSelectionBindings = {
+    clickToggle: Binding([Binding.Trigger(ButtonsType.Flag.Primary)], 'Set selection to clicked element using ${triggers}.'),
+    clickDeselectAllOnEmpty: Binding([Binding.Trigger(ButtonsType.Flag.Primary)], 'Deselect all when clicking on nothing using ${triggers}.'),
+};
+const WatAALociSelectionParams = {
+    bindings: PD.Value(WatAALociSelectionBindings, { isHidden: true }),
+};
+type WatAALociSelectionProps = PD.Values<typeof WatAALociSelectionParams>;
+
+const WatAALociSelectionProvider = PluginBehavior.create({
+    name: 'wataa-loci-selection-provider',
+    category: 'interaction',
+    display: { name: 'Interactive loci selection' },
+    params: () => WatAALociSelectionParams,
+    ctor: class extends PluginBehavior.Handler<WatAALociSelectionProps> {
+        private spine: StateTreeSpine.Impl
+        private lociMarkProvider = (reprLoci: Representation.Loci, action: MarkerAction, noRender?: boolean) => {
+            if (!this.ctx.canvas3d) return;
+            this.ctx.canvas3d.mark({ loci: reprLoci.loci }, action, noRender);
+        }
+        private applySelectMark(ref: string, clear?: boolean) {
+            const cell = this.ctx.state.data.cells.get(ref);
+            if (cell && PSO.isRepresentation3D(cell.obj)) {
+                this.spine.current = cell;
+                const so = this.spine.getRootOfType(PSO.Molecule.Structure);
+                if (so) {
+                    if (clear) {
+                        this.lociMarkProvider({ loci: Structure.Loci(so.data) }, MarkerAction.Deselect);
+                    }
+                    const loci = this.ctx.managers.structure.selection.getLoci(so.data);
+                    this.lociMarkProvider({ loci }, MarkerAction.Select);
+                }
+            }
+        }
+        register() {
+            const lociIsEmpty = (current: Representation.Loci) => Loci.isEmpty(current.loci);
+            const lociIsNotEmpty = (current: Representation.Loci) => !Loci.isEmpty(current.loci);
+
+            const actions: [keyof typeof WatAALociSelectionBindings, (current: Representation.Loci) => void, ((current: Representation.Loci) => boolean) | undefined][] = [
+                ['clickDeselectAllOnEmpty', () => this.ctx.managers.interactivity.lociSelects.deselectAll(), lociIsEmpty],
+                ['clickToggle', current => {
+                    if (current.loci.kind === 'element-loci')
+                        this.ctx.managers.interactivity.lociSelects.toggle(current, true);
+                },
+                lociIsNotEmpty],
+            ];
+
+            // sort the action so that the ones with more modifiers trigger sooner.
+            actions.sort((a, b) => {
+                const x = this.params.bindings[a[0]], y = this.params.bindings[b[0]];
+                const k = x.triggers.length === 0 ? 0 : arrayMax(x.triggers.map(t => ModifiersKeys.size(t.modifiers)));
+                const l = y.triggers.length === 0 ? 0 : arrayMax(y.triggers.map(t => ModifiersKeys.size(t.modifiers)));
+                return l - k;
+            });
+
+            this.subscribeObservable(this.ctx.behaviors.interaction.click, ({ current, button, modifiers }) => {
+                if (!this.ctx.canvas3d) return;
+
+                // only trigger the 1st action that matches
+                for (const [binding, action, condition] of actions) {
+                    if (Binding.match(this.params.bindings[binding], button, modifiers) && (!condition || condition(current))) {
+                        action(current);
+                        break;
+                    }
+                }
+            });
+
+            this.ctx.managers.interactivity.lociSelects.addProvider(this.lociMarkProvider);
+
+            this.subscribeObservable(this.ctx.state.events.object.created, ({ ref }) => this.applySelectMark(ref));
+
+            // re-apply select-mark to all representation of an updated structure
+            this.subscribeObservable(this.ctx.state.events.object.updated, ({ ref, obj, oldObj, oldData, action }) => {
+                const cell = this.ctx.state.data.cells.get(ref);
+                if (cell && PSO.Molecule.Structure.is(cell.obj)) {
+                    const structure: Structure = obj.data;
+                    const oldStructure: Structure | undefined = action === 'recreate' ? oldObj?.data :
+                        action === 'in-place' ? oldData : undefined;
+                    if (oldStructure &&
+                        Structure.areEquivalent(structure, oldStructure) &&
+                        Structure.areHierarchiesEqual(structure, oldStructure)) return;
+
+                    const reprs = this.ctx.state.data.select(StateSelection.Generators.ofType(PSO.Molecule.Structure.Representation3D, ref));
+                    for (const repr of reprs) this.applySelectMark(repr.transform.ref, true);
+                }
+            });
+
+        }
+        unregister() {
+        }
+        constructor(ctx: PluginContext, params: WatAALociSelectionProps) {
+            super(ctx, params);
+            this.spine = new StateTreeSpine.Impl(ctx.state.data.cells);
+        }
+    },
+});
+
+class WatAAViewer {
+    plugin: PluginUIContext;
+    private spinner: ReturnType<typeof setInterval> | null;
+
+    constructor(target: HTMLElement) {
+        const defaultSpec = DefaultPluginUISpec();
+        const spec: PluginUISpec = {
+            ...defaultSpec,
+            behaviors: [
+                PluginSpec.Behavior(PluginBehaviors.Representation.HighlightLoci),
+                PluginSpec.Behavior(WatAALociSelectionProvider),
+            ],
+            components: {
+                ...defaultSpec.components,
+                controls: {
+                    ...defaultSpec.components?.controls,
+                    top: 'none',
+                    bottom: 'none',
+                    left: 'none',
+                    right: 'none'
+                },
+            },
+            layout: {
+                initial: {
+                    isExpanded: false,
+                    showControls: false,
+                },
+            },
+        };
+
+        this.spinner = null;
+        this.plugin = createPlugin(target, spec);
+
+        this.plugin.managers.interactivity.setProps({ granularity: 'element' });
+
+        // Preinitialize spinner matrices
+        Mat3.setValue(spinnerRotX, 0, 0, 1);
+        Mat3.setValue(spinnerRotY, 1, 1, 1);
+        Mat3.setValue(spinnerRotZ, 2, 2, 1);
+    }
+
+    private async hide(ref: string) {
+        const state = this.plugin.state.data;
+
+        const cell = state.cells.has(ref);
+        if (cell)
+            await this.plugin.build().delete(ref).commit();
+    }
+
+    private mkDataRef(ref: string, kind: 'structure' | 'density-map') {
+        return `${ref}_${kind}_data`;
+    }
+
+    private mkDensityMapRef(ref: string) {
+        return ref + '_density-map';
+    }
+
+    private mkQmWaterIdf(idx: number, ref: string) {
+        return `${ref}_qmw${idx}`;
+    }
+
+    private mkStructRef(ref: string) {
+        return ref + '_structure';
+    }
+
+    private mkVisRef(ref: string, kind: 'structure' | 'density-map') {
+        return `${ref}_${kind}_visual`;
+    }
+
+    async hideDensityMap(ref: string) {
+        await this.hide(this.mkVisRef(ref, 'density-map'));
+    }
+
+    async hideQmWaterPosition(idx: number, ref: string) {
+        await this.hide(this.mkVisRef(this.mkQmWaterIdf(idx, ref), 'structure'));
+    }
+
+    async hideStructure(ref: string) {
+        await this.hide(this.mkVisRef(ref, 'structure'));
+    }
+
+    isDensityMapShown(ref: string) {
+        return this.plugin.state.data.cells.has(this.mkVisRef(ref, 'density-map'));
+    }
+
+    isQmWaterPositionShown(idx: number, ref: string) {
+        return this.plugin.state.data.cells.has(this.mkVisRef(this.mkQmWaterIdf(idx, ref), 'structure'));
+    }
+
+    isSpinning() {
+        return this.spinner;
+    }
+
+    isStructureShown(ref: string) {
+        return this.plugin.state.data.cells.has(this.mkVisRef(ref, 'structure'));
+    }
+
+    async loadDensityMap(url: string, ref: string) {
+        const b = this.plugin.state.data.build().toRoot()
+            .apply(StateTransforms.Data.Download, { url, isBinary: true }, { state: { isGhost: true }, ref: this.mkDataRef(ref, 'density-map') })
+            .apply(StateTransforms.Data.ParseCcp4, {}, { state: { isGhost: true } })
+            .apply(StateTransforms.Volume.VolumeFromCcp4, {}, { ref: this.mkDensityMapRef(ref) });
+
+        await b.commit({ revertOnError: true });
+    }
+
+    async loadQmWaterPositions(urls: string[], ref: string) {
+        let b = this.plugin.state.data.build().toRoot();
+
+        for (let idx = 0; idx < urls.length; idx++) {
+            const qmwIdf = this.mkQmWaterIdf(idx, ref);
+            const url = urls[idx];
+
+            b = b.toRoot()
+                .apply(StateTransforms.Data.Download, { url }, { state: { isGhost: true }, ref: this.mkDataRef(qmwIdf, 'structure') })
+                .apply(StateTransforms.Model.TrajectoryFromXYZ, {}, { state: { isGhost: true } })
+                .apply(StateTransforms.Model.ModelFromTrajectory, { modelIndex: 0 })
+                .apply(StateTransforms.Model.StructureFromModel, {}, { ref: this.mkStructRef(qmwIdf) });
+        }
+
+        await b.commit({ revertOnError: true });
+    }
+
+    async loadStructure(url: string, ref: string) {
+        const b = this.plugin.state.data.build().toRoot()
+            .apply(StateTransforms.Data.Download, { url }, { state: { isGhost: true }, ref: this.mkDataRef(ref, 'structure') })
+            .apply(StateTransforms.Model.TrajectoryFromPDB, {}, { state: { isGhost: true } })
+            .apply(StateTransforms.Model.ModelFromTrajectory, { modelIndex: 0 })
+            .apply(StateTransforms.Model.StructureFromModel, {}, { ref: this.mkStructRef(ref) });
+
+        await b.commit({ revertOnError: true });
+    }
+
+    async showDensityMap(occupancy: number, ref: string) {
+        const volRef = this.mkDensityMapRef(ref);
+        const mapRef = this.mkDensityMapRef(ref);
+        const state = this.plugin.state.data;
+
+        const volCell = state.cells.get(volRef);
+        if (!volCell)
+            return;
+        if (!state.cells.has(mapRef))
+            return;
+
+        const iso = occupancyToIso(occupancy, (volCell.obj!.data as Volume).grid.stats);
+        const b = state.build().to(mapRef)
+            .apply(
+                StateTransforms.Representation.VolumeRepresentation3D,
+                {
+                    colorTheme: { name: 'uniform', params: { value: Color(0x0000FF) } },
+                    type: {
+                        name: 'isosurface',
+                        params: {
+                            sizeFactor: 0.3,
+                            isoValue: Volume.IsoValue.absolute(iso),
+                            visuals: ['wireframe'],
+                        }
+                    }
+                },
+                {
+                    ref: this.mkVisRef(ref, 'density-map'),
+                }
+            );
+
+        await b.commit();
+    }
+
+    async showQmWaterPosition(idx: number, ref: string) {
+        const state = this.plugin.state.data;
+        const qmwIdf = this.mkQmWaterIdf(idx, ref);
+        const dataRef = this.mkStructRef(qmwIdf);
+
+        if (!state.cells.has(dataRef))
+            return;
+
+        const b = state.build().to(dataRef)
+            .apply(
+                StateTransforms.Representation.StructureRepresentation3D,
+                {
+                    colorTheme: {
+                        name: 'element-symbol',
+                        params: {},
+                    },
+                    type: {
+                        name: 'ball-and-stick', params: {
+                            alpha: 0.5,
+                        }
+                    }
+                },
+                {
+                    ref: this.mkVisRef(qmwIdf, 'structure'),
+                }
+            );
+
+        await b.commit();
+    }
+
+    async showStructure(ref: string) {
+        const state = this.plugin.state.data;
+        const structRef = this.mkStructRef(ref);
+
+        if (!state.cells.has(structRef))
+            return;
+
+        const b = state.build().to(structRef)
+            .apply(
+                StateTransforms.Representation.StructureRepresentation3D,
+                {
+                    colorTheme: { name: 'element-symbol', params: {} },
+                    type: {
+                        name: 'ball-and-stick',
+                        params: {}
+                    }
+                },
+                {
+                    ref: this.mkVisRef(ref, 'structure'),
+                }
+            );
+
+        await b.commit();
+    }
+
+    toggleSpinning(enabled: boolean) {
+        if (enabled) {
+
+            this.spinner = setInterval(() => {
+                const snapshot = this.plugin.canvas3d?.camera?.getSnapshot();
+                if (!snapshot)
+                    return;
+                const [xt, yt, zt] = snapshot.target;
+                const [xc, yc, zc] = snapshot.position;
+                const [upX, upY, upZ] = snapshot.up;
+
+                const x0 = xc - xt;
+                const y0 = yc - yt;
+                const z0 = zc - zt;
+
+                const thetaX = upX * SPIN_ANIM_THETA;
+                const thetaY = upY * SPIN_ANIM_THETA;
+                const thetaZ = upZ * SPIN_ANIM_THETA;
+
+                Mat3.setValue(spinnerRotX, 1, 1, Math.cos(thetaX));
+                Mat3.setValue(spinnerRotX, 2, 1, -Math.sin(thetaX));
+                Mat3.setValue(spinnerRotX, 1, 2, Math.sin(thetaX));
+                Mat3.setValue(spinnerRotX, 2, 2, Math.cos(thetaX));
+
+                Mat3.setValue(spinnerRotY, 0, 0, Math.cos(thetaY));
+                Mat3.setValue(spinnerRotY, 2, 0, Math.sin(thetaY));
+                Mat3.setValue(spinnerRotY, 0, 2, -Math.sin(thetaY));
+                Mat3.setValue(spinnerRotY, 2, 2, Math.cos(thetaY));
+
+                Mat3.setValue(spinnerRotZ, 0, 0, Math.cos(thetaZ));
+                Mat3.setValue(spinnerRotZ, 1, 0, -Math.sin(thetaZ));
+                Mat3.setValue(spinnerRotZ, 0, 1, Math.sin(thetaZ));
+                Mat3.setValue(spinnerRotZ, 1, 1, Math.cos(thetaZ));
+
+                Mat3.setValue(spinnerNewPos, 0, 0, x0);
+                Mat3.setValue(spinnerNewPos, 0, 1, y0);
+                Mat3.setValue(spinnerNewPos, 0, 2, z0);
+
+                Mat3.mul(spinnerNewPos, spinnerNewPos, spinnerRotX);
+                Mat3.mul(spinnerNewPos, spinnerNewPos, spinnerRotY);
+                Mat3.mul(spinnerNewPos, spinnerNewPos, spinnerRotZ);
+
+                Vec3.set(
+                    snapshot.position,
+                    spinnerNewPos.at(0)! + xt,
+                    spinnerNewPos.at(3)! + yt,
+                    spinnerNewPos.at(6)! + zt
+                );
+
+                PluginCommands.Camera.SetSnapshot(this.plugin, { snapshot, durationMs: 0 });
+            },
+            SPIN_ANIM_PERIOD_MS
+            );
+        } else {
+            if (!this.spinner)
+                return;
+
+            clearInterval(this.spinner!);
+            this.spinner = null;
+
+            const snapshot = this.plugin.canvas3d?.camera?.getSnapshot();
+            if (!snapshot)
+                return;
+
+            PluginCommands.Camera.SetSnapshot(this.plugin, { snapshot, durationMs: 0 });
+        }
+    }
+
+    async changeWaterDensityMapOccupancy(occupancy: number, ref: string) {
+        const volRef = this.mkDensityMapRef(ref);
+        const visRef = this.mkVisRef(ref, 'density-map');
+        const state = this.plugin.state.data;
+
+        const volCell = state.cells.get(volRef);
+        if (!volCell)
+            return;
+
+        const cell = state.cells.get(visRef);
+        if (!cell)
+            return;
+        const iso = occupancyToIso(occupancy, (volCell.obj!.data as Volume).grid.stats);
+        console.log(iso, (volCell.obj!.data as Volume).grid.stats);
+
+        const b = state.build().to(this.mkVisRef(ref, 'density-map'))
+            .update(
+                StateTransforms.Representation.VolumeRepresentation3D,
+                old => (
+                    {
+                        ...old,
+                        type: {
+                            ...old.type,
+                            params: {
+                                ...old.type.params,
+                                isoValue: Volume.IsoValue.absolute(iso),
+                            }
+                        }
+                    }
+                )
+            );
+        await b.commit();
+    }
+}
+
+interface WatAAProps extends Partial<WatAAApp.Configuration> {
+    appId: string;
+}
+
+export class WatAAApp extends React.Component<WatAAProps> {
+    private viewer: WatAAViewer | null;
+    private loadedAminoAcids: Map<string, { numHydrationSites: number }>;
+
+    constructor(props: WatAAProps) {
+        super(props);
+
+        this.viewer = null;
+        this.loadedAminoAcids = new Map();
+    }
+
+    isCrystalStructureShown(aa: string) {
+        return this.viewer?.isStructureShown(aa) ?? false;
+    }
+
+    isQmWaterPositionShown(idx: number, aa: string) {
+        return this.viewer?.isQmWaterPositionShown(idx, aa) ?? false;
+    }
+
+    isWaterDensityMapShown(aa: string) {
+        return this.viewer?.isDensityMapShown(aa) ?? false;
+    }
+
+    private async loadAminoAcid(aa: string, structUrl: string, densityMapUrl: string, qmWaterStructUrls: string[]) {
+        if (!this.loadedAminoAcids.has(aa)) {
+            await this.viewer!.loadStructure(structUrl, aa);
+            await this.viewer!.loadDensityMap(densityMapUrl, aa);
+            await this.viewer!.loadQmWaterPositions(qmWaterStructUrls, aa);
+
+            this.loadedAminoAcids.set(aa, { numHydrationSites: qmWaterStructUrls.length });
+        }
+    }
+
+    async hideAminoAcid(aa: string) {
+        this.viewer!.toggleSpinning(false);
+
+        if (this.loadedAminoAcids.has(aa)) {
+            await this.viewer!.hideStructure(aa);
+            await this.viewer!.hideDensityMap(aa);
+
+            for (let idx = 0; idx < this.loadedAminoAcids.get(aa)!.numHydrationSites; idx++)
+                await this.viewer!.hideQmWaterPosition(idx, aa);
+        }
+    }
+
+    async showAminoAcid(aa: string, structUrl: string, densityMapUrl: string, qmWaterStructUrls: string[], options: Partial<Api.DisplayOptions>) {
+        if (!this.viewer)
+            throw new Error('Attempted to show amino acid before initializing the viewer');
+
+        await this.loadAminoAcid(aa, structUrl, densityMapUrl, qmWaterStructUrls);
+
+        if (options.showCrystalStructure)
+            await this.viewer.showStructure(aa);
+        if (options.showWaterDensityMap)
+            await this.viewer.showDensityMap(options.densityMapOccupancy ?? 0.1, aa);
+
+        for (const num of options.shownQmWaterPositions ?? [])
+            await this.viewer.showQmWaterPosition(num, aa);
+    }
+
+    async toggleCrystalStructure(aa: string, show: boolean) {
+        if (!this.viewer)
+            throw new Error('Attempted to toggle crystal structure before initializing the viewer');
+
+        if (!this.loadedAminoAcids.has(aa))
+            throw new Error('Attempted to toggle crystal structure for an amino acid that has not been loaded yet');
+
+        if (show)
+            await this.viewer.showStructure(aa);
+        else
+            await this.viewer.hideStructure(aa);
+    }
+
+    async toggleQmWaterPositions(aa: string, idxs: number[], show: boolean) {
+        if (!this.viewer)
+            throw new Error('Attempted to show QM-optimized water position before initializing the viewer');
+
+        if (!this.loadedAminoAcids.has(aa))
+            throw new Error('Attempted to display QM-optimized water position for an amino acid that has not been loaded yet');
+
+        for (const idx of idxs) {
+            if (show)
+                await this.viewer.showQmWaterPosition(idx, aa);
+            else
+                await this.viewer.hideQmWaterPosition(idx, aa);
+        }
+    }
+
+    toggleSpinning(enabled: boolean) {
+        if (!this.viewer)
+            throw new Error('Attempted to toggle spinning before initializing the viewer');
+
+        this.viewer.toggleSpinning(enabled);
+    }
+
+    async toggleWaterDensityMap(aa: string, relativeIso: number, show: boolean) {
+        if (!this.viewer)
+            throw new Error('Attempted to toggle water density map before initializing the viewer');
+
+        if (!this.loadedAminoAcids.has(aa))
+            throw new Error('Attempted to toggle water density map for an amino acid that has not been loaded yet');
+
+        if (show)
+            await this.viewer.showDensityMap(relativeIso, aa);
+        else
+            await this.viewer.hideDensityMap(aa);
+    }
+
+    async changeWaterDensityMapOccupancy(aa: string, occupancy: number) {
+        if (!this.viewer)
+            throw new Error('Attempted to toggle water density map before initializing the viewer');
+
+        await this.viewer.changeWaterDensityMapOccupancy(occupancy, aa);
+    }
+
+    componentDidMount() {
+        const elem = document.getElementById(viewerId(this.props.appId));
+        if (!elem)
+            throw new Error('No element to display the viewer in');
+
+        if (!this.viewer)
+            this.viewer = new WatAAViewer(elem);
+
+        WAApi.bind(this, this.props.appId);
+
+        this.forceUpdate(); /* Necessary to make sure that we pass the Molstar plugin to Measurements */
+    }
+
+    render() {
+        return (
+            <div className='waav-app-container'>
+                <div id={viewerId(this.props.appId)} className='waav-ms-viewer'></div>
+                <Measurements plugin={this.viewer?.plugin} orientation='horizontal' />
+            </div>
+        );
+    }
+}
+
+export namespace WatAAApp {
+    export interface Configuration {
+    }
+
+    export function init(appId: string, configuration: Partial<Configuration>) {
+        const elem = document.getElementById(appId);
+        if (!elem)
+            throw new Error(`Element with id ${appId} does not exist`);
+
+        ReactDOM.render(<WatAAApp {...configuration} appId={appId} />, elem);
+    }
+}

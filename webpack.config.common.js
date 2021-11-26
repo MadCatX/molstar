@@ -97,15 +97,18 @@ function createNodeEntryPoint(name, dir, out) {
 }
 
 function createApp(name, library) { return createEntryPoint('index', `apps/${name}`, name, library); }
+function createApp2(name, library, cfg) { return createEntryPoint('index', `apps/${name}`, name, library, cfg); }
 function createExample(name) { return createEntry(`examples/${name}/index`, `examples/${name}`, 'index'); }
 function createBrowserTest(name) { return createEntryPoint(name, 'tests/browser', 'tests'); }
 function createNodeApp(name) { return createNodeEntryPoint('index', `apps/${name}`, name); }
 
 module.exports = {
     createApp,
+    createApp2,
     createEntry,
     createExample,
     createBrowserTest,
     createNodeEntryPoint,
-    createNodeApp
+    createNodeApp,
+    sharedConfig,
 };

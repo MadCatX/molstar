@@ -1,0 +1,41 @@
+<!-- vim: set sw=4 ts=4 sts=4 expandtab : -->
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-eval' 'unsafe-inline'; script-src 'self' 'unsafe-eval' 'unsafe-inline'">
+        <link href="wataa-viewer.css" rel="stylesheet" type="text/css">
+        <link href="molstar.css" rel="stylesheet" type="text/css">
+        <title>WatAA viewer</title>
+    </head>
+
+    <body>
+        <script src="molstar.js"></script>
+        <div id="waa-test-app" style="width: 1000px; height: 1000px;"></div>
+        <div>
+            <span onclick="showAA('Trp', 'H', 'g+', 3);">Trp H g+</span>
+        </div>
+
+        <script>
+            const MAP_SUFFIX = 'clust0_water';
+
+            function mkSrc(aa, secStruct, rotamer) {
+                return `${aa.toUpperCase()}_${secStruct.toUpperCase()}_${rotamer.toLowerCase()}`;
+            }
+
+            function showAA(aa, secStruct, rotamer, numHydSites) {
+                const src = mkSrc(aa, secStruct, rotamer);
+                const structUrl = `pdbs/${src}.pdb`;
+                const densityMapUrl = `maps/${src}_${MAP_SUFFIX}.map.ccp4`;
+                const qmWaterStructUrls = [];
+                for (let n = 1; n <= numHydSites; n++)
+                    qmWaterStructUrls.push(`xyzs/${src}_W${n}.xyz`);
+
+                WAApi.showAminoAcid('waa-test-app', src, structUrl, densityMapUrl, qmWaterStructUrls, { showCrystalAtoms: true, showWaterDensityMap: true, shownQMWaterPositions: [ 1, 2 ] });
+            }
+
+            WAApi.init('waa-test-app');
+        </script>
+    </body>
+</html>

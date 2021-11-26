@@ -1,0 +1,147 @@
+/* vim: set sw=2 ts=2 sts=2 expandtab : */
+
+.wva-added-measurement {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-column-gap: 1em;
+}
+
+.wva-added-measurement-label-bold {
+    font-weight: bold;
+}
+
+.wva-added-measurement-label-small {
+    font-size: 8pt;
+}
+
+.wva-block-caption {
+    font-size: 14pt;
+    font-weight: bold;
+}
+
+.wva-collapse-ctrl-header {
+    display: grid;
+    grid-gap: 0.25em;
+    grid-template-columns: 1fr auto;
+    padding-bottom: 0.1em;
+    padding-top: 0.1em;
+}
+
+.wva-collapse-expand-pushbutton {
+    width: 1em;
+}
+
+.wva-expand-ctrl-header-horizontal {
+    display: grid;
+    grid-gap: 0.25em;
+    grid-template-columns: 1fr auto;
+    padding-bottom: 0.1em;
+    padding-top: 0.1em;
+}
+
+.wva-expand-ctrl-header-vertical {
+    display: grid;
+    grid-gap: 0.25em;
+    grid-template-rows: auto auto 1fr;
+    padding-bottom: 0.1em;
+    padding-top: 0.1em;
+}
+
+.wva-highlighted-item {
+    background-color: #ccc;
+}
+
+.wva-hoverable-item {
+    transition: background-color 222ms;
+}
+.wva-hoverable-item:hover {
+    background-color: #ccc;
+}
+
+.wva-measurements-container-expanded-horizontal {
+}
+
+.wva-measurements-container-expanded-vertical {
+    width: 20em;
+}
+
+.wva-measurements-current-sel-list {
+    text-align: center;
+}
+
+.wva-measurements-section-caption {
+    font-style: italic;
+}
+
+.wva-padded-pushbutton {
+    padding: 0em 0.5em !important;
+}
+
+.wva-pushbutton {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    transition: background-color 222ms;
+}
+.wva-pushbutton:hover {
+    background-color: #ccc;
+}
+
+.wva-pushbutton-border {
+    border: 0.15em solid #ccc;
+}
+
+.wva-pushbutton-disabled {
+    align-items: center;
+    background-color: rgb(111, 111, 111);
+    display: flex;
+    justify-content: center;
+}
+
+.wva-pushbutton-text {
+    font-weight: bold;
+    font-family: sans-serif;
+}
+
+.wva-pushbutton-text-disabled {
+    color: rgb(111, 111, 111);
+    font-weight: bold;
+    font-family: sans-serif;
+}
+
+.wva-pushbutton-text-highlightable {
+    font-weight: bold;
+    font-family: sans-serif;
+    transition: text-shadow 222ms;
+}
+.wva-pushbutton-text-highlightable:hover {
+    text-shadow: 0px 0px 3px rgb(111, 111, 111);
+}
+
+.wva-pushbutton-text-highlightable-dark {
+    font-weight: bold;
+    font-family: sans-serif;
+    transition: text-shadow 222ms;
+}
+.wva-pushbutton-text-highlightable-dark:hover {
+    text-shadow: 0px 0px 3px rgb(0, 0, 0);
+}
+
+.wva-spaced-flex-vertical {
+    display: flex;
+    flex-direction: column;
+}
+.wva-spaced-flex-vertical > div {
+    margin-top: 0.25em;
+}
+
+.wva-selected-structure-element {
+    display: grid;
+    grid-column-gap: 0.15em;
+    grid-template-columns: 1fr 1em 1em 1em;
+}
+
+.wva-vertical {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg) translateX(-10%);
+}
