@@ -35,7 +35,8 @@ export const ElementSymbolColorThemeParams = {
         'entity-id': PD.Group(EntityIdColorThemeParams),
         'entity-source': PD.Group(EntitySourceColorThemeParams),
         'operator-name': PD.Group(OperatorNameColorThemeParams),
-        'element-symbol': PD.EmptyGroup()
+        'element-symbol': PD.EmptyGroup(),
+        'custom': PD.Color(Color(0xDDDDDD))
     }, { description: 'Use chain-id coloring for carbon atoms.' }),
     saturation: PD.Numeric(0, { min: -6, max: 6, step: 0.1 }),
     lightness: PD.Numeric(0.2, { min: -6, max: 6, step: 0.1 }),
@@ -64,7 +65,8 @@ export function ElementSymbolColorTheme(ctx: ThemeDataContext, props: PD.Values<
                 pcc.name === 'entity-source' ? EntitySourceColorTheme(ctx, pcc.params).color :
                     pcc.name === 'operator-name' ? OperatorNameColorTheme(ctx, pcc.params).color :
                         pcc.name === 'element-symbol' ? undefined :
-                            assertUnreachable(pcc);
+                            pcc.name === 'custom' ? (_l: Location, _sec: boolean) => props.carbonColor.params as Color :
+                                assertUnreachable(pcc);
 
     function elementColor(element: ElementSymbol, location: Location) {
         return (carbonColor && element === 'C')

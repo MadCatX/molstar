@@ -333,7 +333,9 @@ class WatAAViewer {
                 {
                     colorTheme: {
                         name: 'element-symbol',
-                        params: {},
+                        params: {
+                            carbonColor: { name: 'custom', params: Color(0xDDDDDD) }
+                        },
                     },
                     type: {
                         name: 'ball-and-stick', params: {
@@ -360,7 +362,12 @@ class WatAAViewer {
             .apply(
                 StateTransforms.Representation.StructureRepresentation3D,
                 {
-                    colorTheme: { name: 'element-symbol', params: {} },
+                    colorTheme: {
+                        name: 'element-symbol',
+                        params: {
+                            carbonColor: { name: 'custom', params: Color(0xDDDDDD) }
+                        }
+                    },
                     type: {
                         name: 'ball-and-stick',
                         params: {}
