@@ -187,16 +187,25 @@ class WatAAViewer {
         this.plugin.managers.interactivity.setProps({ granularity: 'element' });
     }
 
-    private async hide(ref: string) {
+    private async hide(refs: string[]) {
         const state = this.plugin.state.data;
 
-        const cell = state.cells.has(ref);
-        if (cell)
-            await this.plugin.build().delete(ref).commit();
+       let b = this.plugin.build();
+        for (const ref of refs) {
+            const cell = state.cells.has(ref);
+            if (cell)
+                b.delete(ref);
+        }
+
+        await b.commit();
     }
 
     private mkDataRef(ref: string, kind: 'structure' | 'density-map') {
         return `${ref}_${kind}_data`;
+    }
+
+    private mkFullStructRef(ref: string) {
+        return ref + '_full_structure';
     }
 
     private mkDensityMapRef(ref: string) {
@@ -207,24 +216,24 @@ class WatAAViewer {
         return `${ref}_qmw${idx}`;
     }
 
-    private mkStructRef(ref: string) {
-        return ref + '_structure';
+    private mkStructRef(ref: string, kind: 'protein' | 'water' | 'everything') {
+        return ref + '_structure_' + kind;
     }
 
-    private mkVisRef(ref: string, kind: 'structure' | 'density-map') {
+    private mkVisRef(ref: string, kind: 'structure-protein' | 'structure-water' | 'density-map') {
         return `${ref}_${kind}_visual`;
     }
 
     async hideDensityMap(ref: string) {
-        await this.hide(this.mkVisRef(ref, 'density-map'));
+        await this.hide([this.mkVisRef(ref, 'density-map')]);
     }
 
     async hideQmWaterPosition(idx: number, ref: string) {
-        await this.hide(this.mkVisRef(this.mkQmWaterIdf(idx, ref), 'structure'));
+        await this.hide([this.mkVisRef(this.mkQmWaterIdf(idx, ref), 'structure-water')]);
     }
 
     async hideStructure(ref: string) {
-        await this.hide(this.mkVisRef(ref, 'structure'));
+        await this.hide([this.mkVisRef(ref, 'structure-protein'), this.mkVisRef(ref, 'structure-water')]);
     }
 
     isDensityMapShown(ref: string) {
@@ -232,7 +241,7 @@ class WatAAViewer {
     }
 
     isQmWaterPositionShown(idx: number, ref: string) {
-        return this.plugin.state.data.cells.has(this.mkVisRef(this.mkQmWaterIdf(idx, ref), 'structure'));
+        return this.plugin.state.data.cells.has(this.mkVisRef(this.mkQmWaterIdf(idx, ref), 'structure-water'));
     }
 
     isSpinning() {
@@ -240,7 +249,7 @@ class WatAAViewer {
     }
 
     isStructureShown(ref: string) {
-        return this.plugin.state.data.cells.has(this.mkVisRef(ref, 'structure'));
+        return this.plugin.state.data.cells.has(this.mkVisRef(ref, 'structure-protein'));
     }
 
     async loadDensityMap(url: string, ref: string) {
@@ -263,18 +272,22 @@ class WatAAViewer {
                 .apply(StateTransforms.Data.Download, { url }, { state: { isGhost: true }, ref: this.mkDataRef(qmwIdf, 'structure') })
                 .apply(StateTransforms.Model.TrajectoryFromXYZ, {}, { state: { isGhost: true } })
                 .apply(StateTransforms.Model.ModelFromTrajectory, { modelIndex: 0 })
-                .apply(StateTransforms.Model.StructureFromModel, {}, { ref: this.mkStructRef(qmwIdf) });
+                .apply(StateTransforms.Model.StructureFromModel, {}, { ref: this.mkStructRef(qmwIdf, 'everything') });
         }
 
         await b.commit({ revertOnError: true });
     }
 
     async loadStructure(url: string, ref: string) {
-        const b = this.plugin.state.data.build().toRoot()
+        const fsRef = this.mkFullStructRef(ref)
+        let b = this.plugin.state.data.build().toRoot()
             .apply(StateTransforms.Data.Download, { url }, { state: { isGhost: true }, ref: this.mkDataRef(ref, 'structure') })
             .apply(StateTransforms.Model.TrajectoryFromPDB, {}, { state: { isGhost: true } })
             .apply(StateTransforms.Model.ModelFromTrajectory, { modelIndex: 0 })
-            .apply(StateTransforms.Model.StructureFromModel, {}, { ref: this.mkStructRef(ref) });
+            .apply(StateTransforms.Model.StructureFromModel, {}, { ref: fsRef })
+            .apply(StateTransforms.Model.StructureComplexElement, { type: 'water' }, { ref: this.mkStructRef(ref, 'water') })
+            .to(fsRef)
+            .apply(StateTransforms.Model.StructureComplexElement, { type: 'protein' }, { ref: this.mkStructRef(ref, 'protein') });
 
         await b.commit({ revertOnError: true });
     }
@@ -316,7 +329,7 @@ class WatAAViewer {
     async showQmWaterPosition(idx: number, ref: string) {
         const state = this.plugin.state.data;
         const qmwIdf = this.mkQmWaterIdf(idx, ref);
-        const dataRef = this.mkStructRef(qmwIdf);
+        const dataRef = this.mkStructRef(qmwIdf, 'everything');
 
         if (!state.cells.has(dataRef))
             return;
@@ -338,7 +351,7 @@ class WatAAViewer {
                     }
                 },
                 {
-                    ref: this.mkVisRef(qmwIdf, 'structure'),
+                    ref: this.mkVisRef(qmwIdf, 'structure-water'),
                 }
             );
 
@@ -347,7 +360,7 @@ class WatAAViewer {
 
     async showStructure(ref: string) {
         const state = this.plugin.state.data;
-        const structRef = this.mkStructRef(ref);
+        let structRef = this.mkStructRef(ref, 'protein');
 
         if (!state.cells.has(structRef))
             return;
@@ -368,9 +381,32 @@ class WatAAViewer {
                     }
                 },
                 {
-                    ref: this.mkVisRef(ref, 'structure'),
+                    ref: this.mkVisRef(ref, 'structure-protein'),
                 }
             );
+
+        structRef = this.mkStructRef(ref, 'water');
+        if (state.cells.has(structRef)) {
+            b.to(structRef)
+                .apply(
+                    StateTransforms.Representation.StructureRepresentation3D,
+                    {
+                        colorTheme: {
+                            name: 'uniform',
+                            params: {
+                                value: Color(0x00FFFF)
+                            }
+                        },
+                        type: {
+                            name: 'ball-and-stick',
+                            params: {}
+                        }
+                    },
+                    {
+                        ref: this.mkVisRef(ref, 'structure-water'),
+                    }
+                );
+        }
 
         await b.commit();
     }
