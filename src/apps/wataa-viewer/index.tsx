@@ -28,6 +28,7 @@ import { createPlugin } from '../../mol-plugin-ui';
 import { PluginUIContext } from '../../mol-plugin-ui/context';
 import { DefaultPluginUISpec, PluginUISpec } from '../../mol-plugin-ui/spec';
 import { Representation } from '../../mol-repr/representation';
+import { Script } from '../../mol-script/script';
 import { StateSelection } from '../../mol-state';
 import { StateTreeSpine } from '../../mol-state/tree/spine';
 import { arrayMax } from '../../mol-util/array';
@@ -41,9 +42,12 @@ const SPIN_ANIM_PERIOD_MS = 50;
 const SPIN_ANIM_DPS = 20; // Rotation speed in degrees per second
 const SPIN_ANIM_THETA = (SPIN_ANIM_DPS * Math.PI / 180) * (SPIN_ANIM_PERIOD_MS / 1000);
 
+const SelectAllScript = Script('(sel.atom.atoms true)', 'mol-script');
+
 const spinnerAxis = Vec3.zero();
 const spinnerQuat = Quat.zero();
 const spinnerDirection = Vec3.zero();
+const camResTmp = Vec3.zero();
 
 const WAApi = new Api();
 (window as any).WAApi = WAApi;
@@ -294,6 +298,28 @@ class WatAAViewer {
         await b.commit({ revertOnError: true });
     }
 
+    async resetCamera(ref: string) {
+        const cells = this.plugin.state.data.cells;
+        const cell = cells.get(this.mkFullStructRef(ref));
+        if (!cell)
+            return;
+
+        const sphere = Loci.getBoundingSphere(Script.toLoci(SelectAllScript, cell.obj!.data));
+        if (!sphere)
+            return;
+
+        await PluginCommands.Camera.Reset(this.plugin, {});
+
+        const snapshot = this.plugin.canvas3d!.camera.getSnapshot();
+        Vec3.sub(camResTmp, snapshot.position, snapshot.target);
+        Vec3.scale(camResTmp, camResTmp, 1.25);
+        Vec3.add(snapshot.position, snapshot.position, camResTmp);
+
+        snapshot.radius = sphere.radius * 3.0;
+
+        PluginCommands.Camera.SetSnapshot(this.plugin, { snapshot });
+    }
+
     async showDensityMap(occupancy: number, ref: string) {
         const volRef = this.mkDensityMapRef(ref);
         const mapRef = this.mkDensityMapRef(ref);
@@ -441,6 +467,7 @@ class WatAAViewer {
                         borderColor: Color(0x000000),
                         borderWidth: 0.3,
                         textColor: Color(0xFFFFFFF),
+                        offsetZ: 0.5,
                         customText: `HS${hydSiteNo}`,
                     },
                     {
@@ -452,6 +479,8 @@ class WatAAViewer {
         }
 
         await b.commit();
+
+        this.resetCamera(ref);
     }
 
     toggleSpinning(enabled: boolean) {
