@@ -339,7 +339,10 @@ export class Measurements extends PurePluginUIComponent<Measurements.Props, Stat
                         kind={e.l}
                         cell={m}
                         plugin={this.props.plugin}
-                        delete={() => PluginCommands.State.RemoveObject(this.props.plugin!, { state: m.parent!, ref: m.transform.parent, removeParentGhosts: true })}
+                        delete={() => {
+                            PluginCommands.State.RemoveObject(this.props.plugin!, { state: m.parent!, ref: m.transform.parent, removeParentGhosts: true })
+                                .then(() => Util.triggerResize());
+                        }}
                     />
                 );
                 entries.push(elem);
