@@ -11,10 +11,12 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { Api } from './api';
 import { Measurements } from '../watlas-common/measurements';
+import { OrderedSet } from '../../mol-data/int';
 import { Vec3 } from '../../mol-math/linear-algebra/3d/vec3';
 import { Quat } from '../../mol-math/linear-algebra/3d/quat';
 import { Loci } from '../../mol-model/loci';
-import { Structure } from '../../mol-model/structure';
+import { Structure, StructureElement, StructureProperties } from '../../mol-model/structure';
+import { UnitIndex } from '../../mol-model/structure/structure/element/util';
 import { Volume } from '../../mol-model/volume';
 import { PluginBehavior, PluginBehaviors } from '../../mol-plugin/behavior';
 import { PluginCommands } from '../../mol-plugin/commands';
@@ -406,6 +408,47 @@ class WatAAViewer {
                         ref: this.mkVisRef(ref, 'structure-water'),
                     }
                 );
+        }
+
+        /* Here we assume that the selected substructure contains only waters
+         * Additional check for entity type === "water" would be needed had this assumption not been true */
+        const structCell = state.cells.get(structRef)!;
+        const structure = structCell.obj!.data;
+        for (const unit of structure.units) {
+            for (let idx = 0; idx < unit.elements.length; idx++) {
+                const eI = unit.elements[idx];
+                const location = StructureElement.Location.create(structure, unit, eI);
+                const hydSiteNo = StructureProperties.residue.auth_seq_id(location);
+
+                const loci = StructureElement.Loci(structure, [{ unit, indices: OrderedSet.ofSingleton(idx as UnitIndex) }]);
+
+                b.apply(
+                    StateTransforms.Model.MultiStructureSelectionFromExpression,
+                    {
+                        selections: [
+                            { key: 'hs', ref: structCell.transform.ref, expression: StructureElement.Loci.toExpression(loci) }
+                        ],
+                        isTransitive: true,
+                    },
+                    {
+                        dependsOn: [structCell.transform.ref],
+                        tags: 'hs',
+                        state: { isGhost: true },
+                    }
+                ).apply(
+                    StateTransforms.Representation.StructureSelectionsLabel3D,
+                    {
+                        borderColor: Color(0x000000),
+                        borderWidth: 0.3,
+                        textColor: Color(0xFFFFFFF),
+                        customText: `HS${hydSiteNo}`,
+                    },
+                    {
+                        state: { isGhost: true },
+                        tags: 'hs'
+                    }
+                );
+            }
         }
 
         await b.commit();
