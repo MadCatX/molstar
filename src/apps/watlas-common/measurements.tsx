@@ -388,10 +388,12 @@ export class Measurements extends PurePluginUIComponent<Measurements.Props, Stat
             return;
 
         this.subscribe(this.props.plugin.managers.structure.selection.events.additionsHistoryUpdated, () => {
-            this.forceUpdate();
             this.updateOrderLabels();
+            Util.triggerResize();
+            this.forceUpdate();
         });
         this.subscribe(this.props.plugin.managers.structure.measurement.behaviors.state, () => {
+            Util.triggerResize();
             this.forceUpdate();
         });
     }
@@ -418,8 +420,8 @@ export class Measurements extends PurePluginUIComponent<Measurements.Props, Stat
             this.setupSubscription();
         }
         if (this.props.plugin && this.state.expanded !== prevState.expanded) {
-            this.props.plugin!.handleResize();
             this.updateOrderLabels();
+            Util.triggerResize();
         }
     }
 

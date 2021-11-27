@@ -13,4 +13,8 @@ export namespace Util {
             s = s.replace(what, by);
         return s;
     }
+
+    export function triggerResize() {
+        window.dispatchEvent(new Event('resize'));
+    }
 }
