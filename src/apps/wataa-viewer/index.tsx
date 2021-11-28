@@ -254,6 +254,10 @@ class WatAAViewer {
         return this.spinner;
     }
 
+    isStructureAvailable(ref: string) {
+        return this.plugin.state.data.cells.has(this.mkFullStructRef(ref));
+    }
+
     isStructureShown(ref: string) {
         return this.plugin.state.data.cells.has(this.mkVisRef(ref, 'structure-protein'));
     }
@@ -557,6 +561,7 @@ interface WatAAProps extends Partial<WatAAApp.Configuration> {
 
 interface WatAAState {
     currentAA: string;
+    errorMsg: string | null;
 }
 
 export class WatAAApp extends React.Component<WatAAProps, WatAAState> {
@@ -571,6 +576,7 @@ export class WatAAApp extends React.Component<WatAAProps, WatAAState> {
 
         this.state = {
             currentAA: '',
+            errorMsg: null,
         };
     }
 
@@ -608,7 +614,7 @@ export class WatAAApp extends React.Component<WatAAProps, WatAAState> {
         }
 
         if (this.state.currentAA === aa)
-            this.setState({ ...this.state, currentAA: aa });
+            this.setState({ ...this.state, currentAA: aa, errorMsg: null });
     }
 
     async showAminoAcid(aa: string, structUrl: string, densityMapUrl: string, qmWaterStructUrls: string[], options: Partial<Api.DisplayOptions>) {
@@ -628,7 +634,10 @@ export class WatAAApp extends React.Component<WatAAProps, WatAAState> {
         for (const num of options.shownQmWaterPositions ?? [])
             await this.viewer.showQmWaterPosition(num, aa);
 
-        this.setState({ ...this.state, currentAA: aa });
+        if (this.viewer.isStructureAvailable(aa))
+            this.setState({ ...this.state, currentAA: aa, errorMsg: null });
+        else
+            this.setState({ ...this.state, currentAA: '', errorMsg: 'Cannot display amino acid' });
     }
 
     async toggleCrystalStructure(aa: string, show: boolean) {
@@ -702,8 +711,14 @@ export class WatAAApp extends React.Component<WatAAProps, WatAAState> {
     render() {
         return (
             <div className='waav-app-container'>
-                <div id={viewerId(this.props.appId)} className='waav-ms-viewer'></div>
-                <div className='waav-aminoacid-identifier'>{this.state.currentAA}</div>
+                <div className='waav-ms-viewer-container'>
+                    <div id={viewerId(this.props.appId)} className='waav-ms-viewer'></div>
+                    {this.state.errorMsg
+                        ? <div className='waav-error-msg'>{this.state.errorMsg}</div>
+                        : undefined
+                    }
+                    <div className='waav-aminoacid-identifier'>{this.state.currentAA}</div>
+                </div>
                 <Measurements plugin={this.viewer?.plugin} orientation='horizontal' />
             </div>
         );

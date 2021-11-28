@@ -4,18 +4,31 @@
     color: #0c8604;
     font-size: 16pt;
     position: absolute;
-    right: 2em;
-    top: 2em;
+    left: 4em;
+    bottom: 2em;
 }
 
 .waav-app-container {
     display: flex;
     flex-direction: column;
     height: 100%;
-    position: relative;
+}
+
+.waav-error-msg {
+    color: red;
+    position: absolute;
+    text-align: center;
+    top: 50%;
+    width: 100%;
 }
 
 .waav-ms-viewer {
+    flex: 1;
+    position: relative;
+}
+
+.waav-ms-viewer-container {
+    display: flex;
     flex: 1;
     position: relative;
 }
