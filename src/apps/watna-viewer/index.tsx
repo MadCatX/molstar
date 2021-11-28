@@ -159,11 +159,11 @@ const WatlasLociSelectionProvider = PluginBehavior.create({
     display: { name: 'Interactive loci selection' },
     params: () => WatlasLociSelectionParams,
     ctor: class extends PluginBehavior.Handler<WatlasLociSelectionProps> {
-        private spine: StateTreeSpine.Impl
+        private spine: StateTreeSpine.Impl;
         private lociMarkProvider = (reprLoci: Representation.Loci, action: MarkerAction, noRender?: boolean) => {
             if (!this.ctx.canvas3d) return;
             this.ctx.canvas3d.mark({ loci: reprLoci.loci }, action, noRender);
-        }
+        };
         private applySelectMark(ref: string, clear?: boolean) {
             const cell = this.ctx.state.data.cells.get(ref);
             if (cell && PSO.isRepresentation3D(cell.obj)) {

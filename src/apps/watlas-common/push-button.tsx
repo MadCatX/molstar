@@ -25,7 +25,7 @@ function Noop() {}
 export class PushButton extends AbstractPushButton<PushButton.Props, {}> {
     static defaultProps = {
         enabled: true,
-    }
+    };
 
     private clsName() {
         if (this.props.enabled)

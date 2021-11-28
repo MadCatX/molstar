@@ -75,11 +75,11 @@ const WatAALociSelectionProvider = PluginBehavior.create({
     display: { name: 'Interactive loci selection' },
     params: () => WatAALociSelectionParams,
     ctor: class extends PluginBehavior.Handler<WatAALociSelectionProps> {
-        private spine: StateTreeSpine.Impl
+        private spine: StateTreeSpine.Impl;
         private lociMarkProvider = (reprLoci: Representation.Loci, action: MarkerAction, noRender?: boolean) => {
             if (!this.ctx.canvas3d) return;
             this.ctx.canvas3d.mark({ loci: reprLoci.loci }, action, noRender);
-        }
+        };
         private applySelectMark(ref: string, clear?: boolean) {
             const cell = this.ctx.state.data.cells.get(ref);
             if (cell && PSO.isRepresentation3D(cell.obj)) {
@@ -196,7 +196,7 @@ class WatAAViewer {
     private async hide(refs: string[]) {
         const state = this.plugin.state.data;
 
-       let b = this.plugin.build();
+        const b = this.plugin.build();
         for (const ref of refs) {
             const cell = state.cells.has(ref);
             if (cell)
@@ -272,13 +272,13 @@ class WatAAViewer {
     }
 
     async loadQmWaterPositions(urls: string[], ref: string) {
-        let b = this.plugin.state.data.build().toRoot();
+        const b = this.plugin.state.data.build().toRoot();
 
         for (let idx = 0; idx < urls.length; idx++) {
             const qmwIdf = this.mkQmWaterIdf(idx, ref);
             const url = urls[idx];
 
-            b = b.toRoot()
+            b.toRoot()
                 .apply(StateTransforms.Data.Download, { url }, { state: { isGhost: true }, ref: this.mkDataRef(qmwIdf, 'structure') })
                 .apply(StateTransforms.Model.TrajectoryFromXYZ, {}, { state: { isGhost: true } })
                 .apply(StateTransforms.Model.ModelFromTrajectory, { modelIndex: 0 })
