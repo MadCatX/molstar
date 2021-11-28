@@ -352,17 +352,20 @@ export class Measurements extends PurePluginUIComponent<Measurements.Props, Stat
         return entries;
     }
 
-    private removeAll() {
+    private async removeAll() {
         if (!this.props.plugin)
             return (<div>(Nothing selected)</div>);
 
         const measurements = this.props.plugin.managers.structure.measurement.state;
         if (!measurements)
             return;
+
         for (const k of ['distances', 'angles', 'dihedrals'] as (keyof StructureMeasurementManagerState)[]) {
             for (const cell of measurements[k] as StructureMeasurementCell[])
-                PluginCommands.State.RemoveObject(this.props.plugin, { state: cell.parent!, ref: cell.transform.parent, removeParentGhosts: true });
+                await PluginCommands.State.RemoveObject(this.props.plugin, { state: cell.parent!, ref: cell.transform.parent, removeParentGhosts: true });
         }
+
+        Util.triggerResize();
     }
 
     private selections() {
