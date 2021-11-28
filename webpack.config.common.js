@@ -73,11 +73,11 @@ function createEntry(src, outFolder, outFilename, isNode) {
     };
 }
 
-function createEntryPoint(name, dir, out, library) {
+function createEntryPoint(name, dir, out, library, cfg = sharedConfig) {
     return {
         entry: path.resolve(__dirname, `lib/${dir}/${name}.js`),
         output: { filename: `${library || name}.js`, path: path.resolve(__dirname, `build/${out}`), library: library || out, libraryTarget: 'umd' },
-        ...sharedConfig
+        ...cfg
     };
 }
 
