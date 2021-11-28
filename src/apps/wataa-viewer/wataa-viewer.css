@@ -1,9 +1,18 @@
 /* vim: set sw=4 ts=4 sts=4 expandtab : */
 
+.waav-aminoacid-identifier {
+    color: #0c8604;
+    font-size: 16pt;
+    position: absolute;
+    right: 2em;
+    top: 2em;
+}
+
 .waav-app-container {
     display: flex;
     flex-direction: column;
     height: 100%;
+    position: relative;
 }
 
 .waav-ms-viewer {

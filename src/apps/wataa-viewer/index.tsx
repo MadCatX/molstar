@@ -555,7 +555,11 @@ interface WatAAProps extends Partial<WatAAApp.Configuration> {
     appId: string;
 }
 
-export class WatAAApp extends React.Component<WatAAProps> {
+interface WatAAState {
+    currentAA: string;
+}
+
+export class WatAAApp extends React.Component<WatAAProps, WatAAState> {
     private viewer: WatAAViewer | null;
     private loadedAminoAcids: Map<string, { numHydrationSites: number }>;
 
@@ -564,6 +568,10 @@ export class WatAAApp extends React.Component<WatAAProps> {
 
         this.viewer = null;
         this.loadedAminoAcids = new Map();
+
+        this.state = {
+            currentAA: '',
+        };
     }
 
     isCrystalStructureShown(aa: string) {
@@ -598,6 +606,9 @@ export class WatAAApp extends React.Component<WatAAProps> {
             for (let idx = 0; idx < this.loadedAminoAcids.get(aa)!.numHydrationSites; idx++)
                 await this.viewer!.hideQmWaterPosition(idx, aa);
         }
+
+        if (this.state.currentAA === aa)
+            this.setState({ ...this.state, currentAA: aa });
     }
 
     async showAminoAcid(aa: string, structUrl: string, densityMapUrl: string, qmWaterStructUrls: string[], options: Partial<Api.DisplayOptions>) {
@@ -616,6 +627,8 @@ export class WatAAApp extends React.Component<WatAAProps> {
 
         for (const num of options.shownQmWaterPositions ?? [])
             await this.viewer.showQmWaterPosition(num, aa);
+
+        this.setState({ ...this.state, currentAA: aa });
     }
 
     async toggleCrystalStructure(aa: string, show: boolean) {
@@ -690,6 +703,7 @@ export class WatAAApp extends React.Component<WatAAProps> {
         return (
             <div className='waav-app-container'>
                 <div id={viewerId(this.props.appId)} className='waav-ms-viewer'></div>
+                <div className='waav-aminoacid-identifier'>{this.state.currentAA}</div>
                 <Measurements plugin={this.viewer?.plugin} orientation='horizontal' />
             </div>
         );
