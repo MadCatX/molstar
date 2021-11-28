@@ -42,7 +42,7 @@ const SPIN_ANIM_PERIOD_MS = 50;
 const SPIN_ANIM_DPS = 20; // Rotation speed in degrees per second
 const SPIN_ANIM_THETA = (SPIN_ANIM_DPS * Math.PI / 180) * (SPIN_ANIM_PERIOD_MS / 1000);
 
-const SelectAllScript = Script('(sel.atom.atoms true)', 'mol-script');
+const SelectAllProtein = Script('(sel.atom.atoms (= atom.entity-type polymer))', 'mol-script');
 
 const spinnerAxis = Vec3.zero();
 const spinnerQuat = Quat.zero();
@@ -302,21 +302,20 @@ class WatAAViewer {
         await b.commit({ revertOnError: true });
     }
 
-    async resetCamera(ref: string) {
+    resetCamera(ref: string) {
         const cells = this.plugin.state.data.cells;
-        const cell = cells.get(this.mkFullStructRef(ref));
+        const cell = cells.get(this.mkStructRef(ref, 'protein'));
         if (!cell)
             return;
 
-        const sphere = Loci.getBoundingSphere(Script.toLoci(SelectAllScript, cell.obj!.data));
+        const sphere = Loci.getBoundingSphere(Script.toLoci(SelectAllProtein, cell.obj!.data));
         if (!sphere)
             return;
 
-        await PluginCommands.Camera.Reset(this.plugin, {});
-
         const snapshot = this.plugin.canvas3d!.camera.getSnapshot();
+        snapshot.target = sphere.center;
         Vec3.sub(camResTmp, snapshot.position, snapshot.target);
-        Vec3.scale(camResTmp, camResTmp, 1.25);
+        Vec3.scale(camResTmp, camResTmp, 0.25);
         Vec3.add(snapshot.position, snapshot.position, camResTmp);
 
         snapshot.radius = sphere.radius * 3.0;
@@ -483,8 +482,6 @@ class WatAAViewer {
         }
 
         await b.commit();
-
-        this.resetCamera(ref);
     }
 
     toggleSpinning(enabled: boolean) {
@@ -638,6 +635,8 @@ export class WatAAApp extends React.Component<WatAAProps, WatAAState> {
             this.setState({ ...this.state, currentAA: aa, errorMsg: null });
         else
             this.setState({ ...this.state, currentAA: '', errorMsg: 'Cannot display amino acid' });
+
+        this.viewer.resetCamera(aa);
     }
 
     async toggleCrystalStructure(aa: string, show: boolean) {
