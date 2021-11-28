@@ -604,6 +604,9 @@ export class WatAAApp extends React.Component<WatAAProps> {
         if (!this.viewer)
             throw new Error('Attempted to show amino acid before initializing the viewer');
 
+        Measurements.clearSelection(this.viewer.plugin);
+        Measurements.removeAllMeasurements(this.viewer.plugin);
+
         await this.loadAminoAcid(aa, structUrl, densityMapUrl, qmWaterStructUrls);
 
         if (options.showCrystalStructure)

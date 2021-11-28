@@ -352,20 +352,11 @@ export class Measurements extends PurePluginUIComponent<Measurements.Props, Stat
         return entries;
     }
 
-    private async removeAll() {
+    private removeAll() {
         if (!this.props.plugin)
-            return (<div>(Nothing selected)</div>);
-
-        const measurements = this.props.plugin.managers.structure.measurement.state;
-        if (!measurements)
             return;
 
-        for (const k of ['distances', 'angles', 'dihedrals'] as (keyof StructureMeasurementManagerState)[]) {
-            for (const cell of measurements[k] as StructureMeasurementCell[])
-                await PluginCommands.State.RemoveObject(this.props.plugin, { state: cell.parent!, ref: cell.transform.parent, removeParentGhosts: true });
-        }
-
-        Util.triggerResize();
+        Measurements.removeAllMeasurements(this.props.plugin);
     }
 
     private selections() {
@@ -517,5 +508,26 @@ export namespace Measurements {
     export interface Props {
         plugin?: PluginUIContext;
         orientation: 'vertical' | 'horizontal';
+    }
+
+    export function clearSelection(plugin: PluginUIContext) {
+        plugin.managers.structure.selection.clear();
+    }
+
+    export async function removeAllMeasurements(plugin: PluginUIContext) {
+        const measurements = plugin.managers.structure.measurement.state;
+        if (!measurements)
+            return;
+
+        let changed = false;
+        for (const k of ['distances', 'angles', 'dihedrals'] as (keyof StructureMeasurementManagerState)[]) {
+            for (const cell of measurements[k] as StructureMeasurementCell[]) {
+                changed = true;
+                await PluginCommands.State.RemoveObject(plugin, { state: cell.parent!, ref: cell.transform.parent, removeParentGhosts: true });
+            }
+        }
+
+        if (changed)
+            Util.triggerResize();
     }
 }
