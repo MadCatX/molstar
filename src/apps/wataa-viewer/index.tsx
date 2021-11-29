@@ -56,10 +56,6 @@ function viewerId(baseId: string) {
     return baseId + '-viewer';
 }
 
-function occupancyToIso(occupancy: number, stats: { min: number, max: number, sigma: number }) {
-    return stats.min + occupancy * stats.sigma * 50;
-}
-
 const WatAALociSelectionBindings = {
     clickToggle: Binding([Binding.Trigger(ButtonsType.Flag.Primary)], 'Set selection to clicked element using ${triggers}.'),
     clickDeselectAllOnEmpty: Binding([Binding.Trigger(ButtonsType.Flag.Primary)], 'Deselect all when clicking on nothing using ${triggers}.'),
@@ -334,7 +330,6 @@ class WatAAViewer {
         if (!state.cells.has(mapRef))
             return;
 
-        const iso = occupancyToIso(occupancy, (volCell.obj!.data as Volume).grid.stats);
         const b = state.build().to(mapRef)
             .apply(
                 StateTransforms.Representation.VolumeRepresentation3D,
@@ -344,7 +339,7 @@ class WatAAViewer {
                         name: 'isosurface',
                         params: {
                             sizeFactor: 0.3,
-                            isoValue: Volume.IsoValue.absolute(iso),
+                            isoValue: Volume.IsoValue.absolute(occupancy),
                             visuals: ['wireframe'],
                         }
                     }
@@ -529,8 +524,6 @@ class WatAAViewer {
         const cell = state.cells.get(visRef);
         if (!cell)
             return;
-        const iso = occupancyToIso(occupancy, (volCell.obj!.data as Volume).grid.stats);
-        console.log(iso, (volCell.obj!.data as Volume).grid.stats);
 
         const b = state.build().to(this.mkVisRef(ref, 'density-map'))
             .update(
@@ -542,7 +535,7 @@ class WatAAViewer {
                             ...old.type,
                             params: {
                                 ...old.type.params,
-                                isoValue: Volume.IsoValue.absolute(iso),
+                                isoValue: Volume.IsoValue.absolute(occupancy),
                             }
                         }
                     }
