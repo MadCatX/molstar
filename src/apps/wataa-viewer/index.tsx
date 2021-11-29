@@ -551,6 +551,7 @@ interface WatAAProps extends Partial<WatAAApp.Configuration> {
 
 interface WatAAState {
     currentAA: string;
+    label: string;
     errorMsg: string | null;
 }
 
@@ -566,6 +567,7 @@ export class WatAAApp extends React.Component<WatAAProps, WatAAState> {
 
         this.state = {
             currentAA: '',
+            label: '',
             errorMsg: null,
         };
     }
@@ -592,6 +594,12 @@ export class WatAAApp extends React.Component<WatAAProps, WatAAState> {
         }
     }
 
+    private mkLabel(aa: string, qmWaters?: number[]) {
+        if (qmWaters && qmWaters.length > 0)
+            return aa + '_' + qmWaters.map(idx => `HS${idx+1}`).join('_');
+        return aa;
+    }
+
     async hideAminoAcid(aa: string) {
         this.viewer!.toggleSpinning(false);
 
@@ -604,7 +612,7 @@ export class WatAAApp extends React.Component<WatAAProps, WatAAState> {
         }
 
         if (this.state.currentAA === aa)
-            this.setState({ ...this.state, currentAA: aa, errorMsg: null });
+            this.setState({ ...this.state, currentAA: '', label: '', errorMsg: null });
     }
 
     async showAminoAcid(aa: string, structUrl: string, densityMapUrl: string, qmWaterStructUrls: string[], options: Partial<Api.DisplayOptions>) {
@@ -625,9 +633,9 @@ export class WatAAApp extends React.Component<WatAAProps, WatAAState> {
             await this.viewer.showQmWaterPosition(num, aa);
 
         if (this.viewer.isStructureAvailable(aa))
-            this.setState({ ...this.state, currentAA: aa, errorMsg: null });
+            this.setState({ ...this.state, currentAA: aa, label: this.mkLabel(aa, options.shownQmWaterPositions), errorMsg: null });
         else
-            this.setState({ ...this.state, currentAA: '', errorMsg: 'Cannot display amino acid' });
+            this.setState({ ...this.state, currentAA: '', label: '', errorMsg: 'Cannot display amino acid' });
 
         this.viewer.resetCamera(aa);
     }
@@ -658,6 +666,11 @@ export class WatAAApp extends React.Component<WatAAProps, WatAAState> {
             else
                 await this.viewer.hideQmWaterPosition(idx, aa);
         }
+
+        if (show)
+            this.setState({ ...this.state, label: this.mkLabel(this.state.currentAA, idxs) });
+        else
+            this.setState({ ...this.state, label: this.mkLabel(this.state.currentAA) });
     }
 
     toggleSpinning(enabled: boolean) {
@@ -709,7 +722,7 @@ export class WatAAApp extends React.Component<WatAAProps, WatAAState> {
                         ? <div className='waav-error-msg'>{this.state.errorMsg}</div>
                         : undefined
                     }
-                    <div className='waav-aminoacid-identifier'>{this.state.currentAA}</div>
+                    <div className='waav-aminoacid-identifier'>{this.state.label}</div>
                 </div>
                 <Measurements plugin={this.viewer?.plugin} orientation='horizontal' />
             </div>
