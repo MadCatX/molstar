@@ -465,6 +465,8 @@ class WatAAViewer {
                         borderColor: Color(0x000000),
                         borderWidth: 0.3,
                         textColor: Color(0xFFFFFFF),
+                        offsetX: 0.25,
+                        offsetY: 0.25,
                         offsetZ: 0.5,
                         customText: `HS${hydSiteNo}`,
                     },
