@@ -45,6 +45,8 @@ const SPIN_ANIM_THETA = (SPIN_ANIM_DPS * Math.PI / 180) * (SPIN_ANIM_PERIOD_MS /
 
 const SelectAllProtein = Script('(sel.atom.atoms (= atom.entity-type polymer))', 'mol-script');
 
+const AAVisualTag = 'aa-visual';
+
 const spinnerAxis = Vec3.zero();
 const spinnerQuat = Quat.zero();
 const spinnerDirection = Vec3.zero();
@@ -227,6 +229,16 @@ class WatAAViewer {
         return `${ref}_${kind}_visual`;
     }
 
+    async hideByTag(tag: string) {
+        const state = this.plugin.state.data;
+        const b = state.build();
+        let tagged = state.select(StateSelection.withTag(StateSelection.Generators.root.subtree(), tag));
+        for (const obj of tagged)
+            b.delete(obj);
+
+        await b.commit();
+    }
+
     async hideDensityMap(ref: string) {
         await this.hide([this.mkVisRef(ref, 'density-map')]);
     }
@@ -321,13 +333,9 @@ class WatAAViewer {
     }
 
     async showDensityMap(occupancy: number, ref: string) {
-        const volRef = this.mkDensityMapRef(ref);
         const mapRef = this.mkDensityMapRef(ref);
         const state = this.plugin.state.data;
 
-        const volCell = state.cells.get(volRef);
-        if (!volCell)
-            return;
         if (!state.cells.has(mapRef))
             return;
 
@@ -347,6 +355,7 @@ class WatAAViewer {
                 },
                 {
                     ref: this.mkVisRef(ref, 'density-map'),
+                    tags: AAVisualTag,
                 }
             );
 
@@ -379,6 +388,7 @@ class WatAAViewer {
                 },
                 {
                     ref: this.mkVisRef(qmwIdf, 'structure-water'),
+                    tags: AAVisualTag,
                 }
             );
 
@@ -409,6 +419,7 @@ class WatAAViewer {
                 },
                 {
                     ref: this.mkVisRef(ref, 'structure-protein'),
+                    tags: AAVisualTag,
                 }
             );
 
@@ -431,6 +442,7 @@ class WatAAViewer {
                     },
                     {
                         ref: this.mkVisRef(ref, 'structure-water'),
+                        tags: AAVisualTag,
                     }
                 );
         }
@@ -482,7 +494,7 @@ class WatAAViewer {
         await b.commit();
     }
 
-    toggleSpinning(enabled: boolean) {
+    async toggleSpinning(enabled: boolean) {
         if (enabled) {
 
             this.spinner = setInterval(() => {
@@ -511,7 +523,7 @@ class WatAAViewer {
             if (!snapshot)
                 return;
 
-            PluginCommands.Camera.SetSnapshot(this.plugin, { snapshot, durationMs: 0 });
+            await PluginCommands.Camera.SetSnapshot(this.plugin, { snapshot, durationMs: 0 });
         }
     }
 
@@ -608,15 +620,11 @@ export class WatAAApp extends React.Component<WatAAProps, WatAAState> {
     }
 
     async hideAminoAcid(aa: string) {
-        this.viewer!.toggleSpinning(false);
+        if (!this.viewer)
+            throw new Error('Attempted to hide amino acid before initializing the viewer');
 
-        if (this.loadedAminoAcids.has(aa)) {
-            await this.viewer!.hideStructure(aa);
-            await this.viewer!.hideDensityMap(aa);
-
-            for (let idx = 0; idx < this.loadedAminoAcids.get(aa)!.numHydrationSites; idx++)
-                await this.viewer!.hideQmWaterPosition(idx, aa);
-        }
+        await this.viewer.toggleSpinning(false);
+        await this.viewer.hideByTag(AAVisualTag);
 
         if (this.state.currentAA === aa)
             this.setState({ ...this.state, currentAA: '', label: '', errorMsg: null });
