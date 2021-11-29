@@ -286,7 +286,7 @@ class WatAAViewer {
 
     async loadStructure(url: string, ref: string) {
         const fsRef = this.mkFullStructRef(ref)
-        let b = this.plugin.state.data.build().toRoot()
+        const b = this.plugin.state.data.build().toRoot()
             .apply(StateTransforms.Data.Download, { url }, { state: { isGhost: true }, ref: this.mkDataRef(ref, 'structure') })
             .apply(StateTransforms.Model.TrajectoryFromPDB, {}, { state: { isGhost: true } })
             .apply(StateTransforms.Model.ModelFromTrajectory, { modelIndex: 0 })
