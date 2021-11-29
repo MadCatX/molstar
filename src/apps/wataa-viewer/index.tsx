@@ -337,7 +337,7 @@ class WatAAViewer {
 
         if (!cameraLocked) {
             cameraLocked = true;
-            await PluginCommands.Camera.Reset(this.plugin, { snapshot: { target: proteinSphere.center, position: camResTmp } });
+            await PluginCommands.Camera.Reset(this.plugin, { snapshot: { target: proteinSphere.center, position: camResTmp }, durationMs: 0 });
             cameraLocked = false;
         }
     }
@@ -506,7 +506,7 @@ class WatAAViewer {
 
     toggleSpinning(enabled: boolean) {
         if (enabled) {
-            this.spinner = setInterval(async () => {
+            this.spinner = setInterval(() => {
                 const snapshot = this.plugin.canvas3d?.camera?.getSnapshot();
                 if (!snapshot)
                     return;
@@ -517,11 +517,8 @@ class WatAAViewer {
                 Vec3.transformQuat(spinnerDirection, spinnerDirection, spinnerQuat);
                 Vec3.add(spinnerDirection, spinnerDirection, snapshot.target);
 
-                if (!cameraLocked) {
-                    cameraLocked = true;
-                    await PluginCommands.Camera.SetSnapshot(this.plugin, { snapshot: { position: spinnerDirection }, durationMs: 0 });
-                    cameraLocked = false;
-                }
+                if (!cameraLocked)
+                    this.plugin.canvas3d?.requestCameraReset({ snapshot: { position: spinnerDirection }, durationMs: 0 });
             },
             SPIN_ANIM_PERIOD_MS
             );
