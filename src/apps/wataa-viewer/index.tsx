@@ -235,7 +235,7 @@ class WatAAViewer {
     async hideByTag(tag: string) {
         const state = this.plugin.state.data;
         const b = state.build();
-        let tagged = state.select(StateSelection.withTag(StateSelection.Generators.root.subtree(), tag));
+        const tagged = state.select(StateSelection.withTag(StateSelection.Generators.root.subtree(), tag));
         for (const obj of tagged)
             b.delete(obj);
 
