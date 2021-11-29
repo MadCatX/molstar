@@ -311,7 +311,7 @@ class WatAAViewer {
         await b.commit({ revertOnError: true });
     }
 
-    resetCamera(ref: string) {
+    async resetCamera(ref: string) {
         const cells = this.plugin.state.data.cells;
         const cell = cells.get(this.mkStructRef(ref, 'protein'));
         if (!cell)
@@ -329,7 +329,7 @@ class WatAAViewer {
 
         snapshot.radius = sphere.radius * 3.0;
 
-        PluginCommands.Camera.SetSnapshot(this.plugin, { snapshot });
+        await PluginCommands.Camera.SetSnapshot(this.plugin, { snapshot });
     }
 
     async showDensityMap(occupancy: number, ref: string) {
@@ -424,7 +424,8 @@ class WatAAViewer {
             );
 
         structRef = this.mkStructRef(ref, 'water');
-        if (state.cells.has(structRef)) {
+        const watersCell = state.cells.get(structRef)!;
+        if (watersCell && watersCell.obj!.data) {
             b.to(structRef)
                 .apply(
                     StateTransforms.Representation.StructureRepresentation3D,
@@ -445,56 +446,55 @@ class WatAAViewer {
                         tags: AAVisualTag,
                     }
                 );
-        }
 
-        /* Here we assume that the selected substructure contains only waters
-         * Additional check for entity type === "water" would be needed had this assumption not been true */
-        const structCell = state.cells.get(structRef)!;
-        const structure = structCell.obj!.data;
-        for (const unit of structure.units) {
-            for (let idx = 0; idx < unit.elements.length; idx++) {
-                const eI = unit.elements[idx];
-                const location = StructureElement.Location.create(structure, unit, eI);
-                const hydSiteNo = StructureProperties.residue.auth_seq_id(location);
+            /* Here we assume that the selected substructure contains only waters
+             * Additional check for entity type === "water" would be needed had this assumption not been true */
+            const data = watersCell.obj!.data;
+            for (const unit of data.units) {
+                for (let idx = 0; idx < unit.elements.length; idx++) {
+                    const eI = unit.elements[idx];
+                    const location = StructureElement.Location.create(data, unit, eI);
+                    const hydSiteNo = StructureProperties.residue.auth_seq_id(location);
 
-                const loci = StructureElement.Loci(structure, [{ unit, indices: OrderedSet.ofSingleton(idx as UnitIndex) }]);
+                    const loci = StructureElement.Loci(data, [{ unit, indices: OrderedSet.ofSingleton(idx as UnitIndex) }]);
 
-                b.apply(
-                    StateTransforms.Model.MultiStructureSelectionFromExpression,
-                    {
-                        selections: [
-                            { key: 'hs', ref: structCell.transform.ref, expression: StructureElement.Loci.toExpression(loci) }
-                        ],
-                        isTransitive: true,
-                    },
-                    {
-                        dependsOn: [structCell.transform.ref],
-                        tags: 'hs',
-                        state: { isGhost: true },
-                    }
-                ).apply(
-                    StateTransforms.Representation.StructureSelectionsLabel3D,
-                    {
-                        borderColor: Color(0x000000),
-                        borderWidth: 0.3,
-                        textColor: Color(0xFFFFFFF),
-                        offsetX: 0.25,
-                        offsetY: 0.25,
-                        offsetZ: 0.5,
-                        customText: `HS${hydSiteNo}`,
-                    },
-                    {
-                        state: { isGhost: true },
-                        tags: 'hs'
-                    }
-                );
+                    b.apply(
+                        StateTransforms.Model.MultiStructureSelectionFromExpression,
+                        {
+                            selections: [
+                                { key: 'hs', ref: watersCell.transform.ref, expression: StructureElement.Loci.toExpression(loci) }
+                            ],
+                            isTransitive: true,
+                        },
+                        {
+                            dependsOn: [watersCell.transform.ref],
+                            tags: 'hs',
+                            state: { isGhost: true },
+                        }
+                    ).apply(
+                        StateTransforms.Representation.StructureSelectionsLabel3D,
+                        {
+                            borderColor: Color(0x000000),
+                            borderWidth: 0.3,
+                            textColor: Color(0xFFFFFFF),
+                            offsetX: 0.25,
+                            offsetY: 0.25,
+                            offsetZ: 0.5,
+                            customText: `HS${hydSiteNo}`,
+                        },
+                        {
+                            state: { isGhost: true },
+                            tags: 'hs'
+                        }
+                    );
+                }
             }
         }
 
         await b.commit();
     }
 
-    async toggleSpinning(enabled: boolean) {
+    toggleSpinning(enabled: boolean) {
         if (enabled) {
 
             this.spinner = setInterval(() => {
@@ -516,14 +516,8 @@ class WatAAViewer {
             if (!this.spinner)
                 return;
 
-            clearInterval(this.spinner!);
+            clearInterval(this.spinner);
             this.spinner = null;
-
-            const snapshot = this.plugin.canvas3d?.camera?.getSnapshot();
-            if (!snapshot)
-                return;
-
-            await PluginCommands.Camera.SetSnapshot(this.plugin, { snapshot, durationMs: 0 });
         }
     }
 
@@ -623,7 +617,7 @@ export class WatAAApp extends React.Component<WatAAProps, WatAAState> {
         if (!this.viewer)
             throw new Error('Attempted to hide amino acid before initializing the viewer');
 
-        await this.viewer.toggleSpinning(false);
+        this.viewer.toggleSpinning(false);
         await this.viewer.hideByTag(AAVisualTag);
 
         if (this.state.currentAA === aa)
@@ -647,12 +641,13 @@ export class WatAAApp extends React.Component<WatAAProps, WatAAState> {
         for (const num of options.shownQmWaterPositions ?? [])
             await this.viewer.showQmWaterPosition(num, aa);
 
+        await this.viewer.resetCamera(aa);
+
         if (this.viewer.isStructureAvailable(aa))
             this.setState({ ...this.state, currentAA: aa, label: this.mkLabel(aa, options.shownQmWaterPositions), errorMsg: null });
         else
             this.setState({ ...this.state, currentAA: '', label: '', errorMsg: 'Cannot display amino acid' });
 
-        this.viewer.resetCamera(aa);
     }
 
     async toggleCrystalStructure(aa: string, show: boolean) {
