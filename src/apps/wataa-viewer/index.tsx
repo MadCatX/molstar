@@ -44,6 +44,7 @@ const SPIN_ANIM_DPS = -12; // Rotation speed in degrees per second
 const SPIN_ANIM_THETA = (SPIN_ANIM_DPS * Math.PI / 180) * (SPIN_ANIM_PERIOD_MS / 1000);
 
 const SelectAllProtein = Script('(sel.atom.atoms (= atom.entity-type polymer))', 'mol-script');
+const SelectEverything = Script('(sel.atom.atoms true)', 'mol-script');
 
 const AAVisualTag = 'aa-visual';
 
@@ -51,6 +52,8 @@ const spinnerAxis = Vec3.zero();
 const spinnerQuat = Quat.zero();
 const spinnerDirection = Vec3.zero();
 const camResTmp = Vec3.zero();
+
+let cameraLocked = false;
 
 const WAApi = new Api();
 (window as any).WAApi = WAApi;
@@ -313,23 +316,30 @@ class WatAAViewer {
 
     async resetCamera(ref: string) {
         const cells = this.plugin.state.data.cells;
-        const cell = cells.get(this.mkStructRef(ref, 'protein'));
-        if (!cell)
+        const proteinCell = cells.get(this.mkStructRef(ref, 'protein'));
+        const everythingCell = cells.get(this.mkFullStructRef(ref));
+        if (!proteinCell || !everythingCell) {
+            console.warn('Attempted to reset camera with no structure');
             return;
+        }
 
-        const sphere = Loci.getBoundingSphere(Script.toLoci(SelectAllProtein, cell.obj!.data));
-        if (!sphere)
+        const proteinSphere = Loci.getBoundingSphere(Script.toLoci(SelectAllProtein, proteinCell.obj!.data));
+        const everythingSphere = Loci.getBoundingSphere(Script.toLoci(SelectEverything, everythingCell.obj!.data));
+        if (!proteinSphere || !everythingSphere) {
+            console.warn('Unable to get bounding spheres for camera positioning');
             return;
+        }
 
-        const snapshot = this.plugin.canvas3d!.camera.getSnapshot();
-        snapshot.target = sphere.center;
-        Vec3.sub(camResTmp, snapshot.position, snapshot.target);
-        Vec3.scale(camResTmp, camResTmp, 0.25);
-        Vec3.add(snapshot.position, snapshot.position, camResTmp);
+        const radius = everythingSphere.radius * 6.0;
+        const zv = Vec3.zero();
+        zv[2] = radius;
+        Vec3.sub(camResTmp, proteinSphere.center, zv);
 
-        snapshot.radius = sphere.radius * 3.0;
-
-        await PluginCommands.Camera.SetSnapshot(this.plugin, { snapshot });
+        if (!cameraLocked) {
+            cameraLocked = true;
+            await PluginCommands.Camera.Reset(this.plugin, { snapshot: { target: proteinSphere.center, position: camResTmp } });
+            cameraLocked = false;
+        }
     }
 
     async showDensityMap(occupancy: number, ref: string) {
@@ -496,8 +506,7 @@ class WatAAViewer {
 
     toggleSpinning(enabled: boolean) {
         if (enabled) {
-
-            this.spinner = setInterval(() => {
+            this.spinner = setInterval(async () => {
                 const snapshot = this.plugin.canvas3d?.camera?.getSnapshot();
                 if (!snapshot)
                     return;
@@ -506,9 +515,13 @@ class WatAAViewer {
                 Vec3.normalize(spinnerAxis, snapshot.up);
                 Quat.setAxisAngle(spinnerQuat, spinnerAxis, SPIN_ANIM_THETA);
                 Vec3.transformQuat(spinnerDirection, spinnerDirection, spinnerQuat);
-                Vec3.add(snapshot.position, spinnerDirection, snapshot.target);
+                Vec3.add(spinnerDirection, spinnerDirection, snapshot.target);
 
-                PluginCommands.Camera.SetSnapshot(this.plugin, { snapshot, durationMs: 0 });
+                if (!cameraLocked) {
+                    cameraLocked = true;
+                    await PluginCommands.Camera.SetSnapshot(this.plugin, { snapshot: { position: spinnerDirection }, durationMs: 0 });
+                    cameraLocked = false;
+                }
             },
             SPIN_ANIM_PERIOD_MS
             );
@@ -628,9 +641,6 @@ export class WatAAApp extends React.Component<WatAAProps, WatAAState> {
         if (!this.viewer)
             throw new Error('Attempted to show amino acid before initializing the viewer');
 
-        Measurements.clearSelection(this.viewer.plugin);
-        Measurements.removeAllMeasurements(this.viewer.plugin);
-
         await this.loadAminoAcid(aa, structUrl, densityMapUrl, qmWaterStructUrls);
 
         if (options.showCrystalStructure)
@@ -642,6 +652,9 @@ export class WatAAApp extends React.Component<WatAAProps, WatAAState> {
             await this.viewer.showQmWaterPosition(num, aa);
 
         await this.viewer.resetCamera(aa);
+
+        Measurements.clearSelection(this.viewer.plugin);
+        Measurements.removeAllMeasurements(this.viewer.plugin);
 
         if (this.viewer.isStructureAvailable(aa))
             this.setState({ ...this.state, currentAA: aa, label: this.mkLabel(aa, options.shownQmWaterPositions), errorMsg: null });
