@@ -11,6 +11,7 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { Api } from './api';
 import { Measurements } from '../watlas-common/measurements';
+import { Util } from '../watlas-common/util';
 import { OrderedSet } from '../../mol-data/int';
 import { Vec3 } from '../../mol-math/linear-algebra/3d/vec3';
 import { Quat } from '../../mol-math/linear-algebra/3d/quat';
@@ -597,9 +598,13 @@ export class WatAAApp extends React.Component<WatAAProps, WatAAState> {
     }
 
     private mkLabel(aa: string, qmWaters?: number[]) {
+        const blks = aa.split('_');
+        blks[0] = Util.capitalize(blks[0]);
+        const label = blks.join('_');
+
         if (qmWaters && qmWaters.length > 0)
-            return aa + '_' + qmWaters.map(idx => `HS${idx + 1}`).join('_');
-        return aa;
+            return label + '_' + qmWaters.map(idx => `HS${idx + 1}`).join('_');
+        return label;
     }
 
     async hideAminoAcid(aa: string) {
