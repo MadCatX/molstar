@@ -596,7 +596,7 @@ export class WatAAApp extends React.Component<WatAAProps, WatAAState> {
 
     private mkLabel(aa: string, qmWaters?: number[]) {
         if (qmWaters && qmWaters.length > 0)
-            return aa + '_' + qmWaters.map(idx => `HS${idx+1}`).join('_');
+            return aa + '_' + qmWaters.map(idx => `HS${idx + 1}`).join('_');
         return aa;
     }
 
