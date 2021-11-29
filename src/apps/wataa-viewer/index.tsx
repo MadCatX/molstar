@@ -39,7 +39,7 @@ import { MarkerAction } from '../../mol-util/marker-action';
 import { ParamDefinition as PD } from '../../mol-util/param-definition';
 
 const SPIN_ANIM_PERIOD_MS = 50;
-const SPIN_ANIM_DPS = 20; // Rotation speed in degrees per second
+const SPIN_ANIM_DPS = -12; // Rotation speed in degrees per second
 const SPIN_ANIM_THETA = (SPIN_ANIM_DPS * Math.PI / 180) * (SPIN_ANIM_PERIOD_MS / 1000);
 
 const SelectAllProtein = Script('(sel.atom.atoms (= atom.entity-type polymer))', 'mol-script');
