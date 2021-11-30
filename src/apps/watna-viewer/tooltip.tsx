@@ -24,11 +24,11 @@ export class Tooltip extends React.Component<Tooltip.Props, State> {
 
     render() {
         return (
-            <div className='wva-tooltip'
+            <div className='wnav-tooltip'
                 onMouseEnter={() => this.setState({ ...this.state, tooltipShown: true })}
                 onMouseLeave={() => this.setState({ ...this.state, tooltipShown: false })}
             >
-                {this.state.tooltipShown ? <div className='wva-tooltip-text'>{this.props.text}</div> : undefined}
+                {this.state.tooltipShown ? <div className='wnav-tooltip-text'>{this.props.text}</div> : undefined}
                 {this.props.children}
             </div>
         );
