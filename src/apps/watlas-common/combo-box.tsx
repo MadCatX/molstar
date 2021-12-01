@@ -12,15 +12,15 @@ import * as React from 'react';
 export class ComboBox extends React.Component<ComboBox.Props> {
     render() {
         return (
-            <div className='wnav-combobox-container'>
+            <div className='wva-combobox-container'>
                 <select
-                    className='wnav-combobox'
+                    className='wva-combobox'
                     value={this.props.value}
                     onChange={evt => this.props.onChange(evt.target.value)}
                 >
                     {this.props.options.map((opt, idx) => <option key={idx} value={opt.value}>{opt.caption}</option>)}
                 </select>
-                <div className='wnav-combobox-arrow'>▼</div>
+                <div className='wva-combobox-arrow'>▼</div>
             </div>
         );
     }

@@ -9,7 +9,7 @@
 
 import * as React from 'react';
 import { PushButton } from '../watlas-common/push-button';
-import { SpinBox } from './spin-box';
+import { SpinBox } from '../watlas-common/spin-box';
 
 const MinClip = 0.05;
 const MaxClip = 1.20;
@@ -56,7 +56,7 @@ export class Controls extends React.Component<Controls.Props, State> {
                     <>
                         <div className='wnav-ctrl-line wnav-ctrl-item'>
                             <div className='wnav-ctrl-imgdims-line-one wnav-ctrl-fullwidth'>
-                                <div className='wnav-tight'>Width</div>
+                                <div className='wva-tight'>Width</div>
                                 <SpinBox
                                     value={Math.round(this.state.imageWidth)}
                                     min={MinImgDim}
@@ -75,7 +75,7 @@ export class Controls extends React.Component<Controls.Props, State> {
                                             this.setState({ ...this.state, imageWidth: w });
                                     }}
                                 />
-                                <div className='wnav-tight'>Height</div>
+                                <div className='wva-tight'>Height</div>
                                 <SpinBox
                                     value={Math.round(this.state.imageHeight)}
                                     min={MinImgDim}
@@ -97,18 +97,18 @@ export class Controls extends React.Component<Controls.Props, State> {
                             </div>
                         </div>
                         <div className='wnav-ctrl-line wnav-ctrl-item'>
-                            <div className='wnav-tight'>Keep aspect ratio</div>
+                            <div className='wva-tight'>Keep aspect ratio</div>
                             <input
-                                className='wnav-checkbox'
+                                className='wva-checkbox'
                                 type='checkbox'
                                 checked={this.state.imageKeepAspectRatio}
                                 onChange={evt => this.setState({ ...this.state, imageKeepAspectRatio: evt.currentTarget.checked })}
                             />
                         </div>
                         <div className='wnav-ctrl-line wnav-ctrl-item'>
-                            <div className='wnav-tight'>Transparent background</div>
+                            <div className='wva-tight'>Transparent background</div>
                             <input
-                                className='wnav-checkbox'
+                                className='wva-checkbox'
                                 type='checkbox'
                                 checked={this.state.imageTransparentBackground}
                                 onChange={evt => this.setState({ ...this.state, imageTransparentBackground: evt.currentTarget.checked })}
@@ -140,10 +140,10 @@ export class Controls extends React.Component<Controls.Props, State> {
                     !this.props.disableStepWaters
                         ?
                         <div className='wnav-ctrl-line wnav-ctrl-item'>
-                            <div className='wnav-tight'>Show {this.props.nucleotideWatersName.toLowerCase()}</div>
-                            <div className='wnav-vcenter-box'>
+                            <div className='wva-tight'>Show {this.props.nucleotideWatersName.toLowerCase()}</div>
+                            <div className='wva-vcenter-box'>
                                 <input
-                                    className='wnav-checkbox'
+                                    className='wva-checkbox'
                                     type='checkbox'
                                     checked={this.props.showStepWaters}
                                     onChange={evt => this.props.onHideShowStepWaters(evt.currentTarget.checked)}
@@ -154,10 +154,10 @@ export class Controls extends React.Component<Controls.Props, State> {
                         undefined
                 }
                 <div className='wnav-ctrl-line wnav-ctrl-item'>
-                    <div className='wnav-tight'>Clip radius</div>
-                    <div className='wnav-slider-spinbox-group'>
+                    <div className='wva-tight'>Clip radius</div>
+                    <div className='wva-slider-spinbox-group'>
                         <input
-                            className='wnav-range-slider'
+                            className='wva-range-slider'
                             type='range'
                             value={this.props.camClipRadius}
                             min={MinClip}

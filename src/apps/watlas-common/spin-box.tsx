@@ -11,11 +11,11 @@ import * as React from 'react';
 
 export class SpinBox extends React.Component<SpinBox.Props> {
     private clsDisabled() {
-        return this.props.classNameDisabled ?? 'wnav-spinbox-disabled';
+        return this.props.classNameDisabled ?? 'wva-spinbox-disabled';
     }
 
     private clsEnabled() {
-        return this.props.className ?? 'wnav-spinbox';
+        return this.props.className ?? 'wva-spinbox';
     }
 
     render() {

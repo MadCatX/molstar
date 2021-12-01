@@ -19,6 +19,49 @@
     font-weight: bold;
 }
 
+.wva-checkbox {
+    -moz-appearance: none;
+    -webkit-appearance: none;
+    appearance: none;
+
+    border: 0.15em solid #aaa;
+    border-radius: 0;
+    height: 1em;
+    transition: background-color 222ms;
+    width: 1em;
+}
+.wva-checkbox:checked {
+    background-color: #ccc;
+}
+
+.wva-combobox {
+    -moz-appearance: none;
+    -webkit-appearance: none;
+    appearance: none;
+
+    background: none;
+    border: 0.15em solid #ccc;
+    color: black;
+    padding: 0.15em 1em 0.15em 0.15em;
+    z-index: 2;
+}
+
+.wva-combobox-arrow {
+    color: black;
+    font-size: 8pt;
+    margin: auto 0 auto 0;
+    text-align: center;
+    position: relative;
+    left: -1.35em;
+    z-index: 1;
+}
+
+.wva-combobox-container {
+    display: flex;
+    justify-content: center;
+    position: relative;
+}
+
 .wva-expanded-ctrl {
     display: grid;
     grid-template-rows: auto 1fr;
@@ -134,6 +177,44 @@
     text-shadow: 0px 0px 3px rgb(0, 0, 0);
 }
 
+.wva-range-slider {
+    -moz-appearance: none;
+    -webkit-appearance: none;
+    appearance: none;
+
+    background: #ccc;
+    height: 0.15em;
+    margin: auto 0 auto 0;
+}
+.wva-range-slider::-moz-range-thumb {
+    background: white;
+    border-radius: 0;
+    border: 0.15em solid #aaa;
+    cursor: pointer;
+    height: 0.8em;
+    transition: background-color 222ms;
+    width: 0.8em;
+}
+.wva-range-slider::-moz-range-thumb:hover {
+    background-color: #ccc;
+}
+.wva-range-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+
+    background: white;
+    border-radius: 0;
+    border: 0.15em solid #aaa;
+    cursor: pointer;
+    height: 1em;
+    transition: background-color 222ms;
+    width: 1em;
+}
+.wva-range-slider::-webkit-slider-thumb:hover {
+    background-color: #ccc;
+}
+
+
 .wva-spaced-flex-vertical {
     display: flex;
     flex-direction: column;
@@ -146,6 +227,33 @@
     display: grid;
     grid-column-gap: 0.15em;
     grid-template-columns: 1fr 1em 1em 1em;
+}
+
+.wva-slider-spinbox-group {
+    display: grid;
+    grid-column-gap: 1em;
+    grid-template-columns: 1fr 5em;
+}
+
+.wva-spinbox {
+    -moz-appearance: none;
+    -webkit-appearance: none;
+    appearance: none;
+
+    border: 0.15em solid #ccc;
+    border-radius: 0;
+}
+
+.wva-tight {
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.wva-vcenter-box {
+    display: flex;
+    align-items: center;
 }
 
 .wva-vertical {

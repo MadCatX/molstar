@@ -9,14 +9,14 @@
 
 import * as React from 'react';
 import { Coloring } from './coloring';
-import { ComboBox } from './combo-box';
 import { FragmentDescription } from './fragment-description';
 import { Resources } from './resources';
-import { SpinBox } from './spin-box';
 import { Tooltip } from './tooltip';
 import * as ST from './substructure-types';
 import { WatNAUtil } from './watna-util';
+import { ComboBox } from '../watlas-common/combo-box';
 import { PushButton } from '../watlas-common/push-button';
+import { SpinBox } from '../watlas-common/spin-box';
 import { Color } from '../../mol-util/color';
 
 function colorBoxStyle(color: Color) {
@@ -79,9 +79,9 @@ export class FragmentControls extends React.Component<FragmentControls.Props> {
                         value={dm.style}
                         onChange={val => this.props.onDensityMapStyleChanged(val as FragmentDescription.MapStyle, kind)}
                     />
-                    <div className='wnav-vcenter-box'>
+                    <div className='wva-vcenter-box'>
                         <input
-                            className='wnav-checkbox'
+                            className='wva-checkbox'
                             type='checkbox'
                             checked={dm.shown}
                             onChange={evt => this.props.onHideShowResource(evt.target.checked, kind, 'density-map')}
@@ -90,7 +90,7 @@ export class FragmentControls extends React.Component<FragmentControls.Props> {
                 </div>
                 <div className='wnav-ntc-fragment-densitymap-secondrow wnav-ctrl-item'>
                     <input
-                        className='wnav-range-slider'
+                        className='wva-range-slider'
                         type='range'
                         value={isoFixed}
                         min={bounds.min}
@@ -116,9 +116,9 @@ export class FragmentControls extends React.Component<FragmentControls.Props> {
         return (
             <div className='wnav-ctrl-line wnav-ctrl-item'>
                 {this.renderColorCodedCaption(caption, kind)}
-                <div className='wnav-vcenter-box'>
+                <div className='wva-vcenter-box'>
                     <input
-                        className='wnav-checkbox'
+                        className='wva-checkbox'
                         type='checkbox'
                         checked={stru.shown}
                         onChange={evt => this.props.onHideShowResource(evt.target.checked, kind, 'structure')}
