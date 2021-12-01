@@ -994,11 +994,6 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
         this.forceUpdate(); /* Necessary to make sure that we pass the Molstar plugin to Measurements */
     }
 
-    componentDidUpdate(prevProps: WatlasAppProps, prevState: WatlasAppState) {
-        // TODO: Do not do this unconditionally
-            this.viewer?.plugin.handleResize();
-    }
-
     async add(fragId: string, paths: Resources.Paths, referenceName: { text: string; transform: boolean }, shownStructures: Resources.Structures[], shownDensityMaps: Resources.DensityMaps[]) {
         if (!this.viewer)
             return;
@@ -1185,6 +1180,7 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
                     orientation='vertical'
                     initialState='expanded'
                     dontGrow={true}
+                    onStateChanged={() => this.viewer?.plugin.handleResize()}
                 >
                     <div className='wnav-ctrl-panel'>
                         <List
