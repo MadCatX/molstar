@@ -43,7 +43,12 @@
     border: 0.15em solid #ccc;
     color: black;
     padding: 0.15em 1em 0.15em 0.15em;
+    transition: background-color 222ms;
     z-index: 2;
+}
+
+.wva-combobox-disabled {
+  background-color: #aaa;
 }
 
 .wva-combobox-arrow {
@@ -59,6 +64,18 @@
 .wva-combobox-container {
     display: flex;
     justify-content: center;
+    position: relative;
+}
+
+.wva-combobox-container-left-aligned {
+    display: flex;
+    justify-content: left;
+    position: relative;
+}
+
+.wva-combobox-container-right-aligned {
+    display: flex;
+    justify-content: right;
     position: relative;
 }
 
@@ -253,6 +270,11 @@
 
 .wva-vcenter-box {
     display: flex;
+    align-items: center;
+}
+
+.wva-vcenter-box-inline {
+    display: inline-flex;
     align-items: center;
 }
 
