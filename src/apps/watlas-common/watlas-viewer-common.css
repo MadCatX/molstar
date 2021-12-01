@@ -67,10 +67,8 @@
     background-color: #ccc;
 }
 
-.wva-measurements-container-expanded-horizontal {
-}
-
-.wva-measurements-container-expanded-vertical {
+.wva-measurements-container {
+    height: 100%;
     width: 20em;
 }
 
