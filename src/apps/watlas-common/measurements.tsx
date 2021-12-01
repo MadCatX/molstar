@@ -8,6 +8,7 @@
  */
 
 import * as React from 'react';
+import { Collapsible } from './collapsible';
 import { PushButton } from './push-button';
 import { Util } from './util';
 import { Loci } from '../../mol-model/loci';
@@ -425,82 +426,53 @@ export class Measurements extends PurePluginUIComponent<Measurements.Props, Stat
     render() {
         const history = this.props.plugin?.managers.structure.selection.additionsHistory ?? [];
 
-        if (this.state.expanded) {
-            return (
-                <div className={'wva-measurements-container-expanded-' + this.props.orientation}>
-                    <div className='wva-collapse-ctrl-header'>
-                        <div className='wva-block-caption'>Measurements</div>
-                        <PushButton
-                            className='wva-pushbutton wva-pushbutton-border wva-padded-pushbutton wva-collapse-expand-pushbutton'
-                            value='◀'
-                            onClick={() => this.setState({ ...this.state, expanded: false })}
-                        />
-                    </div>
-                    <div className='wva-measurements-current-sel-list'>
-                        <div className='wva-block-subcaption'>Current selection</div>
-                        {this.selections()}
-                    </div>
-                    <div className='wva-spaced-flex-vertical'>
-                        {<PushButton
-                            className='wva-pushbutton wva-pushbutton-border wva-padded-pushbutton'
-                            classNameDisabled='wva-pushbutton-disabled wva-padded-pushbutton'
-                            value='Distance'
-                            onClick={() => this.measureDistance()}
-                            enabled={history.length > 1}
-                        />}
-                        {<PushButton
-                            className='wva-pushbutton wva-pushbutton-border wva-padded-pushbutton'
-                            classNameDisabled='wva-pushbutton-disabled wva-padded-pushbutton'
-                            value='Angle'
-                            onClick={() => this.measureAngle()}
-                            enabled={history.length > 2}
-                        />}
-                        {<PushButton
-                            className='wva-pushbutton wva-pushbutton-border wva-padded-pushbutton'
-                            classNameDisabled='wva-pushbutton-disabled wva-padded-pushbutton'
-                            value='Dihedral'
-                            onClick={() => this.measureDihedral()}
-                            enabled={history.length > 3}
-                        />}
-                    </div>
-                    <div className='wva-spaced-flex-vertical'>
-                        {this.measurements()}
-                    </div>
-                    <div className='wva-spaced-flex-vertical'>
-                        <PushButton
-                            className='wva-pushbutton wva-pushbutton-border wva-padded-pushbutton'
-                            value='Remove all'
-                            onClick={() => this.removeAll()}
-                        />
-                    </div>
+        return (
+            <Collapsible
+                caption='Measurements'
+                initialState='collapsed'
+                orientation={this.props.orientation}
+                dontGrow={true}
+                onStateChanged={ isCollapsed => this.setState({ ...this.state, expanded: !isCollapsed }) }
+            >
+                <div className='wva-measurements-current-sel-list'>
+                    <div className='wva-block-subcaption'>Current selection</div>
+                    {this.selections()}
                 </div>
-            );
-        } else {
-            if (this.props.orientation === 'vertical') {
-                return (
-                    <div className='wva-expand-ctrl-header-vertical'>
-                        <PushButton
-                            className='wva-pushbutton wva-pushbutton-border wva-padded-pushbutton wva-collapse-expand-pushbutton'
-                            value='▼'
-                            onClick={() => this.setState({ ...this.state, expanded: true })}
-                        />
-                        <div className='wva-block-caption wva-vertical'>Measurements</div>
-                        <div />
-                    </div>
-                );
-            } else {
-                return (
-                    <div className='wva-expand-ctrl-header-horizontal'>
-                        <div className='wva-block-caption'>Measurements</div>
-                        <PushButton
-                            className='wva-pushbutton wva-pushbutton-border wva-padded-pushbutton wva-collapse-expand-pushbutton'
-                            value='▼'
-                            onClick={() => this.setState({ ...this.state, expanded: true })}
-                        />
-                    </div>
-                );
-            }
-        }
+                <div className='wva-spaced-flex-vertical'>
+                    {<PushButton
+                        className='wva-pushbutton wva-pushbutton-border wva-padded-pushbutton'
+                        classNameDisabled='wva-pushbutton-disabled wva-padded-pushbutton'
+                        value='Distance'
+                        onClick={() => this.measureDistance()}
+                        enabled={history.length > 1}
+                    />}
+                    {<PushButton
+                        className='wva-pushbutton wva-pushbutton-border wva-padded-pushbutton'
+                        classNameDisabled='wva-pushbutton-disabled wva-padded-pushbutton'
+                        value='Angle'
+                        onClick={() => this.measureAngle()}
+                        enabled={history.length > 2}
+                    />}
+                    {<PushButton
+                        className='wva-pushbutton wva-pushbutton-border wva-padded-pushbutton'
+                        classNameDisabled='wva-pushbutton-disabled wva-padded-pushbutton'
+                        value='Dihedral'
+                        onClick={() => this.measureDihedral()}
+                        enabled={history.length > 3}
+                    />}
+                </div>
+                <div className='wva-spaced-flex-vertical'>
+                    {this.measurements()}
+                </div>
+                <div className='wva-spaced-flex-vertical'>
+                    <PushButton
+                        className='wva-pushbutton wva-pushbutton-border wva-padded-pushbutton'
+                        value='Remove all'
+                        onClick={() => this.removeAll()}
+                    />
+                </div>
+            </Collapsible>
+        );
     }
 }
 

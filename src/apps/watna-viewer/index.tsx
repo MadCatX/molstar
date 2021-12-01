@@ -17,8 +17,8 @@ import { List } from './list';
 import { Resources } from './resources';
 import { WatNAUtil } from './watna-util';
 import * as ST from './substructure-types';
+import { Collapsible } from '../watlas-common/collapsible';
 import { Measurements } from '../watlas-common/measurements';
-import { PushButton } from '../watlas-common/push-button';
 import { BoundaryHelper } from '../../mol-math/geometry/boundary-helper';
 import { Loci } from '../../mol-model/loci';
 import { Structure } from '../../mol-model/structure';
@@ -743,7 +743,6 @@ interface WatlasAppProps extends WatlasApp.Configuration {
 
 interface WatlasAppState {
     camClipRadius: number;
-    controlPanelExpanded: boolean;
     fragments: FragmentMap;
     hue: number;
     showStepWaters: boolean;
@@ -763,7 +762,6 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
 
         this.state = {
             camClipRadius: DefaultRadiusRatio,
-            controlPanelExpanded: true,
             fragments: new Map(),
             hue: Coloring.nextHue(0),
             showStepWaters: false,
@@ -997,9 +995,8 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
     }
 
     componentDidUpdate(prevProps: WatlasAppProps, prevState: WatlasAppState) {
-        if (this.state.controlPanelExpanded !== prevState.controlPanelExpanded) {
+        // TODO: Do not do this unconditionally
             this.viewer?.plugin.handleResize();
-        }
     }
 
     async add(fragId: string, paths: Resources.Paths, referenceName: { text: string; transform: boolean }, shownStructures: Resources.Structures[], shownDensityMaps: Resources.DensityMaps[]) {
@@ -1179,138 +1176,125 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
         return (
             <div className='wnav-app-container'>
                 <div id={this.props.elemId + '-viewer'} className='wnav-viewer'></div>
-                <Measurements plugin={this.viewer?.plugin} orientation='vertical' />
-                {this.state.controlPanelExpanded
-                    ?
-                    <div>
-                        <div className='wva-collapse-ctrl-header'>
-                            <div className='wva-block-caption'>Controls</div>
-                            <PushButton
-                                className='wva-pushbutton wva-pushbutton-border wva-padded-pushbutton wva-collapse-expand-pushbutton'
-                                value='◀'
-                                onClick={() => this.setState({ ...this.state, controlPanelExpanded: false })}
-                            />
-                        </div>
-                        <div className='wnav-ctrl-panel'>
-                            <List
-                                fragments={this.state.fragments}
-                                showStepWaters={this.state.showStepWaters}
-                                onChangeNonNucleicAppearance={(repr, type, base) => this.setNonNucleicAppearance(repr, type, base)}
-                                onDensityMapIsoChanged={(iso, kind, base) => {
-                                    const ref = baseRefToResRef(base, kind, 'density-map');
-                                    const { colors } = this.fragmentColorsInternal(base);
-                                    const dm = this.densityMapData(base, kind);
+                <Measurements
+                    plugin={this.viewer?.plugin}
+                    orientation='vertical'
+                />
+                <Collapsible
+                    caption='Controls'
+                    orientation='vertical'
+                    initialState='expanded'
+                    dontGrow={true}
+                >
+                    <div className='wnav-ctrl-panel'>
+                        <List
+                            fragments={this.state.fragments}
+                            showStepWaters={this.state.showStepWaters}
+                            onChangeNonNucleicAppearance={(repr, type, base) => this.setNonNucleicAppearance(repr, type, base)}
+                            onDensityMapIsoChanged={(iso, kind, base) => {
+                                const ref = baseRefToResRef(base, kind, 'density-map');
+                                const { colors } = this.fragmentColorsInternal(base);
+                                const dm = this.densityMapData(base, kind);
 
-                                    this.viewer!.setDensityMapAppearance(iso, dm.style, colors.get(kind)!, ref);
+                                this.viewer!.setDensityMapAppearance(iso, dm.style, colors.get(kind)!, ref);
 
-                                    this.updateFragmentDensityMap({ ...dm, iso }, base, kind);
-                                }}
-                                onDensityMapStyleChanged={(style, kind, base) => {
-                                    const ref = baseRefToResRef(base, kind, 'density-map');
-                                    const { colors } = this.fragmentColorsInternal(base);
-                                    const dm = this.densityMapData(base, kind);
+                                this.updateFragmentDensityMap({ ...dm, iso }, base, kind);
+                            }}
+                            onDensityMapStyleChanged={(style, kind, base) => {
+                                const ref = baseRefToResRef(base, kind, 'density-map');
+                                const { colors } = this.fragmentColorsInternal(base);
+                                const dm = this.densityMapData(base, kind);
 
-                                    this.viewer!.setDensityMapAppearance(dm.iso, style, colors.get(kind)!, ref);
+                                this.viewer!.setDensityMapAppearance(dm.iso, style, colors.get(kind)!, ref);
 
-                                    this.updateFragmentDensityMap({ ...dm, style }, base, kind);
-                                }}
-                                onHideShowResource={(show, kind, type, base) => {
-                                    const frag = this.state.fragments.get(base)!;
-                                    const ref = baseRefToResRef(base, kind, type);
+                                this.updateFragmentDensityMap({ ...dm, style }, base, kind);
+                            }}
+                            onHideShowResource={(show, kind, type, base) => {
+                                const frag = this.state.fragments.get(base)!;
+                                const ref = baseRefToResRef(base, kind, type);
 
-                                    if (type === 'density-map') {
-                                        const dm = frag.densityMaps.get(kind as Resources.DensityMaps)!;
-                                        if (show) {
-                                            const color = frag.colors.get(kind)!;
-                                            this.viewer!.showDensityMap(ref, dm.iso, dm.style, color);
-                                        } else
-                                            this.viewer!.hideDensityMap(ref);
+                                if (type === 'density-map') {
+                                    const dm = frag.densityMaps.get(kind as Resources.DensityMaps)!;
+                                    if (show) {
+                                        const color = frag.colors.get(kind)!;
+                                        this.viewer!.showDensityMap(ref, dm.iso, dm.style, color);
+                                    } else
+                                        this.viewer!.hideDensityMap(ref);
 
-                                        this.updateFragmentDensityMap({ ...dm, shown: show }, base, kind as Resources.DensityMaps);
-                                    } else {
-                                        const stru = frag.structures.get(kind)!;
-                                        if (show) {
-                                            const color = frag.colors.get(kind)!;
-                                            this.viewer!.showStructure(ref, color, kind === 'reference' ? 'element-symbol' : 'uniform', 'uniform', kind !== 'reference');
-                                        } else
-                                            this.viewer!.hideStructure(ref);
+                                    this.updateFragmentDensityMap({ ...dm, shown: show }, base, kind as Resources.DensityMaps);
+                                } else {
+                                    const stru = frag.structures.get(kind)!;
+                                    if (show) {
+                                        const color = frag.colors.get(kind)!;
+                                        this.viewer!.showStructure(ref, color, kind === 'reference' ? 'element-symbol' : 'uniform', 'uniform', kind !== 'reference');
+                                    } else
+                                        this.viewer!.hideStructure(ref);
 
-                                        this.updateFragmentStructure({ ...stru, shown: show }, base, kind);
-                                    }
-                                }}
-                                onRemoveClicked={base => {
-                                    const frag = this.state.fragments.get(base)!;
-                                    this.remove(frag.fragId);
-                                }}
-                                hydrationSitesName={this.props.hydrationSitesName}
-                                hydrationDistributionName={this.props.hydrationDistributionName}
-                                nucleotideWatersName={this.props.nucleotideWatersName}
-                                extraStructurePartsName={this.props.extraStructurePartsName}
-                                extraStructurePartsPlacement={this.props.extraStructurePartsPlacement}
-                                treatReferenceAsExtraPart={this.props.treatReferenceAsExtraPart}
-                            />
-                            <Controls
-                                disableStepWaters={this.props.disableStepWaters}
-                                camClipRadius={this.state.camClipRadius}
-                                getCanvasSize={() => {
-                                    const elem = document.querySelector(`#${this.props.elemId}-viewer`);
-                                    if (elem)
-                                        return { width: elem.clientWidth, height: elem.clientHeight };
-                                    return { width: 0, height: 0 };
-                                }}
-                                showStepWaters={this.state.showStepWaters}
-                                onCamClipRadiusChanged={radius => {
-                                    this.viewer!.setCamClipRadius(radius);
-                                    this.setState({ ...this.state, camClipRadius: radius });
-                                }}
-                                onHideShowStepWaters={show => {
-                                    if (!show) {
-                                        for (const [base, frag] of Array.from(this.state.fragments.entries())) {
-                                            const stru = frag.structures.get('nucleotide')!;
-                                            if (stru.shown)
-                                                this.viewer!.hideStructure(baseRefToResRef(base, 'nucleotide', 'structure'));
-
-                                            const dm = frag.densityMaps.get('nucleotide')!;
-                                            if (dm.shown)
-                                                this.viewer!.hideDensityMap(baseRefToResRef(base, 'nucleotide', 'density-map'));
-                                        }
-                                    } else {
-                                        for (const [base, frag] of Array.from(this.state.fragments.entries())) {
-                                            const color = frag.colors.get('nucleotide')!;
-                                            const stru = frag.structures.get('nucleotide')!;
-                                            if (stru.shown)
-                                                this.viewer!.showStructure(baseRefToResRef(base, 'nucleotide', 'structure'), color, 'uniform', 'uniform', true);
-
-                                            const dm = frag.densityMaps.get('nucleotide')!;
-                                            if (dm.shown)
-                                                this.viewer!.showDensityMap(baseRefToResRef(base, 'nucleotide', 'density-map'), dm.iso, dm.style, color);
-                                        }
-                                    }
-
-                                    this.setState({ ...this.state, showStepWaters: show });
-                                }}
-                                onResetCamera={() => {
-                                    if (this.viewer)
-                                        this.viewer.resetCamera(DefaultRadiusRatio);
-                                    this.setState({ ...this.state, camClipRadius: DefaultRadiusRatio });
-                                }}
-                                onResetColors={() => this.resetColors()}
-                                onSaveViewAsImage={(width, height, transparentBackground) => this.saveViewAsImage(width, height, transparentBackground)}
-                                nucleotideWatersName={this.props.nucleotideWatersName}
-                            />
-                        </div>
-                    </div>
-                    :
-                    <div className='wva-expand-ctrl-header-vertical'>
-                        <PushButton
-                            className='wva-pushbutton wva-pushbutton-border wva-padded-pushbutton wva-colapse-expand-pushbutton'
-                            value='▼'
-                            onClick={() => this.setState({ ...this.state, controlPanelExpanded: true })}
+                                    this.updateFragmentStructure({ ...stru, shown: show }, base, kind);
+                                }
+                            }}
+                            onRemoveClicked={base => {
+                                const frag = this.state.fragments.get(base)!;
+                                this.remove(frag.fragId);
+                            }}
+                            hydrationSitesName={this.props.hydrationSitesName}
+                            hydrationDistributionName={this.props.hydrationDistributionName}
+                            nucleotideWatersName={this.props.nucleotideWatersName}
+                            extraStructurePartsName={this.props.extraStructurePartsName}
+                            extraStructurePartsPlacement={this.props.extraStructurePartsPlacement}
+                            treatReferenceAsExtraPart={this.props.treatReferenceAsExtraPart}
                         />
-                        <div className='wva-block-caption wva-vertical'>Controls</div>
-                        <div />
+                        <Controls
+                            disableStepWaters={this.props.disableStepWaters}
+                            camClipRadius={this.state.camClipRadius}
+                            getCanvasSize={() => {
+                                const elem = document.querySelector(`#${this.props.elemId}-viewer`);
+                                if (elem)
+                                    return { width: elem.clientWidth, height: elem.clientHeight };
+                                return { width: 0, height: 0 };
+                            }}
+                            showStepWaters={this.state.showStepWaters}
+                            onCamClipRadiusChanged={radius => {
+                                this.viewer!.setCamClipRadius(radius);
+                                this.setState({ ...this.state, camClipRadius: radius });
+                            }}
+                            onHideShowStepWaters={show => {
+                                if (!show) {
+                                    for (const [base, frag] of Array.from(this.state.fragments.entries())) {
+                                        const stru = frag.structures.get('nucleotide')!;
+                                        if (stru.shown)
+                                            this.viewer!.hideStructure(baseRefToResRef(base, 'nucleotide', 'structure'));
+
+                                        const dm = frag.densityMaps.get('nucleotide')!;
+                                        if (dm.shown)
+                                            this.viewer!.hideDensityMap(baseRefToResRef(base, 'nucleotide', 'density-map'));
+                                    }
+                                } else {
+                                    for (const [base, frag] of Array.from(this.state.fragments.entries())) {
+                                        const color = frag.colors.get('nucleotide')!;
+                                        const stru = frag.structures.get('nucleotide')!;
+                                        if (stru.shown)
+                                            this.viewer!.showStructure(baseRefToResRef(base, 'nucleotide', 'structure'), color, 'uniform', 'uniform', true);
+
+                                        const dm = frag.densityMaps.get('nucleotide')!;
+                                        if (dm.shown)
+                                            this.viewer!.showDensityMap(baseRefToResRef(base, 'nucleotide', 'density-map'), dm.iso, dm.style, color);
+                                    }
+                                }
+
+                                this.setState({ ...this.state, showStepWaters: show });
+                            }}
+                            onResetCamera={() => {
+                                if (this.viewer)
+                                    this.viewer.resetCamera(DefaultRadiusRatio);
+                                this.setState({ ...this.state, camClipRadius: DefaultRadiusRatio });
+                            }}
+                            onResetColors={() => this.resetColors()}
+                            onSaveViewAsImage={(width, height, transparentBackground) => this.saveViewAsImage(width, height, transparentBackground)}
+                            nucleotideWatersName={this.props.nucleotideWatersName}
+                        />
                     </div>
-                }
+                </Collapsible>
             </div>
         );
     }
