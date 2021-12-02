@@ -801,13 +801,19 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
         const frag = this.fragments.get(base)!;
         frag.colors.set(kind, color);
 
+        /* Make sure that reference and base colors are the same as it is the current consensus */
+        if (kind === 'base')
+            frag.colors.set('reference', color);
+        else if (kind === 'reference')
+            frag.colors.set('base', color);
+
         const stru = frag.structures.get(kind)!;
         const resRef = baseRefToResRef(base, kind, 'structure');
         if (stru.shown) {
             const theme = kind === 'reference' ? 'element-symbol' : 'uniform';
             this.viewer!.setStructureAppearance(color, theme, 'uniform', resRef);
         }
-        // TODO: Handle nonnucleic structures
+        // TODO: Fix recoloring of non-nucleic structures but this needs a bugfix elsewhere
 
         const dmRef = kind as Resources.DensityMaps;
         if (Array.from(frag.densityMaps.keys()).includes(dmRef)) {
