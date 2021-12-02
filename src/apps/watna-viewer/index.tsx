@@ -796,7 +796,7 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
         return { colors, nextHue };
     }
 
-    private changeColor(clr: number, kind: Resources.AllKinds, base: string) {
+    private async changeColor(clr: number, kind: Resources.AllKinds, base: string) {
         const color = Color(clr);
         const frag = this.fragments.get(base)!;
         frag.colors.set(kind, color);
@@ -811,15 +811,14 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
         const resRef = baseRefToResRef(base, kind, 'structure');
         if (stru.shown) {
             const theme = kind === 'reference' ? 'element-symbol' : 'uniform';
-            this.viewer!.setStructureAppearance(color, theme, 'uniform', resRef);
+            await this.viewer!.setStructureAppearance(color, theme, 'uniform', resRef);
         }
-        // TODO: Fix recoloring of non-nucleic structures but this needs a bugfix elsewhere
 
         const dmRef = kind as Resources.DensityMaps;
         if (Array.from(frag.densityMaps.keys()).includes(dmRef)) {
             const dm = frag.densityMaps.get(dmRef)!;
             if (dm.shown)
-                this.viewer!.setDensityMapAppearance(dm.iso, dm.style, color, baseRefToResRef(base, dmRef, 'density-map'));
+                await this.viewer!.setDensityMapAppearance(dm.iso, dm.style, color, baseRefToResRef(base, dmRef, 'density-map'));
         }
 
         if (kind === 'base')
@@ -864,7 +863,7 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
         return this.loadedFragments.includes(fragId);
     }
 
-    private resetColors() {
+    private async resetColors() {
         this.assignedHues.clear();
 
         this.hue = Coloring.nextHue(0);
@@ -884,17 +883,19 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
                 const color = frag.colors.get(struRef)!;
                 if (stru.shown) {
                     const theme = struRef === 'reference' ? 'element-symbol' : 'uniform';
-                    this.viewer!.setStructureAppearance(color, theme, 'uniform', resRef);
+                    await this.viewer!.setStructureAppearance(color, theme, 'uniform', resRef);
                 }
+                /*
                 for (const st of ['protein', 'ligand', 'water'] as ST.NonNucleicType[]) {
-                    this.viewer!.setNonNucleicAppearance(st, frag.extraStructurePartsRepresentations.get(st)!, color, 'uniform', resRef);
+                    await this.viewer!.setNonNucleicAppearance(st, frag.extraStructurePartsRepresentations.get(st)!, color, 'uniform', resRef);
                 }
+                */
             }
 
             for (const dmRef of Array.from(frag.densityMaps.keys())) {
                 const dm = frag.densityMaps.get(dmRef)!;
                 if (dm.shown)
-                    this.viewer!.setDensityMapAppearance(dm.iso, dm.style, frag.colors.get(dmRef)!, baseRefToResRef(ref, dmRef, 'density-map'));
+                    await this.viewer!.setDensityMapAppearance(dm.iso, dm.style, frag.colors.get(dmRef)!, baseRefToResRef(ref, dmRef, 'density-map'));
             }
 
             this.assignedHues.set(ref, this.hue);
