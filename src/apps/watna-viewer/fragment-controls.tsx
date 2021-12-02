@@ -210,7 +210,7 @@ export class FragmentControls extends React.Component<FragmentControls.Props> {
             <>
                 <div className='wnav-ntc-fragment-hide-show-btns'>
                     <PushButton
-                        className='wnav-pushbutton wva-pushbutton-border'
+                        className='wva-pushbutton wva-pushbutton-border'
                         text='Show all'
                         onClick={() => this.hideShowAllResources(true)}
                     />
