@@ -236,7 +236,6 @@
     background-color: #ccc;
 }
 
-
 .wva-spaced-flex-vertical {
     display: flex;
     flex-direction: column;
@@ -285,5 +284,5 @@
 
 .wva-vertical {
     writing-mode: vertical-rl;
-    transform: rotate(180deg) translateX(-10%);
+    transform: rotate(180deg);
 }
