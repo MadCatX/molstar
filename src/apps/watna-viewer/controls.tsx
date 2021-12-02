@@ -48,7 +48,6 @@ export class Controls extends React.Component<Controls.Props, State> {
                     />
                     <PushButton
                         className='wva-pushbutton wva-pushbutton-border wva-symbolic-pushbutton'
-                        text={this.state.imageDimsShown ? '▼' : '▲' }
                         onClick={() => this.setState({ ...this.state, imageDimsShown: !this.state.imageDimsShown })}
                     >
                         {this.state.imageDimsShown

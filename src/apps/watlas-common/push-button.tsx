@@ -40,6 +40,9 @@ export class PushButton extends AbstractPushButton<PushButton.Props, {}> {
     }
 
     renderButton() {
+        if (this.props.text && this.props.children)
+            throw new Error('Watlas PushButton must not specify both text and children properties');
+
         if (this.props.text) {
             return (
                 <div
