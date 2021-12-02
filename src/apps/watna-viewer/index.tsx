@@ -1241,6 +1241,7 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
                             extraStructurePartsName={this.props.extraStructurePartsName}
                             extraStructurePartsPlacement={this.props.extraStructurePartsPlacement}
                             treatReferenceAsExtraPart={this.props.treatReferenceAsExtraPart}
+                            pathPrefix={this.props.pathPrefix ?? ''}
                         />
                         <Controls
                             disableStepWaters={this.props.disableStepWaters}

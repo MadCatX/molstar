@@ -63,6 +63,7 @@ export class List extends React.Component<List.Props, State> {
                             );
                         },
                         onRemoveClicked: () => this.props.onRemoveClicked(base),
+                        pathPrefix: this.props.pathPrefix,
                     };
                     return (
                         <FragmentControls {...props} key={base} />
@@ -108,5 +109,6 @@ export namespace List {
         onDensityMapStyleChanged: OnDensityMapStyleChanged;
         onHideShowResource: OnHideShowResource;
         onRemoveClicked: OnRemoveClicked;
+        pathPrefix: string;
     }
 }

@@ -120,11 +120,6 @@
     overflow: scroll;
 }
 
-.wnav-remove-fragment-pushbutton {
-    color: red;
-    font-weight: bold;
-}
-
 .wnav-tooltip {
     position: relative;
 }

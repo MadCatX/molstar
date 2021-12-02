@@ -266,15 +266,20 @@ export class FragmentControls extends React.Component<FragmentControls.Props> {
                     }
                     <PushButton
                         className='wva-pushbutton wva-pushbutton-border wva-symbolic-pushbutton'
-                        text={this.props.expanded ? '▼' : '▲'}
                         onClick={() => this.props.onHideShowClicked()}
-                    />
+                    >
+                        {this.props.expanded
+                            ? <img src={`${this.props.pathPrefix}assets/imgs/triangle-down.svg`} />
+                            : <img src={`${this.props.pathPrefix}assets/imgs/triangle-up.svg`} />
+                        }
+                    </PushButton>
                     <div className='wnav-ntc-color-spacer'></div>
                     <PushButton
                         className='wva-pushbutton wva-pushbutton-border wva-symbolic-pushbutton'
-                        text='❌'
                         onClick={() => this.props.onRemoveClicked()}
-                    />
+                    >
+                        <img src={`${this.props.pathPrefix}assets/imgs/x-red.svg`} />
+                    </PushButton>
                 </div>
                 {this.props.expanded ? this.renderControls() : undefined}
             </div>
@@ -323,5 +328,6 @@ export namespace FragmentControls {
         onHideShowClicked: OnHideShowClicked;
         onHideShowResource: OnHideShowResource;
         onRemoveClicked: OnRemoveClicked;
+        pathPrefix: string;
     }
 }
