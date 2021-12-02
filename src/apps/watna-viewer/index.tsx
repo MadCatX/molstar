@@ -19,6 +19,7 @@ import { WatNAUtil } from './watna-util';
 import * as ST from './substructure-types';
 import { Collapsible } from '../watlas-common/collapsible';
 import { Measurements } from '../watlas-common/measurements';
+import { Util } from '../watlas-common/util';
 import { BoundaryHelper } from '../../mol-math/geometry/boundary-helper';
 import { Loci } from '../../mol-model/loci';
 import { Structure } from '../../mol-model/structure';
@@ -1181,7 +1182,10 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
                     orientation='vertical'
                     initialState='expanded'
                     dontGrow={true}
-                    onStateChanged={() => this.viewer?.plugin.handleResize()}
+                    onStateChanged={() => {
+                        /* Schedule resizing trigger from a timeout to hopefully prevent races */
+                        setTimeout(Util.triggerResize, 10);
+                    }}
                     pathPrefix={this.props.pathPrefix ?? ''}
                 >
                     <div className='wnav-ctrl-panel'>
