@@ -20,7 +20,9 @@ export class ComboBox extends React.Component<ComboBox.Props> {
                 >
                     {this.props.options.map((opt, idx) => <option key={idx} value={opt.value}>{opt.caption}</option>)}
                 </select>
-                <div className='wva-combobox-arrow'>▼</div>
+                <div className='wva-combobox-arrow'>
+                    <img src={`${this.props.pathPrefix}assets/imgs/triangle-down.svg`} />
+                </div>
             </div>
         );
     }
@@ -31,5 +33,6 @@ export namespace ComboBox {
         options: { value: string, caption: string }[];
         value: string;
         onChange(value: string): void;
+        pathPrefix: string;
     }
 }

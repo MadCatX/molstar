@@ -48,17 +48,21 @@
 }
 
 .wva-combobox-disabled {
-  background-color: #aaa;
+    background-color: #aaa;
 }
 
 .wva-combobox-arrow {
+    align-items: center;
     color: black;
-    font-size: 8pt;
-    margin: auto 0 auto 0;
-    text-align: center;
+    display: flex;
+    left: -1em;
     position: relative;
-    left: -1.35em;
     z-index: 1;
+}
+
+.wva-combobox-arrow > img {
+    width: 0.5em;
+    height: 0.5em
 }
 
 .wva-combobox-container {

@@ -78,6 +78,7 @@ export class FragmentControls extends React.Component<FragmentControls.Props> {
                         ]}
                         value={dm.style}
                         onChange={val => this.props.onDensityMapStyleChanged(val as FragmentDescription.MapStyle, kind)}
+                        pathPrefix={this.props.pathPrefix}
                     />
                     <div className='wva-vcenter-box'>
                         <input
@@ -145,6 +146,7 @@ export class FragmentControls extends React.Component<FragmentControls.Props> {
                                 { value: 'off', caption: 'Off' },
                                 { value: 'ball-and-stick', caption: 'Ball-and-stick' }
                             ]}
+                            pathPrefix={this.props.pathPrefix}
                         />
                     </div>
                     :
@@ -161,6 +163,7 @@ export class FragmentControls extends React.Component<FragmentControls.Props> {
                                 { value: 'cartoon', caption: 'Cartoon' },
                                 { value: 'ball-and-stick', caption: 'Ball-and-stick' }
                             ]}
+                            pathPrefix={this.props.pathPrefix}
                         />
                     </div>
                     :
@@ -176,6 +179,7 @@ export class FragmentControls extends React.Component<FragmentControls.Props> {
                                 { value: 'off', caption: 'Off' },
                                 { value: 'ball-and-stick', caption: 'Ball-and-stick' }
                             ]}
+                            pathPrefix={this.props.pathPrefix}
                         />
                     </div>
                     :
@@ -191,6 +195,7 @@ export class FragmentControls extends React.Component<FragmentControls.Props> {
                                 { value: 'off', caption: 'Off' },
                                 { value: 'ball-and-stick', caption: 'Ball-and-stick' }
                             ]}
+                            pathPrefix={this.props.pathPrefix}
                         />
                     </div>
                     :
