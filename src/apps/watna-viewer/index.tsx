@@ -18,6 +18,7 @@ import { Resources } from './resources';
 import { WatNAUtil } from './watna-util';
 import * as ST from './substructure-types';
 import { Collapsible } from '../watlas-common/collapsible';
+import { Colors } from '../watlas-common/colors';
 import { Measurements } from '../watlas-common/measurements';
 import { Util } from '../watlas-common/util';
 import { BoundaryHelper } from '../../mol-math/geometry/boundary-helper';
@@ -744,8 +745,6 @@ interface WatlasAppProps extends WatlasApp.Configuration {
 
 interface WatlasAppState {
     camClipRadius: number;
-    fragments: FragmentMap;
-    hue: number;
     showStepWaters: boolean;
 }
 
@@ -756,24 +755,54 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
     private onFragmentAdded: OnFragmentStateChanged | null = null;
     private onFragmentColorsChanged: OnFragmentStateChanged | null = null;
     private onFragmentRemoved: OnFragmentStateChanged | null = null;
-
+    private fragments: FragmentMap;
+    private hue: number;
 
     constructor(props: WatlasAppProps) {
         super(props);
 
         this.state = {
             camClipRadius: DefaultRadiusRatio,
-            fragments: new Map(),
-            hue: Coloring.nextHue(0),
             showStepWaters: false,
         };
 
         this.assignedHues = new Map();
         this.loadedFragments = [];
+        this.hue = Coloring.nextHue(0);
+        this.fragments = new Map();
+    }
+
+    private changeColor(clr: number, kind: Resources.AllKinds, base: string) {
+        const color = Color(clr);
+        const frag = this.fragments.get(base)!;
+        frag.colors.set(kind, color);
+
+        const stru = frag.structures.get(kind)!;
+        const resRef = baseRefToResRef(base, kind, 'structure');
+        if (stru.shown) {
+            const theme = kind === 'reference' ? 'element-symbol' : 'uniform';
+            this.viewer!.setStructureAppearance(color, theme, 'uniform', resRef);
+        }
+        // TODO: Handle nonnucleic structures
+
+        const dmRef = kind as Resources.DensityMaps;
+        if (Array.from(frag.densityMaps.keys()).includes(dmRef)) {
+            const dm = frag.densityMaps.get(dmRef)!;
+            if (dm.shown)
+                this.viewer!.setDensityMapAppearance(dm.iso, dm.style, color, baseRefToResRef(base, dmRef, 'density-map'));
+        }
+
+        if (kind === 'base')
+            this.assignedHues.set(base, Colors.colorToHsv(clr).h);
+
+        this.forceUpdate();
+
+        if (this.onFragmentColorsChanged)
+            this.onFragmentColorsChanged(frag.fragId);
     }
 
     private densityMapData(base: string, kind: Resources.DensityMaps) {
-        const frag = this.state.fragments.get(base)!;
+        const frag = this.fragments.get(base)!;
 
         return frag.densityMaps.get(kind)!;
     }
@@ -782,7 +811,7 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
         if (!this.viewer)
             return;
 
-        const frag = this.state.fragments.get(fragId)!;
+        const frag = this.fragments.get(fragId)!;
 
         const dkeys = Array.from(frag.densityMaps.keys());
         for (const k of dkeys) {
@@ -796,15 +825,9 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
             await disposer(ref);
         };
 
-        const newFragments = new Map(this.state.fragments);
-        newFragments.delete(fragId);
+        this.fragments.delete(fragId);
 
-        this.setState(
-            {
-                ...this.state,
-                fragments: newFragments,
-            }
-        );
+        this.forceUpdate();
     }
 
     private fragmentColorsInternal(base: string): { colors: Map<Resources.AllKinds, Color>, nextHue: number } {
@@ -813,9 +836,9 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
 
         if (this.assignedHues.has(base)) {
             hue = this.assignedHues.get(base)!;
-            nextHue = this.state.hue;
+            nextHue = this.hue;
         } else {
-            hue = this.state.hue;
+            hue = this.hue;
             nextHue = Coloring.nextHue(hue);
 
             this.assignedHues.set(base, hue);
@@ -838,16 +861,15 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
     private resetColors() {
         this.assignedHues.clear();
 
-        const newFrags = new Map(this.state.fragments);
-        let hue = 0;
+        this.hue = Coloring.nextHue(0);
 
-        for (const ref of Array.from(newFrags.keys())) {
-            const frag = newFrags.get(ref)!;
+        for (const ref of Array.from(this.fragments.keys())) {
+            const frag = this.fragments.get(ref)!;
             frag.colors = new Map<Resources.AllKinds, Color>([
-                ['reference', Coloring.baseColor(hue)],
-                ['base', Coloring.baseColor(hue)],
-                ['nucleotide', Coloring.nucleotideColor(hue)],
-                ['phosphate', Coloring.phosphateColor(hue)],
+                ['reference', Coloring.baseColor(this.hue)],
+                ['base', Coloring.baseColor(this.hue)],
+                ['nucleotide', Coloring.nucleotideColor(this.hue)],
+                ['phosphate', Coloring.phosphateColor(this.hue)],
             ]);
 
             for (const struRef of Array.from(frag.structures.keys())) {
@@ -869,18 +891,14 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
                     this.viewer!.setDensityMapAppearance(dm.iso, dm.style, frag.colors.get(dmRef)!, baseRefToResRef(ref, dmRef, 'density-map'));
             }
 
-            this.assignedHues.set(ref, hue);
-            hue = Coloring.nextHue(hue);
+            this.assignedHues.set(ref, this.hue);
+            this.hue = Coloring.nextHue(this.hue);
 
             if (this.onFragmentColorsChanged)
                 this.onFragmentColorsChanged(frag.fragId);
         }
 
-        this.setState({
-            ...this.state,
-            hue,
-            fragments: newFrags,
-        });
+        this.forceUpdate();
     }
 
     private async saveViewAsImage(width: number, height: number, transparentBackground: boolean) {
@@ -913,18 +931,14 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
     }
 
     private setNonNucleicAppearance(repr: ST.SubstructureRepresentation, type: ST.NonNucleicType, base: string) {
-        const newFrags = new Map(this.state.fragments);
-        const frag = newFrags.get(base)!;
+        const frag = this.fragments.get(base)!;
 
-        const color = this.state.fragments.get(base)!.colors.get('reference')!;
+        const color = this.fragments.get(base)!.colors.get('reference')!;
         const ref = baseRefToResRef(base, 'reference', 'structure');
         this.viewer!.setNonNucleicAppearance(type, repr, color, 'uniform', ref);
         frag.extraStructurePartsRepresentations.set(type, repr);
 
-        this.setState({
-            ...this.state,
-            fragments: newFrags,
-        });
+        this.forceUpdate();
     }
 
     private async showFragmentInitial(frag: FragmentDescription.Description, isOnlyFragment: boolean) {
@@ -955,31 +969,17 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
     }
 
     private updateFragmentDensityMap(data: FragmentDescription.DensityMap, base: string, kind: Resources.DensityMaps) {
-        const newFragments = new Map(this.state.fragments);
-        const frag = newFragments.get(base)!;
+        const frag = this.fragments.get(base)!;
         frag.densityMaps.set(kind, data);
 
-
-        this.setState(
-            {
-                ...this.state,
-                fragments: newFragments,
-            }
-        );
+        this.forceUpdate();
     }
 
     private updateFragmentStructure(data: FragmentDescription.Structure, base: string, kind: Resources.Structures) {
-        const newFragments = new Map(this.state.fragments);
-        const frag = newFragments.get(base)!;
+        const frag = this.fragments.get(base)!;
         frag.structures.set(kind, data);
 
-        this.setState(
-            {
-                ...this.state,
-                fragments: newFragments,
-            }
-        );
-
+        this.forceUpdate();
     }
 
     componentDidMount() {
@@ -1002,7 +1002,7 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
         if (!this.isLoaded(fragId))
             await this.load([{ fragId, paths }]);
 
-        if (this.state.fragments.has(fragId))
+        if (this.fragments.has(fragId))
             return;
 
         const baseWaterMapIsoRange = this.viewer.isoRange(baseRefToResRef(fragId, 'base', 'density-map'));
@@ -1053,20 +1053,18 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
         };
         const newFragments: FragmentMap = new Map([[fragId, frag]]);
 
-        await this.showFragmentInitial(frag, this.state.fragments.size === 0);
+        await this.showFragmentInitial(frag, this.fragments.size === 0);
 
-        this.setState(
-            {
-                ...this.state,
-                fragments: new Map(
-                    [
-                        ...Array.from(this.state.fragments.entries()),
-                        ...Array.from(newFragments.entries())
-                    ]
-                ),
-                hue: nextHue,
-            }
+        this.fragments = new Map(
+            [
+                ...Array.from(this.fragments.entries()),
+                ...Array.from(newFragments.entries())
+            ]
         );
+        this.hue = nextHue;
+
+        this.forceUpdate();
+
         if (this.onFragmentAdded)
             this.onFragmentAdded(fragId);
     }
@@ -1099,7 +1097,7 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
     }
 
     has(fragId: string) {
-        return this.state.fragments.has(fragId);
+        return this.fragments.has(fragId);
     }
 
     async load(fragments: { fragId: string, paths: Resources.Paths }[], callback?: OnFragmentLoaded) {
@@ -1190,8 +1188,9 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
                 >
                     <div className='wnav-ctrl-panel'>
                         <List
-                            fragments={this.state.fragments}
+                            fragments={this.fragments}
                             showStepWaters={this.state.showStepWaters}
+                            onChangeColor={(clr, kind, base) => this.changeColor(clr, kind, base)}
                             onChangeNonNucleicAppearance={(repr, type, base) => this.setNonNucleicAppearance(repr, type, base)}
                             onDensityMapIsoChanged={(iso, kind, base) => {
                                 const ref = baseRefToResRef(base, kind, 'density-map');
@@ -1212,7 +1211,7 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
                                 this.updateFragmentDensityMap({ ...dm, style }, base, kind);
                             }}
                             onHideShowResource={(show, kind, type, base) => {
-                                const frag = this.state.fragments.get(base)!;
+                                const frag = this.fragments.get(base)!;
                                 const ref = baseRefToResRef(base, kind, type);
 
                                 if (type === 'density-map') {
@@ -1236,7 +1235,7 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
                                 }
                             }}
                             onRemoveClicked={base => {
-                                const frag = this.state.fragments.get(base)!;
+                                const frag = this.fragments.get(base)!;
                                 this.remove(frag.fragId);
                             }}
                             hydrationSitesName={this.props.hydrationSitesName}
@@ -1263,7 +1262,7 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
                             }}
                             onHideShowStepWaters={show => {
                                 if (!show) {
-                                    for (const [base, frag] of Array.from(this.state.fragments.entries())) {
+                                    for (const [base, frag] of Array.from(this.fragments.entries())) {
                                         const stru = frag.structures.get('nucleotide')!;
                                         if (stru.shown)
                                             this.viewer!.hideStructure(baseRefToResRef(base, 'nucleotide', 'structure'));
@@ -1273,7 +1272,7 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
                                             this.viewer!.hideDensityMap(baseRefToResRef(base, 'nucleotide', 'density-map'));
                                     }
                                 } else {
-                                    for (const [base, frag] of Array.from(this.state.fragments.entries())) {
+                                    for (const [base, frag] of Array.from(this.fragments.entries())) {
                                         const color = frag.colors.get('nucleotide')!;
                                         const stru = frag.structures.get('nucleotide')!;
                                         if (stru.shown)

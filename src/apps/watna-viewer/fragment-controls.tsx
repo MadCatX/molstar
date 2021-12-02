@@ -14,6 +14,7 @@ import { Resources } from './resources';
 import { Tooltip } from './tooltip';
 import * as ST from './substructure-types';
 import { WatNAUtil } from './watna-util';
+import { ColorPicker } from '../watlas-common/color-picker';
 import { ComboBox } from '../watlas-common/combo-box';
 import { PushButton } from '../watlas-common/push-button';
 import { SpinBox } from '../watlas-common/spin-box';
@@ -250,11 +251,25 @@ export class FragmentControls extends React.Component<FragmentControls.Props> {
             <div className='wnav-ntc-fragment-container'>
                 <div className='wnav-ntc-fragment-header'>
                     <div className='wnav-ntc-fragment-name'>{this.props.fragId}</div>
-                    <Tooltip text={`Color of ${this.props.referenceName.transform ? this.props.referenceName.text.toLowerCase() : this.props.referenceName.text}/base waters`}>
-                        <div className='wnav-ntc-color-box' style={colorBoxStyle(this.props.colors.get('base')!)}>{'\u00A0'}</div>
+                    <Tooltip
+                        text={`Color of ${this.props.referenceName.transform ? this.props.referenceName.text.toLowerCase() : this.props.referenceName.text}/base waters`}
+                    >
+                        <div
+                            className='wnav-ntc-color-box'
+                            style={colorBoxStyle(this.props.colors.get('base')!)}
+                            onClick={evt => ColorPicker.create(evt, this.props.colors.get('base')!, clr => this.props.onChangeColor(clr, 'base'))}
+                        >
+                            {'\u00A0'}
+                        </div>
                     </Tooltip>
                     <Tooltip text='Color of backbone waters'>
-                        <div className='wnav-ntc-color-box' style={colorBoxStyle(this.props.colors.get('phosphate')!)}>{'\u00A0'}</div>
+                        <div
+                            className='wnav-ntc-color-box'
+                            style={colorBoxStyle(this.props.colors.get('phosphate')!)}
+                            onClick={evt => ColorPicker.create(evt, this.props.colors.get('phosphate')!, clr => this.props.onChangeColor(clr, 'phosphate'))}
+                        >
+                            {'\u00A0'}
+                        </div>
                     </Tooltip>
                     <div className='wnav-ntc-color-spacer'></div>
                     {
@@ -262,7 +277,13 @@ export class FragmentControls extends React.Component<FragmentControls.Props> {
                             ?
                             <>
                                 <Tooltip text={`Color of ${this.props.nucleotideWatersName.toLowerCase()}`}>
-                                    <div className='wva-ntc-color-box' style={colorBoxStyle(this.props.colors.get('nucleotide')!)}>{'\u00A0'}</div>
+                                    <div
+                                        className='wva-ntc-color-box'
+                                        style={colorBoxStyle(this.props.colors.get('nucleotide')!)}
+                                        onClick={evt => ColorPicker.create(evt, this.props.colors.get('nucleotide')!, clr => this.props.onChangeColor(clr, 'nucleotide'))}
+                                    >
+                                        {'\u00A0'}
+                                    </div>
                                 </Tooltip>
                                 <div className='wnav-ntc-color-spacer'></div>
                             </>
@@ -293,6 +314,10 @@ export class FragmentControls extends React.Component<FragmentControls.Props> {
 }
 
 export namespace FragmentControls {
+    export interface OnChangeColor {
+        (clr: number, kind: Resources.AllKinds): void;
+    }
+
     export interface OnChangeNonNucleicAppearance {
         (repr: ST.SubstructureRepresentation, type: ST.NonNucleicType): void;
     }
@@ -327,6 +352,7 @@ export namespace FragmentControls {
         referenceName: { text: string; transform: boolean };
         showStepWaters: boolean;
         treatReferenceAsExtraPart: boolean;
+        onChangeColor: OnChangeColor;
         onChangeNonNucleicAppearance: OnChangeNonNucleicAppearance;
         onDensityMapIsoChanged: OnDensityMapIsoChanged;
         onDensityMapStyleChanged: OnDensityMapStyleChanged;

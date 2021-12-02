@@ -46,6 +46,7 @@ export class List extends React.Component<List.Props, State> {
                         nucleotideWatersName: this.props.nucleotideWatersName,
                         showStepWaters: this.props.showStepWaters,
                         treatReferenceAsExtraPart: this.props.treatReferenceAsExtraPart,
+                        onChangeColor: (clr, kind) => this.props.onChangeColor(clr, kind, base),
                         onChangeNonNucleicAppearance: (repr, type) => this.props.onChangeNonNucleicAppearance(repr, type, base),
                         onDensityMapIsoChanged: (iso, kind) => this.props.onDensityMapIsoChanged(iso, kind, base),
                         onDensityMapStyleChanged: (style, kind) => this.props.onDensityMapStyleChanged(style, kind, base),
@@ -75,6 +76,10 @@ export class List extends React.Component<List.Props, State> {
 }
 
 export namespace List {
+    export interface OnChangeColor {
+        (clr: number, kind: Resources.AllKinds, base: string): void;
+    }
+
     export interface OnChangeNonNucleicAppearance {
         (repr: ST.SubstructureRepresentation, type: ST.NonNucleicType, base: string): void;
     }
@@ -104,6 +109,7 @@ export namespace List {
         nucleotideWatersName: string;
         showStepWaters: boolean;
         treatReferenceAsExtraPart: boolean;
+        onChangeColor: OnChangeColor;
         onChangeNonNucleicAppearance: OnChangeNonNucleicAppearance;
         onDensityMapIsoChanged: OnDensityMapIsoChanged;
         onDensityMapStyleChanged: OnDensityMapStyleChanged;
