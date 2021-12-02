@@ -756,7 +756,7 @@ export class WatAAApp extends React.Component<WatAAProps, WatAAState> {
 
 export namespace WatAAApp {
     export interface Configuration {
-       /* Path prefix, used to amend assets URLs */
+        /* Path prefix, used to amend assets URLs */
         pathPrefix?: string;
     }
 
