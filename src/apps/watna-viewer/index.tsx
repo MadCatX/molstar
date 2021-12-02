@@ -772,6 +772,30 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
         this.fragments = new Map();
     }
 
+    private advancefragmentColors(base: string): { colors: Map<Resources.AllKinds, Color>, nextHue: number } {
+        let hue;
+        let nextHue;
+
+        if (this.assignedHues.has(base)) {
+            hue = this.assignedHues.get(base)!;
+            nextHue = this.hue;
+        } else {
+            hue = this.hue;
+            nextHue = Coloring.nextHue(hue);
+
+            this.assignedHues.set(base, hue);
+        }
+
+        const colors = new Map<Resources.AllKinds, Color>([
+            ['reference', Coloring.baseColor(hue)],
+            ['base', Coloring.baseColor(hue)],
+            ['nucleotide', Coloring.nucleotideColor(hue)],
+            ['phosphate', Coloring.phosphateColor(hue)]
+        ]);
+
+        return { colors, nextHue };
+    }
+
     private changeColor(clr: number, kind: Resources.AllKinds, base: string) {
         const color = Color(clr);
         const frag = this.fragments.get(base)!;
@@ -828,30 +852,6 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
         this.fragments.delete(fragId);
 
         this.forceUpdate();
-    }
-
-    private fragmentColorsInternal(base: string): { colors: Map<Resources.AllKinds, Color>, nextHue: number } {
-        let hue;
-        let nextHue;
-
-        if (this.assignedHues.has(base)) {
-            hue = this.assignedHues.get(base)!;
-            nextHue = this.hue;
-        } else {
-            hue = this.hue;
-            nextHue = Coloring.nextHue(hue);
-
-            this.assignedHues.set(base, hue);
-        }
-
-        const colors = new Map<Resources.AllKinds, Color>([
-            ['reference', Coloring.baseColor(hue)],
-            ['base', Coloring.baseColor(hue)],
-            ['nucleotide', Coloring.nucleotideColor(hue)],
-            ['phosphate', Coloring.phosphateColor(hue)]
-        ]);
-
-        return { colors, nextHue };
     }
 
     private isLoaded(fragId: string) {
@@ -1035,7 +1035,7 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
                 style: DefaultDensityMapStyle,
             }],
         ]);
-        const { colors, nextHue } = this.fragmentColorsInternal(fragId);
+        const { colors, nextHue } = this.advancefragmentColors(fragId);
 
         const nnRef = baseRefToResRef(fragId, 'reference', 'structure');
         const extraStructurePartsRepresentations = new Map<ST.NonNucleicType, ST.SubstructureRepresentation | null>([
@@ -1076,22 +1076,22 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
     }
 
     fragmentColors(fragId: string, format: 'style' | 'rgb'): ColorInfo | undefined {
-        if (!this.assignedHues.has(fragId))
-            return undefined;
+        const frag = this.fragments.get(fragId);
+        if (!frag)
+            return;
 
-        const { colors } = this.fragmentColorsInternal(fragId);
         switch (format) {
             case 'style':
                 return {
-                    base: Color.toStyle(colors.get('base')!),
-                    phosphate: Color.toStyle(colors.get('phosphate')!),
-                    nucleotide: Color.toStyle(colors.get('nucleotide')!),
+                    base: Color.toStyle(frag.colors.get('base')!),
+                    phosphate: Color.toStyle(frag.colors.get('phosphate')!),
+                    nucleotide: Color.toStyle(frag.colors.get('nucleotide')!),
                 };
             case 'rgb':
                 return {
-                    base: Color.toRgb(colors.get('base')!),
-                    phosphate: Color.toRgb(colors.get('phosphate')!),
-                    nucleotide: Color.toRgb(colors.get('nucleotide')!),
+                    base: Color.toRgb(frag.colors.get('base')!),
+                    phosphate: Color.toRgb(frag.colors.get('phosphate')!),
+                    nucleotide: Color.toRgb(frag.colors.get('nucleotide')!),
                 };
         }
     }
@@ -1194,19 +1194,19 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
                             onChangeNonNucleicAppearance={(repr, type, base) => this.setNonNucleicAppearance(repr, type, base)}
                             onDensityMapIsoChanged={(iso, kind, base) => {
                                 const ref = baseRefToResRef(base, kind, 'density-map');
-                                const { colors } = this.fragmentColorsInternal(base);
+                                const frag = this.fragments.get(base)!;
                                 const dm = this.densityMapData(base, kind);
 
-                                this.viewer!.setDensityMapAppearance(iso, dm.style, colors.get(kind)!, ref);
+                                this.viewer!.setDensityMapAppearance(iso, dm.style, frag.colors.get(kind)!, ref);
 
                                 this.updateFragmentDensityMap({ ...dm, iso }, base, kind);
                             }}
                             onDensityMapStyleChanged={(style, kind, base) => {
                                 const ref = baseRefToResRef(base, kind, 'density-map');
-                                const { colors } = this.fragmentColorsInternal(base);
+                                const frag = this.fragments.get(base)!;
                                 const dm = this.densityMapData(base, kind);
 
-                                this.viewer!.setDensityMapAppearance(dm.iso, style, colors.get(kind)!, ref);
+                                this.viewer!.setDensityMapAppearance(dm.iso, style, frag.colors.get(kind)!, ref);
 
                                 this.updateFragmentDensityMap({ ...dm, style }, base, kind);
                             }}
