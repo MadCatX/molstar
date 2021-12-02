@@ -744,7 +744,11 @@ export class WatAAApp extends React.Component<WatAAProps, WatAAState> {
                     }
                     <div className='waav-aminoacid-identifier'>{this.state.label}</div>
                 </div>
-                <Measurements plugin={this.viewer?.plugin} orientation='horizontal' />
+                <Measurements
+                    plugin={this.viewer?.plugin}
+                    orientation='horizontal'
+                    pathPrefix={this.props.pathPrefix ?? ''}
+                />
             </div>
         );
     }
@@ -752,6 +756,8 @@ export class WatAAApp extends React.Component<WatAAProps, WatAAState> {
 
 export namespace WatAAApp {
     export interface Configuration {
+       /* Path prefix, used to amend assets URLs */
+        pathPrefix?: string;
     }
 
     export function init(appId: string, configuration: Partial<Configuration>) {

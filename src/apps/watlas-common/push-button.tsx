@@ -40,14 +40,27 @@ export class PushButton extends AbstractPushButton<PushButton.Props, {}> {
     }
 
     renderButton() {
-        return (
-            <div
-                id={this.props.id}
-                className={this.clsName()}
-                onClick={this.props.enabled ? this.props.onClick : Noop}>
-                <div className={this.textClsName()}>{this.props.value}</div>
-            </div>
-        );
+        if (this.props.text) {
+            return (
+                <div
+                    id={this.props.id}
+                    className={this.clsName()}
+                    onClick={this.props.enabled ? this.props.onClick : Noop}
+                >
+                    <div className={this.textClsName()}>{this.props.text}</div>
+                </div>
+            );
+        } else {
+            return (
+                <div
+                    id={this.props.id}
+                    className={this.clsName()}
+                    onClick={this.props.enabled ? this.props.onClick : Noop}
+                >
+                    {this.props.children}
+                </div>
+            );
+        }
     }
 }
 
@@ -57,7 +70,7 @@ export namespace AbstractPushButton {
     }
 
     export interface Props {
-        value: string;
+        text?: string;
         id?: string;
         className?: string
         classNameDisabled?: string;

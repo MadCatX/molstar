@@ -25,15 +25,16 @@ export class Collapsible extends React.Component<Collapsible.Props, State> {
                 return (
                     <div className='wva-collapsed-ctrl-header-vertical'>
                         <PushButton
-                            className='wva-pushbutton wva-pushbutton-border wva-padded-pushbutton wva-colapse-expand-pushbutton'
-                            value='▼'
+                            className='wva-pushbutton wva-pushbutton-border wva-symbolic-pushbutton'
                             onClick={
                                 () => {
                                     this.setState({ ...this.state, isCollapsed: false });
                                     if (this.props.onStateChanged) this.props.onStateChanged(false);
                                 }
                             }
-                        />
+                        >
+                            <img src={`./${this.props.pathPrefix}assets/imgs/triangle-down.svg`} />
+                        </PushButton>
                         <div className='wva-block-caption wva-vertical'>{this.props.caption}</div>
                     </div>
                 );
@@ -42,15 +43,16 @@ export class Collapsible extends React.Component<Collapsible.Props, State> {
                     <div className='wva-collapsed-ctrl-header-horizontal'>
                         <div className='wva-block-caption'>{this.props.caption}</div>
                         <PushButton
-                            className='wva-pushbutton wva-pushbutton-border wva-padded-pushbutton wva-colapse-expand-pushbutton'
-                            value='▼'
+                            className='wva-pushbutton wva-pushbutton-border wva-symbolic-pushbutton'
                             onClick={
                                 () => {
                                     this.setState({ ...this.state, isCollapsed: false });
                                     if (this.props.onStateChanged) this.props.onStateChanged(false);
                                 }
                             }
-                        />
+                        >
+                            <img src={`./${this.props.pathPrefix}assets/imgs/triangle-up.svg`} />
+                        </PushButton>
                     </div>
                 );
             }
@@ -60,15 +62,19 @@ export class Collapsible extends React.Component<Collapsible.Props, State> {
                     <div className='wva-expanded-ctrl-header'>
                         <div className='wva-block-caption'>{this.props.caption}</div>
                         <PushButton
-                            className='wva-pushbutton wva-pushbutton-border wva-padded-pushbutton wva-colapse-expand-pushbutton'
-                            value='◀'
+                            className='wva-pushbutton wva-pushbutton-border wva-symbolic-pushbutton'
                             onClick={
                                 () => {
                                     this.setState({ ...this.state, isCollapsed: true });
                                     if (this.props.onStateChanged) this.props.onStateChanged(true);
                                 }
                             }
-                        />
+                        >
+                            {this.props.orientation === 'vertical'
+                                ? <img src={`./${this.props.pathPrefix}assets/imgs/triangle-left.svg`} />
+                                : <img src={`./${this.props.pathPrefix}assets/imgs/triangle-down.svg`} />
+                            }
+                        </PushButton>
                     </div>
                     <div className={this.dontGrow()}>
                         {this.props.children}
@@ -90,5 +96,6 @@ export namespace Collapsible {
         initialState: 'expanded' | 'collapsed';
         orientation: 'horizontal' | 'vertical';
         onStateChanged?: OnStateChanged;
+        pathPrefix: string;
     }
 }

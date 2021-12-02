@@ -92,8 +92,9 @@
     padding-top: 0.1em;
 }
 
-.wva-collapse-expand-pushbutton {
-    width: 1em;
+.wva-symbolic-pushbutton {
+    height: 1.5em;
+    width: 1.5em;
 }
 
 .wva-collapsed-ctrl-header-horizontal {

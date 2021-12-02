@@ -1174,6 +1174,7 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
                 <Measurements
                     plugin={this.viewer?.plugin}
                     orientation='vertical'
+                    pathPrefix={this.props.pathPrefix ?? ''}
                 />
                 <Collapsible
                     caption='Controls'
@@ -1181,6 +1182,7 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
                     initialState='expanded'
                     dontGrow={true}
                     onStateChanged={() => this.viewer?.plugin.handleResize()}
+                    pathPrefix={this.props.pathPrefix ?? ''}
                 >
                     <div className='wnav-ctrl-panel'>
                         <List
@@ -1288,6 +1290,7 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
                             onResetColors={() => this.resetColors()}
                             onSaveViewAsImage={(width, height, transparentBackground) => this.saveViewAsImage(width, height, transparentBackground)}
                             nucleotideWatersName={this.props.nucleotideWatersName}
+                            pathPrefix={this.props.pathPrefix ?? ''}
                         />
                     </div>
                 </Collapsible>
@@ -1312,6 +1315,8 @@ export namespace WatlasApp {
         extraStructurePartsPlacement: 'first' | 'last';
         /* If true, the step waters will not be displayed */
         disableStepWaters: boolean;
+        /* Path prefix, used to amend assets URLs */
+        pathPrefix?: string;
     }
 
     export function init(elemId: string, configuration: Configuration) {

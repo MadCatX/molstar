@@ -43,14 +43,19 @@ export class Controls extends React.Component<Controls.Props, State> {
                 <div className='wnav-ctrl-line wnav-ctrl-item'>
                     <PushButton
                         className='wva-pushbutton wva-pushbutton-border'
-                        value='Save view as image'
+                        text='Save view as image'
                         onClick={() => this.props.onSaveViewAsImage(Math.round(this.state.imageWidth), Math.round(this.state.imageHeight), this.state.imageTransparentBackground)}
                     />
                     <PushButton
-                        className='wva-pushbutton wva-pushbutton-border wva-padded-pushbutton wva-collapse-expand-pushbutton'
-                        value={this.state.imageDimsShown ? '▼' : '▲' }
+                        className='wva-pushbutton wva-pushbutton-border wva-symbolic-pushbutton'
+                        text={this.state.imageDimsShown ? '▼' : '▲' }
                         onClick={() => this.setState({ ...this.state, imageDimsShown: !this.state.imageDimsShown })}
-                    />
+                    >
+                        {this.state.imageDimsShown
+                            ? <img src={`${this.props.pathPrefix}assets/imgs/triangle-up.svg`} />
+                            : <img src={`${this.props.pathPrefix}assets/imgs/triangle-down.svg`} />
+                        }
+                    </PushButton>
                 </div>
                 {this.state.imageDimsShown ?
                     <>
@@ -117,7 +122,7 @@ export class Controls extends React.Component<Controls.Props, State> {
                         <div className='wnav-ctrl-line wnav-ctrl-item'>
                             <PushButton
                                 className='wva-pushbutton wva-pushbutton-border wnav-ctrl-fullwidth'
-                                value='Same image size as viewer'
+                                text='Same image size as viewer'
                                 onClick={() => {
                                     const { width, height } = this.props.getCanvasSize();
                                     if (width > 0 && height > 0)
@@ -132,7 +137,7 @@ export class Controls extends React.Component<Controls.Props, State> {
                 <div className='wnav-ctrl-line wnav-ctrl-item'>
                     <PushButton
                         className='wva-pushbutton wva-pushbutton-border wnav-ctrl-fullwidth'
-                        value='Reset colors'
+                        text='Reset colors'
                         onClick={() => this.props.onResetColors()}
                     />
                 </div>
@@ -178,7 +183,7 @@ export class Controls extends React.Component<Controls.Props, State> {
                 <div className='wnav-ctrl-line wnav-ctrl-item'>
                     <PushButton
                         className='wva-pushbutton wva-pushbutton-border wnav-ctrl-fullwidth'
-                        value='Reset camera'
+                        text='Reset camera'
                         onClick={() => this.props.onResetCamera()}
                     />
                 </div>
@@ -219,5 +224,6 @@ export namespace Controls {
         onResetCamera: OnAction;
         onResetColors: OnAction;
         onSaveViewAsImage: OnSaveViewAsImage;
+        pathPrefix?: string;
     }
 }

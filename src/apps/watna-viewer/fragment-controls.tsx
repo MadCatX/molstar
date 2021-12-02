@@ -206,12 +206,12 @@ export class FragmentControls extends React.Component<FragmentControls.Props> {
                 <div className='wnav-ntc-fragment-hide-show-btns'>
                     <PushButton
                         className='wnav-pushbutton wva-pushbutton-border'
-                        value='Show all'
+                        text='Show all'
                         onClick={() => this.hideShowAllResources(true)}
                     />
                     <PushButton
                         className='wva-pushbutton wva-pushbutton-border'
-                        value='Hide all'
+                        text='Hide all'
                         onClick={() => this.hideShowAllResources(false)}
                     />
                     <div></div>
@@ -265,14 +265,14 @@ export class FragmentControls extends React.Component<FragmentControls.Props> {
                             undefined
                     }
                     <PushButton
-                        className='wva-pushbutton wva-pushbutton-border wva-padded-pushbutton wva-collapse-expand-pushbutton'
-                        value={this.props.expanded ? '▼' : '▲'}
+                        className='wva-pushbutton wva-pushbutton-border wva-symbolic-pushbutton'
+                        text={this.props.expanded ? '▼' : '▲'}
                         onClick={() => this.props.onHideShowClicked()}
                     />
                     <div className='wnav-ntc-color-spacer'></div>
                     <PushButton
-                        className='wva-pushbutton wva-pushbutton-border wva-padded-pushbutton wva-remove-fragment-pushbutton'
-                        value='❌'
+                        className='wva-pushbutton wva-pushbutton-border wva-symbolic-pushbutton'
+                        text='❌'
                         onClick={() => this.props.onRemoveClicked()}
                     />
                 </div>

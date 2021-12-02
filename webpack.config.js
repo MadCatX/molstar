@@ -23,6 +23,10 @@ module.exports = [
                             to: path.resolve(__dirname, 'build/watna-viewer/watlas-viewer-common.css'),
                         },
                         {
+                            from: path.resolve(__dirname, 'src/apps/watlas-common/assets/'),
+                            to: path.resolve(__dirname, 'build/watna-viewer/assets/'),
+                        },
+                        {
                             from: path.resolve(__dirname, 'src/apps/watna-viewer/watna-viewer.css'),
                             to: path.resolve(__dirname, 'build/watna-viewer/watna-viewer.css'),
                         },
@@ -49,6 +53,10 @@ module.exports = [
                         {
                             from: path.resolve(__dirname, 'src/apps/watlas-common/watlas-viewer-common.css'),
                             to: path.resolve(__dirname, 'build/wataa-viewer/watlas-viewer-common.css'),
+                        },
+                        {
+                            from: path.resolve(__dirname, 'src/apps/watlas-common/assets/'),
+                            to: path.resolve(__dirname, 'build/wataa-viewer/assets/'),
                         },
                         {
                             from: path.resolve(__dirname, 'src/apps/wataa-viewer/wataa-viewer.css'),
