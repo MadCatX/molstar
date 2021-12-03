@@ -37,6 +37,7 @@ import { PluginStateObject as PSO } from '../../mol-plugin-state/objects';
 import { StateTransforms } from '../../mol-plugin-state/transforms';
 import { RawData } from '../../mol-plugin-state/transforms/data';
 import { Representation } from '../../mol-repr/representation';
+import { StructureRepresentationRegistry } from '../../mol-repr/structure/registry';
 import { Script } from '../../mol-script/script';
 import { StateObjectCell, State as PluginState } from '../../mol-state';
 import { StateObject } from '../../mol-state/object';
@@ -106,6 +107,12 @@ type DownloadedResource = {
     data: string|Uint8Array;
     kind: Resources.AllKinds;
     type: Resources.Type
+};
+
+type StructureAppearance = {
+    kind: ST.SubstructureType;
+    repr: StructureRepresentationRegistry.BuiltIn;
+    colorTheme: ColorTheme.BuiltIn; color: Color;
 };
 
 async function downloadResource(url: string, kind: Resources.AllKinds, type: Resources.Type) {
@@ -637,30 +644,23 @@ class WatlasViewer {
         }
     }
 
-    async setStructureAppearance(color: Color, nucleicTheme: ColorTheme.BuiltIn, waterTheme: ColorTheme.BuiltIn, ref: string) {
+    async setStructureAppearance(appearances: StructureAppearance[], ref: string) {
         const state = this.plugin.state.data;
 
         let b = state.build().to(ref + '_structure');
 
-        if (state.cells.has(this.mkVisRef(ref, 'nucleic'))) {
-            b = this.setSubstructureAppearance(
-                state,
-                b,
-                ref,
-                'nucleic',
-                { name: 'ball-and-stick', params: { sizeFactor: 0.2, sizeAspectRatio: 0.35 } },
-                { name: nucleicTheme, params: this.colorThemeParams(color, nucleicTheme) }
-            );
-        }
+        for (const { kind, repr, colorTheme, color } of appearances) {
+            const visRef = this.mkVisRef(ref, kind);
+            if (!state.cells.has(visRef))
+                continue;
 
-        if (state.cells.has(this.mkVisRef(ref, 'water'))) {
             b = this.setSubstructureAppearance(
                 state,
                 b,
                 ref,
-                'water',
-                { name: 'ball-and-stick', params: { sizeFactor: 0.2, sizeAspectRatio: 0.35 } },
-                { name: waterTheme, params: this.colorThemeParams(color, waterTheme) }
+                kind,
+                { name: repr, params: { sizeFactor: 0.2, sizeAspectRatio: 0.35 } },
+                { name: colorTheme, params: this.colorThemeParams(color, colorTheme) }
             );
         }
 
@@ -808,8 +808,14 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
         const stru = frag.structures.get(kind)!;
         const resRef = baseRefToResRef(base, kind, 'structure');
         if (stru.shown) {
-            const theme = kind === 'reference' ? 'element-symbol' : 'uniform';
-            await this.viewer!.setStructureAppearance(color, theme, 'uniform', resRef);
+            const colorTheme = kind === 'reference' ? 'element-symbol' : 'uniform';
+            await this.viewer!.setStructureAppearance(
+                [
+                    { kind: 'nucleic', repr: 'ball-and-stick', colorTheme, color },
+                    { kind: 'water',  repr: 'ball-and-stick', colorTheme: 'uniform', color }
+                ],
+                resRef
+            );
         }
 
         const dmRef = kind as Resources.DensityMaps;
@@ -861,6 +867,35 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
         return this.loadedFragments.includes(fragId);
     }
 
+    private async repaintStructures(frag: FragmentDescription.Description, ref: string) {
+        for (const struRef of Array.from(frag.structures.keys())) {
+            const stru = frag.structures.get(struRef)!;
+            const resRef = baseRefToResRef(ref, struRef, 'structure');
+            const color = frag.colors.get(struRef)!;
+
+            if (stru.shown) {
+                const colorTheme = struRef === 'reference' ? 'element-symbol' : 'uniform';
+                const appearances: StructureAppearance[] = [{ kind: 'nucleic', repr: 'ball-and-stick', colorTheme, color }];
+                if (struRef !== 'reference')
+                    appearances.push({ kind: 'water',  repr: 'ball-and-stick', colorTheme: 'uniform', color });
+
+                await this.viewer!.setStructureAppearance(appearances, resRef);
+            }
+        }
+
+        const extraSt: ST.NonNucleicType[] = ['protein', 'ligand'];
+        if (this.props.treatReferenceAsExtraPart && frag.structures.get('reference')!.shown)
+            extraSt.push('water');
+
+        const bResRef = baseRefToResRef(ref, 'reference', 'structure')
+        const bColor = frag.colors.get('reference')!;
+        for (const st of extraSt) {
+            const repr = frag.extraStructurePartsRepresentations.get(st)!;
+            if (repr && repr !== 'off')
+                await this.viewer!.setNonNucleicAppearance(st, repr, bColor, 'uniform', bResRef);
+        }
+    }
+
     private async resetColors() {
         this.assignedHues.clear();
 
@@ -875,20 +910,7 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
                 ['phosphate', Coloring.phosphateColor(this.hue)],
             ]);
 
-            for (const struRef of Array.from(frag.structures.keys())) {
-                const stru = frag.structures.get(struRef)!;
-                const resRef = baseRefToResRef(ref, struRef, 'structure');
-                const color = frag.colors.get(struRef)!;
-                if (stru.shown) {
-                    const theme = struRef === 'reference' ? 'element-symbol' : 'uniform';
-                    await this.viewer!.setStructureAppearance(color, theme, 'uniform', resRef);
-                }
-                for (const st of ['protein', 'ligand', 'water'] as ST.NonNucleicType[]) {
-                    const repr = frag.extraStructurePartsRepresentations.get(st)!;
-                    if (repr !== null)
-                        await this.viewer!.setNonNucleicAppearance(st, repr, color, 'uniform', resRef);
-                }
-            }
+            await this.repaintStructures(frag, ref);
 
             for (const dmRef of Array.from(frag.densityMaps.keys())) {
                 const dm = frag.densityMaps.get(dmRef)!;
