@@ -884,7 +884,9 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
                     await this.viewer!.setStructureAppearance(color, theme, 'uniform', resRef);
                 }
                 for (const st of ['protein', 'ligand', 'water'] as ST.NonNucleicType[]) {
-                    await this.viewer!.setNonNucleicAppearance(st, frag.extraStructurePartsRepresentations.get(st)!, color, 'uniform', resRef);
+                    const repr = frag.extraStructurePartsRepresentations.get(st)!;
+                    if (repr !== null)
+                        await this.viewer!.setNonNucleicAppearance(st, repr, color, 'uniform', resRef);
                 }
             }
 
