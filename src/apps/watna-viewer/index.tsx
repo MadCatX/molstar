@@ -805,25 +805,8 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
         else if (kind === 'reference')
             frag.colors.set('base', color);
 
-        const stru = frag.structures.get(kind)!;
-        const resRef = baseRefToResRef(base, kind, 'structure');
-        if (stru.shown) {
-            const colorTheme = kind === 'reference' ? 'element-symbol' : 'uniform';
-            await this.viewer!.setStructureAppearance(
-                [
-                    { kind: 'nucleic', repr: 'ball-and-stick', colorTheme, color },
-                    { kind: 'water',  repr: 'ball-and-stick', colorTheme: 'uniform', color }
-                ],
-                resRef
-            );
-        }
-
-        const dmRef = kind as Resources.DensityMaps;
-        if (Array.from(frag.densityMaps.keys()).includes(dmRef)) {
-            const dm = frag.densityMaps.get(dmRef)!;
-            if (dm.shown)
-                await this.viewer!.setDensityMapAppearance(dm.iso, dm.style, color, baseRefToResRef(base, dmRef, 'density-map'));
-        }
+        await this.repaintStructures(frag, base);
+        await this.repaintDensityMaps(frag, base);
 
         if (kind === 'base')
             this.assignedHues.set(base, Colors.colorToHsv(clr).h);
@@ -865,6 +848,14 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
 
     private isLoaded(fragId: string) {
         return this.loadedFragments.includes(fragId);
+    }
+
+    private async repaintDensityMaps(frag: FragmentDescription.Description, ref: string) {
+        for (const dmRef of Array.from(frag.densityMaps.keys())) {
+            const dm = frag.densityMaps.get(dmRef)!;
+            if (dm.shown)
+                await this.viewer!.setDensityMapAppearance(dm.iso, dm.style, frag.colors.get(dmRef)!, baseRefToResRef(ref, dmRef, 'density-map'));
+        }
     }
 
     private async repaintStructures(frag: FragmentDescription.Description, ref: string) {
@@ -911,12 +902,7 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
             ]);
 
             await this.repaintStructures(frag, ref);
-
-            for (const dmRef of Array.from(frag.densityMaps.keys())) {
-                const dm = frag.densityMaps.get(dmRef)!;
-                if (dm.shown)
-                    await this.viewer!.setDensityMapAppearance(dm.iso, dm.style, frag.colors.get(dmRef)!, baseRefToResRef(ref, dmRef, 'density-map'));
-            }
+            await this.repaintDensityMaps(frag, ref);
 
             this.assignedHues.set(ref, this.hue);
             this.hue = Coloring.nextHue(this.hue);
