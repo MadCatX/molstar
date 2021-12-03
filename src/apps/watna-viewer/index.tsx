@@ -499,13 +499,13 @@ class WatlasViewer {
         await PluginCommands.State.Update(this.plugin, { state, tree: b });
     }
 
-    async hideStructure(base: string) {
+    async hideStructure(base: string, substructures?: ST.SubstructureType[]) {
         const state = this.plugin.state.data;
 
-        let b = state.build();
-        for (const st of this.substructureTypes) {
+        const b = state.build();
+        for (const st of (substructures ?? this.substructureTypes)) {
             const ref = this.mkVisRef(base, st);
-            b = b.delete(ref);
+            b.delete(ref);
         }
 
         await PluginCommands.State.Update(this.plugin, { state, tree: b });
@@ -689,21 +689,19 @@ class WatlasViewer {
 
         if (!state.transforms.has(structure))
             return;
-        for (const st of this.substructureTypes) {
-            if (state.transforms.has(this.mkVisRef(base, st)))
-                return;
-        }
 
         let b = state.build().to(structure);
-        b = this.showSubstructure(
-            state,
-            b,
-            base,
-            'nucleic',
-            { name: 'ball-and-stick', params: { sizeFactor: 0.2, sizeAspectRatio: 0.35 } },
-            { name: nucleicTheme, params: this.colorThemeParams(color, nucleicTheme) }
-        );
-        if (showWaters) {
+        if (!state.transforms.has(this.mkVisRef(base, 'nucleic'))) {
+            b = this.showSubstructure(
+                state,
+                b,
+                base,
+                'nucleic',
+                { name: 'ball-and-stick', params: { sizeFactor: 0.2, sizeAspectRatio: 0.35 } },
+                { name: nucleicTheme, params: this.colorThemeParams(color, nucleicTheme) }
+            );
+        }
+        if (showWaters && !state.transforms.has(this.mkVisRef(base, 'water'))) {
             b = this.showSubstructure(
                 state,
                 b,
@@ -885,11 +883,9 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
                     const theme = struRef === 'reference' ? 'element-symbol' : 'uniform';
                     await this.viewer!.setStructureAppearance(color, theme, 'uniform', resRef);
                 }
-                /*
                 for (const st of ['protein', 'ligand', 'water'] as ST.NonNucleicType[]) {
                     await this.viewer!.setNonNucleicAppearance(st, frag.extraStructurePartsRepresentations.get(st)!, color, 'uniform', resRef);
                 }
-                */
             }
 
             for (const dmRef of Array.from(frag.densityMaps.keys())) {
@@ -942,8 +938,8 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
 
         const color = this.fragments.get(base)!.colors.get('reference')!;
         const ref = baseRefToResRef(base, 'reference', 'structure');
-        this.viewer!.setNonNucleicAppearance(type, repr, color, 'uniform', ref);
         frag.extraStructurePartsRepresentations.set(type, repr);
+        this.viewer!.setNonNucleicAppearance(type, repr, color, 'uniform', ref);
 
         this.forceUpdate();
     }
@@ -1236,7 +1232,7 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
                                         const color = frag.colors.get(kind)!;
                                         this.viewer!.showStructure(ref, color, kind === 'reference' ? 'element-symbol' : 'uniform', 'uniform', kind !== 'reference');
                                     } else
-                                        this.viewer!.hideStructure(ref);
+                                        this.viewer!.hideStructure(ref, kind === 'reference' && this.props.treatReferenceAsExtraPart ? ['nucleic'] : undefined);
 
                                     this.updateFragmentStructure({ ...stru, shown: show }, base, kind);
                                 }
