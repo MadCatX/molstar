@@ -203,6 +203,41 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
                             const { h, s } = this.paletteCoordsToHueSat(x, y);
                             this.setState({ ...this.state, h, s });
                         }}
+                        onWheel={evt => {
+                            let h = this.state.h;
+                            let s = this.state.s;
+                            let xChanged = false;
+                            let yChanged = false;
+
+                            if (evt.deltaX !== 0) {
+                                h += Math.sign(evt.deltaX);
+                                if (h > 359)
+                                    h = 359;
+                                else if (h < 0)
+                                    h = 0;
+                                xChanged = true;
+                            }
+                            if (evt.altKey && evt.deltaY !== 0) {
+                                h += Math.sign(evt.deltaY);
+                                if (h > 359)
+                                    h = 359;
+                                else if (h < 0)
+                                    h = 0;
+                                xChanged = true;
+                            }
+
+                            if (evt.deltaY !== 0 && !xChanged) {
+                                s -= 0.01 * Math.sign(evt.deltaY);
+                                if (s < 0)
+                                    s = 0;
+                                else if (s > 1)
+                                    s = 1;
+                                yChanged = true;
+                            }
+
+                            if (xChanged || yChanged)
+                                this.setState({ ...this.state, h, s });
+                        }}
                     />
                     <canvas
                         ref={this.valueColumnRef}
@@ -219,6 +254,16 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
                             else if (y >= valCol.height)
                                 y = valCol.height - 1;
                             const v = this.valueColumnCoordToVal(y);
+                            this.setState({ ...this.state, v });
+                        }}
+                        onWheel={evt => {
+                            if (evt.deltaY === 0)
+                                return;
+                            let v = this.state.v - 0.01 * Math.sign(evt.deltaY);
+                            if (v < 0)
+                                v = 0;
+                            else if (v > 1)
+                                v = 1;
                             this.setState({ ...this.state, v });
                         }}
                     />
