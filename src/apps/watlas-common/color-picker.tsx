@@ -8,6 +8,7 @@ interface State {
     h: number;
     s: number;
     v: number;
+    restoreOnCancel: boolean;
 }
 
 function colorsMatch(a: State, b: State) {
@@ -32,6 +33,7 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
             h: 0,
             s: 0,
             v: 0,
+            restoreOnCancel: false,
         };
     }
 
@@ -341,8 +343,20 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
                     />
                     <PushButton
                         className='wva-pushbutton wva-pushbutton-border wva-padded-pushbutton'
+                        text='Preview'
+                        onClick={() => {
+                            this.props.onColorPicked(Colors.colorFromHsv(this.state.h, this.state.s, this.state.v));
+                            this.setState({ ...this.state, restoreOnCancel: true });
+                        }}
+                    />
+                    <PushButton
+                        className='wva-pushbutton wva-pushbutton-border wva-padded-pushbutton'
                         text='Cancel'
-                        onClick={() => this.dispose()}
+                        onClick={() => {
+                            if (this.state.restoreOnCancel)
+                                this.props.onColorPicked(this.props.initialColor);
+                            this.dispose();
+                        }}
                     />
                 </div>
             </div>
