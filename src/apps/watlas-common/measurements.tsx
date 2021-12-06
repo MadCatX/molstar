@@ -81,16 +81,15 @@ export class SelectedStructureElement extends PurePluginUIComponent<SelectedStru
                     textClassNameDisabled='wva-pushbutton-text-disabled'
                 />
                 <PushButton
-                    text='❌'
                     onClick={() => {
                         this.unhighlight();
                         this.props.ctx.managers.structure.selection.fromLoci('remove', this.props.entry.loci);
                     }}
-                    className=''
+                    className='wva-highlightable-red-pushbutton'
                     classNameDisabled=''
-                    textClassName='wva-pushbutton-text-highlightable-dark'
-                    textClassNameDisabled='wva-pushbutton-text-disabled'
-                />
+                >
+                    <img src={`${this.props.pathPrefix}assets/imgs/x-red.svg`} />
+                </PushButton>
             </div>
         );
     }
@@ -101,6 +100,7 @@ namespace SelectedStructureElement {
         ctx: PluginUIContext;
         canGoUp: boolean;
         canGoDown: boolean;
+        pathPrefix: string;
     }
     export interface State {
         isHoveredInViewer: boolean;
@@ -259,10 +259,11 @@ export class AddedMeasurement extends PurePluginUIComponent<AddedMeasurement.Pro
             >
                 <MeasurementTag html={this.getLabel()} />
                 <PushButton
-                    className='wva-pushbutton wva-pushbutton-border wva-padded-pushbutton'
-                    text='❌'
+                    className='wva-pushbutton wva-pushbutton-border wva-symbolic-pushbutton'
                     onClick={() => this.props.delete()}
-                />
+                >
+                        <img src={`${this.props.pathPrefix}assets/imgs/x-red.svg`} />
+                </PushButton>
             </div>
         );
     }
@@ -277,6 +278,7 @@ namespace AddedMeasurement {
         kind: string;
         cell: StructureMeasurementCell;
         plugin: PluginUIContext;
+        pathPrefix: string;
     }
 
     export interface State {
@@ -340,6 +342,7 @@ export class Measurements extends PurePluginUIComponent<Measurements.Props, Stat
                         kind={e.l}
                         cell={m}
                         plugin={this.props.plugin}
+                        pathPrefix={this.props.pathPrefix}
                         delete={() => {
                             PluginCommands.State.RemoveObject(this.props.plugin!, { state: m.parent!, ref: m.transform.parent, removeParentGhosts: true })
                                 .then(() => Util.triggerResize());
@@ -375,6 +378,7 @@ export class Measurements extends PurePluginUIComponent<Measurements.Props, Stat
                     entry={e}
                     canGoUp={idx > 0}
                     canGoDown={idx < history.length - 1}
+                    pathPrefix={this.props.pathPrefix}
                 />
             );
         }
