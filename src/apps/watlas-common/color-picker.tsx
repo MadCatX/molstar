@@ -5,7 +5,15 @@ import { PushButton } from './push-button';
 import { SpinBox } from './spin-box';
 
 interface State {
-    currentColor: number;
+    h: number;
+    s: number;
+    v: number;
+}
+
+function colorsMatch(a: State, b: State) {
+    return a.h === b.h &&
+           a.s === b.s &&
+           a.v === b.v;
 }
 
 export class ColorPicker extends React.Component<ColorPicker.Props, State> {
@@ -21,7 +29,9 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
         this.selfRef = React.createRef();
 
         this.state = {
-            currentColor: 0,
+            h: 0,
+            s: 0,
+            v: 0,
         };
     }
 
@@ -64,8 +74,6 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
         if (!ctx)
             return;
 
-        const { h, s } = Colors.colorToHsv(this.state.currentColor);
-
         const hueStep = 360 / canvas.width;
         const satStep = 1.0 / canvas.height;
 
@@ -79,8 +87,8 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
             }
         }
 
-        const x = h / hueStep;
-        const y = (1.0 - s) / satStep;
+        const x = this.state.h / hueStep;
+        const y = (1.0 - this.state.s) / satStep;
 
         ctx.fillStyle = '#000000';
 
@@ -102,19 +110,17 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
         if (!ctx)
             return;
 
-        const { h, s, v } = Colors.colorToHsv(this.state.currentColor);
-
         const w = canvas.width;
         const valStep = 1.0 / canvas.height;
 
         for (let y = 0; y < canvas.height; y++) {
             const cv = 1.0 - y * valStep;
 
-            ctx.fillStyle = Colors.hsvToHexString(h, s, cv);
+            ctx.fillStyle = Colors.hsvToHexString(this.state.h, this.state.s, cv);
             ctx.fillRect(0, y, w, 1);
         }
 
-        const y = (1.0 - v) / valStep;
+        const y = (1.0 - this.state.v) / valStep;
 
         ctx.fillStyle = '#FFFFFF';
         ctx.fillRect(0, y, w / 2, 3);
@@ -122,33 +128,31 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
         ctx.fillRect(w / 2, y, w / 2, 3);
     }
 
-    private paletteCoordsToColor(x: number, y: number) {
+    private paletteCoordsToHueSat(x: number, y: number) {
         const palette = this.paletteRef.current!;
 
         const h = 360 * x / palette.width;
         const s = 1.0 - 1.0 * y / palette.height;
-        const v = Colors.colorToHsv(this.state.currentColor).v;
 
-        return Colors.hsvToColor(h, s, v);
+        return { h, s };
     }
 
-    private valueColumnCoordToColor(y: number) {
+    private valueColumnCoordToVal(y: number) {
         const valCol = this.valueColumnRef.current!;
 
-        const { h, s } = Colors.colorToHsv(this.state.currentColor);
-        const val = 1.0 - 1.0 * y / valCol.height;
-
-        return Colors.hsvToColor(h, s, val);
+        return 1.0 - 1.0 * y / valCol.height;
     }
 
     componentDidMount() {
         this.drawPalette();
         this.drawValueColumn();
-        this.setState({ ...this.state, currentColor: this.props.initialColor });
+
+        const { h, s, v } = Colors.colorToHsv(this.props.initialColor);
+        this.setState({ ...this.state, h, s, v });
     }
 
     componentDidUpdate(prevProps: ColorPicker.Props, prevState: State) {
-        if (this.state.currentColor !== prevState.currentColor) {
+        if (!colorsMatch(this.state, prevState)) {
             this.drawPalette()
             this.drawValueColumn();
         }
@@ -194,8 +198,8 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
                             else if (y >= palette.height)
                                 y = palette.height - 1;
 
-                            const clr = this.paletteCoordsToColor(x, y);
-                            this.setState({ ...this.state, currentColor: clr });
+                            const { h, s } = this.paletteCoordsToHueSat(x, y);
+                            this.setState({ ...this.state, h, s });
                         }}
                     />
                     <canvas
@@ -212,8 +216,8 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
                                 y = 0;
                             else if (y >= valCol.height)
                                 y = valCol.height - 1;
-                            const clr = this.valueColumnCoordToColor(y);
-                            this.setState({ ...this.state, currentColor: clr });
+                            const v = this.valueColumnCoordToVal(y);
+                            this.setState({ ...this.state, v });
                         }}
                     />
                 </div>
@@ -232,7 +236,7 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
                     />
                     <div
                         style={{
-                            background: Colors.colorToHexString(this.state.currentColor),
+                            background: Colors.colorToHexString(Colors.colorFromHsv(this.state.h, this.state.s, this.state.v)),
                             flex: '1',
                             height: '2em',
                         }}
@@ -251,10 +255,11 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
                         min={0}
                         max={255}
                         step={1}
-                        value={Colors.colorToRgb(this.state.currentColor).r}
+                        value={Math.round(Colors.hsv2rgb(this.state.h, this.state.s, this.state.v).r)}
                         onChange={r => {
-                            const { g, b } = Colors.colorToRgb(this.state.currentColor);
-                            this.setState({ ...this.state, currentColor: Colors.colorFromRgb(parseInt(r), g, b) });
+                            const { g, b } = Colors.hsv2rgb(this.state.h, this.state.s, this.state.v);
+                            const { h, s, v } = Colors.rgb2hsv(parseInt(r), g, b);
+                            this.setState({ ...this.state, h, s, v });
                         }}
                     />
                     <div>G</div>
@@ -262,10 +267,11 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
                         min={0}
                         max={255}
                         step={1}
-                        value={Colors.colorToRgb(this.state.currentColor).g}
+                        value={Math.round(Colors.hsv2rgb(this.state.h, this.state.s, this.state.v).g)}
                         onChange={g => {
-                            const { r, b } = Colors.colorToRgb(this.state.currentColor);
-                            this.setState({ ...this.state, currentColor: Colors.colorFromRgb(r, parseInt(g), b) });
+                            const { r, b } = Colors.hsv2rgb(this.state.h, this.state.s, this.state.v);
+                            const { h, s, v } = Colors.rgb2hsv(r, parseInt(g), b);
+                            this.setState({ ...this.state, h, s, v });
                         }}
                     />
                     <div>B</div>
@@ -273,10 +279,11 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
                         min={0}
                         max={255}
                         step={1}
-                        value={Colors.colorToRgb(this.state.currentColor).b}
+                        value={Math.round(Colors.hsv2rgb(this.state.h, this.state.s, this.state.v).b)}
                         onChange={b => {
-                            const { r, g } = Colors.colorToRgb(this.state.currentColor);
-                            this.setState({ ...this.state, currentColor: Colors.colorFromRgb(r, g, parseInt(b)) });
+                            const { r, g } = Colors.hsv2rgb(this.state.h, this.state.s, this.state.v);
+                            const { h, s, v } = Colors.rgb2hsv(r, g, parseInt(b));
+                            this.setState({ ...this.state, h, s, v });
                         }}
                     />
                 </div>
@@ -293,10 +300,9 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
                         min={0}
                         max={360}
                         step={1}
-                        value={Math.round(Colors.colorToHsv(this.state.currentColor).h)}
+                        value={Math.round(this.state.h)}
                         onChange={h => {
-                            const { s, v } = Colors.colorToHsv(this.state.currentColor);
-                            this.setState({ ...this.state, currentColor: Colors.colorFromHsv(parseInt(h), s, v) });
+                            this.setState({ ...this.state, h: parseInt(h) });
                         }}
                     />
                     <div>S</div>
@@ -304,10 +310,9 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
                         min={0}
                         max={100}
                         step={1}
-                        value={Math.round(Colors.colorToHsv(this.state.currentColor).s * 100)}
+                        value={Math.round(this.state.s * 100)}
                         onChange={s => {
-                            const { h, v } = Colors.colorToHsv(this.state.currentColor);
-                            this.setState({ ...this.state, currentColor: Colors.colorFromHsv(h, parseInt(s) / 100, v) });
+                            this.setState({ ...this.state, s: parseInt(s) / 100 });
                         }}
                     />
                     <div>V</div>
@@ -315,10 +320,9 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
                         min={0}
                         max={100}
                         step={1}
-                        value={Math.round(Colors.colorToHsv(this.state.currentColor).v * 100)}
+                        value={Math.round(this.state.v * 100)}
                         onChange={v => {
-                            const { h, s } = Colors.colorToHsv(this.state.currentColor);
-                            this.setState({ ...this.state, currentColor: Colors.colorFromHsv(h, s, parseInt(v) / 100) });
+                            this.setState({ ...this.state, v: parseInt(v) / 100 });
                         }}
                     />
                 </div>
@@ -331,7 +335,7 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
                         className='wva-pushbutton wva-pushbutton-border wva-padded-pushbutton'
                         text='OK'
                         onClick={() => {
-                            this.props.onColorPicked(this.state.currentColor);
+                            this.props.onColorPicked(Colors.colorFromHsv(this.state.h, this.state.s, this.state.v));
                             this.dispose();
                         }}
                     />
