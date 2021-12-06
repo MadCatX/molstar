@@ -376,6 +376,7 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
                 <div
                     style={{
                         display: 'flex',
+                        gap: '0.5em',
                     }}
                 >
                     <PushButton
