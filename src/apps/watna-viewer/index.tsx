@@ -868,7 +868,7 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
                 const colorTheme = struRef === 'reference' ? 'element-symbol' : 'uniform';
                 const appearances: StructureAppearance[] = [{ kind: 'nucleic', repr: 'ball-and-stick', colorTheme, color }];
                 if (struRef !== 'reference')
-                    appearances.push({ kind: 'water',  repr: 'ball-and-stick', colorTheme: 'uniform', color });
+                    appearances.push({ kind: 'water', repr: 'ball-and-stick', colorTheme: 'uniform', color });
 
                 await this.viewer!.setStructureAppearance(appearances, resRef);
             }

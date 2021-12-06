@@ -262,7 +262,7 @@ export class AddedMeasurement extends PurePluginUIComponent<AddedMeasurement.Pro
                     className='wva-pushbutton wva-pushbutton-border wva-symbolic-pushbutton'
                     onClick={() => this.props.delete()}
                 >
-                        <img src={`${this.props.pathPrefix}assets/imgs/x-red.svg`} />
+                    <img src={`${this.props.pathPrefix}assets/imgs/x-red.svg`} />
                 </PushButton>
             </div>
         );
