@@ -11,13 +11,13 @@ import * as React from 'react';
 import { Coloring } from './coloring';
 import { FragmentDescription } from './fragment-description';
 import { Resources } from './resources';
-import { Tooltip } from './tooltip';
 import * as ST from './substructure-types';
 import { WatNAUtil } from './watna-util';
 import { ColorPicker } from '../watlas-common/color-picker';
 import { ComboBox } from '../watlas-common/combo-box';
 import { PushButton } from '../watlas-common/push-button';
 import { SpinBox } from '../watlas-common/spin-box';
+import { Tooltip } from '../watlas-common/tooltip';
 import { Color } from '../../mol-util/color';
 
 function colorBoxStyle(color: Color) {
@@ -253,6 +253,7 @@ export class FragmentControls extends React.Component<FragmentControls.Props> {
                     <div className='wnav-ntc-fragment-name'>{this.props.fragId}</div>
                     <Tooltip
                         text={`Color of ${this.props.referenceName.transform ? this.props.referenceName.text.toLowerCase() : this.props.referenceName.text}/base waters`}
+                        leftOffset='0px' topOffset='2em'
                     >
                         <div
                             className='wnav-ntc-color-box'
@@ -262,7 +263,7 @@ export class FragmentControls extends React.Component<FragmentControls.Props> {
                             {'\u00A0'}
                         </div>
                     </Tooltip>
-                    <Tooltip text='Color of backbone waters'>
+                    <Tooltip text='Color of backbone waters' leftOffset='0px' topOffset='2em'>
                         <div
                             className='wnav-ntc-color-box'
                             style={colorBoxStyle(this.props.colors.get('phosphate')!)}
@@ -276,7 +277,7 @@ export class FragmentControls extends React.Component<FragmentControls.Props> {
                         this.props.showStepWaters
                             ?
                             <>
-                                <Tooltip text={`Color of ${this.props.nucleotideWatersName.toLowerCase()}`}>
+                                <Tooltip text={`Color of ${this.props.nucleotideWatersName.toLowerCase()}`} leftOffset='0px' topOffset='2em'>
                                     <div
                                         className='wva-ntc-color-box'
                                         style={colorBoxStyle(this.props.colors.get('nucleotide')!)}

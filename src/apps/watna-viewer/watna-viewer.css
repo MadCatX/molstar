@@ -120,10 +120,6 @@
     overflow: scroll;
 }
 
-.wnav-tooltip {
-    position: relative;
-}
-
 .wnav-tooltip-text {
     border: 0.15em solid #aaa;
     box-shadow: 0 0 3px #aaa;
