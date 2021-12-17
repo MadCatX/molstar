@@ -581,7 +581,7 @@ class WatlasViewer {
     resetCamera(radiusRatio?: number) {
         if (radiusRatio)
             this.radiusRatio = radiusRatio;
-        PluginCommands.Camera.Reset(this.plugin, { durationMs: AnimationDurationMsec, snapshot: { radius: this.baseRadius * this.radiusRatio } });
+        PluginCommands.Camera.Reset(this.plugin, { durationMs: AnimationDurationMsec, snapshot: { radius: this.baseRadius * this.radiusRatio, fog: 0 } });
     }
 
     async setCamClipRadius(radiusRatio: number) {
