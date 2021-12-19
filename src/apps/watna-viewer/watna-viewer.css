@@ -132,3 +132,8 @@
     -ms-overflow-style: none;  /* IE and Edge */
     scrollbar-width: none;  /* Firefox */
 }
+
+.wnav-ntc-reference-color-box {
+    width: 2.42em;
+    height: 1.5em;
+}

@@ -77,6 +77,7 @@ const SubstructureTypes: ST.SubstructureType[] = [
 ];
 
 export type ColorInfo = {
+    reference: string | [ number, number, number ],
     base: string | [ number, number, number ],
     phosphate: string | [ number, number, number ],
     nucleotide: string | [ number, number, number ],
@@ -1006,12 +1007,14 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
         switch (format) {
             case 'style':
                 return {
+                    reference: Color.toStyle(frag.colors.get('reference')!.get('nucleic')!.color),
                     base: Color.toStyle(frag.colors.get('base')!.get('water')!.color),
                     phosphate: Color.toStyle(frag.colors.get('phosphate')!.get('water')!.color),
                     nucleotide: Color.toStyle(frag.colors.get('nucleotide')!.get('water')!.color),
                 };
             case 'rgb':
                 return {
+                    reference: Color.toRgb(frag.colors.get('reference')!.get('nucleic')!.color),
                     base: Color.toRgb(frag.colors.get('base')!.get('water')!.color),
                     phosphate: Color.toRgb(frag.colors.get('phosphate')!.get('water')!.color),
                     nucleotide: Color.toRgb(frag.colors.get('nucleotide')!.get('water')!.color),
