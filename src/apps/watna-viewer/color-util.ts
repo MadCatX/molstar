@@ -7,7 +7,6 @@
  * @author Bohdan Schneider <Bohdan.Schneider@ibt.cas.cz>
  */
 
-import * as ST from './substructure-types';
 import { Colors } from '../watlas-common/colors';
 import { Color } from '../../mol-util/color';
 
@@ -24,17 +23,29 @@ function randomAdvance() {
     return (StepRandomizer[0] % 10) - 5;
 }
 
-export namespace Coloring {
-    export function baseColor(hue: number) {
+export namespace ColorUtil {
+    export function autoBaseColor(hue: number) {
         return Colors.hsvToColor(hue, 1, 1);
     }
 
-    export function nucleotideColor(hue: number) {
+    export function autoLigandColor(hue: number) {
+        return autoBaseColor(hue);
+    }
+
+    export function autoNucleotideColor(hue: number) {
         return Colors.hsvToColor((hue + 60) % 360, 0.38, 0.75);
     }
 
-    export function phosphateColor(hue: number) {
+    export function autoProteinColor(hue: number) {
+        return Colors.hsvToColor(hue, 0.15, 1);
+    }
+
+    export function autoPhosphateColor(hue: number) {
         return Colors.hsvToColor((hue + 30) % 360, 0.95, 0.75);
+    }
+
+    export function autoWaterColor(hue: number) {
+        return Colors.hsvToColor((hue + 180) % 360, 1, 1);
     }
 
     /* https://alienryderflex.com/hsp.html */
@@ -61,22 +72,5 @@ export namespace Coloring {
         }
 
         return newHue;
-    }
-
-    export function nonNucleicColor(type: ST.NonNucleicType, baseColor: Color) {
-        switch (type) {
-            case 'protein': {
-                const [r, g, b] = Color.toRgb(baseColor);
-                const { h, v } = Colors.rgb2hsv(r, g, b);
-                return Colors.hsvToColor(h, 0.15, v);
-            }
-            case 'water': {
-                const [r, g, b] = Color.toRgb(baseColor);
-                const { h, s, v } = Colors.rgb2hsv(r, g, b);
-                return Colors.hsvToColor((h + 180) % 360, s, v);
-            }
-            default:
-                return baseColor;
-        }
     }
 }

@@ -10,15 +10,15 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { Api } from './api';
-import { Coloring } from './coloring';
+import { ColorUtil } from './color-util';
 import { Controls } from './controls';
-import { FragmentDescription } from './fragment-description';
+import { RepresentationControlsStyle } from './fragment-controls';
+import { FragmentDescription as FD } from './fragment-description';
 import { List } from './list';
 import { Resources } from './resources';
 import { WatNAUtil } from './watna-util';
 import * as ST from './substructure-types';
 import { Collapsible } from '../watlas-common/collapsible';
-import { Colors } from '../watlas-common/colors';
 import { Measurements } from '../watlas-common/measurements';
 import { Util } from '../watlas-common/util';
 import { BoundaryHelper } from '../../mol-math/geometry/boundary-helper';
@@ -37,9 +37,8 @@ import { PluginStateObject as PSO } from '../../mol-plugin-state/objects';
 import { StateTransforms } from '../../mol-plugin-state/transforms';
 import { RawData } from '../../mol-plugin-state/transforms/data';
 import { Representation } from '../../mol-repr/representation';
-import { StructureRepresentationRegistry } from '../../mol-repr/structure/registry';
 import { Script } from '../../mol-script/script';
-import { StateObjectCell, State as PluginState } from '../../mol-state';
+import { StateObjectCell } from '../../mol-state';
 import { StateObject } from '../../mol-state/object';
 import { StateTransformer } from '../../mol-state/transformer';
 import { StateBuilder } from '../../mol-state/state/builder';
@@ -56,10 +55,26 @@ import { lociLabel } from '../../mol-theme/label';
 
 const AnimationDurationMsec = 150;
 const DefaultDensityMapAlpha = 0.5;
-const DefaultDensityMapStyle = 'wireframe';
+const DefaultDensityMapRepr = 'wireframe';
+const DefaultSubstructureReprs: Record<ST.SubstructureType, FD.StructureRepresentation | FD.OffRepresentation> = {
+    'nucleic': 'ball-and-stick',
+    'ligand': 'ball-and-stick',
+    'protein': 'cartoon',
+    'water': 'ball-and-stick',
+};
 const DefaultRadiusRatio = 1.0;
 const SelectAllScript = Script('(sel.atom.atoms true)', 'mol-script');
 const SphereBoundaryHelper = new BoundaryHelper('98');
+
+const NonNuclecSubstructureTypes: ST.NonNucleicType[] = [
+    'water',
+    'protein',
+    'ligand'
+];
+const SubstructureTypes: ST.SubstructureType[] = [
+    'nucleic',
+    ...NonNuclecSubstructureTypes
+];
 
 export type ColorInfo = {
     base: string | [ number, number, number ],
@@ -78,7 +93,7 @@ function baseRefToResRef(base: string, kind: Resources.AllKinds, type: Resources
     return `${base}_${kind}_${type}`;
 }
 
-function mapStyleToVisuals(style: FragmentDescription.MapStyle) {
+function mapStyleToVisuals(style: FD.MapRepresentation) {
     switch (style) {
         case 'solid':
             return ['solid'];
@@ -103,16 +118,21 @@ function downloadFile(blob: Blob, filename: string) {
     document.body.removeChild(element);
 }
 
+function reprIsOn<T>(repr: T | FD.OffRepresentation): repr is T {
+    return repr !== 'off';
+}
+
 type DownloadedResource = {
     data: string|Uint8Array;
     kind: Resources.AllKinds;
     type: Resources.Type
 };
 
-type StructureAppearance = {
-    kind: ST.SubstructureType;
-    repr: StructureRepresentationRegistry.BuiltIn;
-    colorTheme: ColorTheme.BuiltIn; color: Color;
+type SubstructureAppearance = {
+    substru: ST.SubstructureType;
+    repr: FD.StructureRepresentation;
+    colorTheme: ColorTheme.BuiltIn;
+    color: Color;
 };
 
 async function downloadResource(url: string, kind: Resources.AllKinds, type: Resources.Type) {
@@ -288,13 +308,7 @@ const WatlasLociLabelProvider = PluginBehavior.create({
 });
 
 class WatlasViewer {
-    readonly substructureTypes: ST.SubstructureType[] = [
-        'nucleic',
-        'water',
-        'protein',
-        'ligand'
-    ];
-    readonly visualTagTails = this.substructureTypes.map(e => this.mkVisRef('', e));
+    readonly visualTagTails = SubstructureTypes.map(e => this.mkVisRef('', e));
 
     plugin: PluginUIContext;
     baseRadius: number = 0;
@@ -347,7 +361,7 @@ class WatlasViewer {
         return { value: color };
     }
 
-    private densityMapParams(iso: number, style: FragmentDescription.MapStyle) {
+    private densityMapParams(iso: number, style: FD.MapRepresentation) {
         const isoValue = Volume.IsoValue.absolute(iso);
         return {
             isoValue,
@@ -385,7 +399,7 @@ class WatlasViewer {
     }
 
     private mkStructRef(base: string, st: ST.SubstructureType) {
-        return base + '_structure' + '_' + st;
+        return base + '_model-structure' + '_' + st;
     }
 
     private isVisualRef(ref: string) {
@@ -426,38 +440,6 @@ class WatlasViewer {
         this.updateClipping();
     }
 
-    private setSubstructureAppearance<A extends StateObject<any, StateObject.Type<any>>, T extends StateTransformer<A, A>>(
-        state: PluginState,
-        b: StateBuilder.To<A, T>,
-        base: string,
-        st: ST.SubstructureType,
-        reprType: { name: string, params: any },
-        colorTheme: { name: string, params: any }
-    ) {
-        const cell = state.cells.get(this.mkVisRef(base, st));
-        if (cell) {
-            return b.to(cell)
-                .update(StateTransforms.Representation.StructureRepresentation3D, old => ({ ...old, type: reprType, colorTheme })).to(cell);
-        }
-        return b;
-    }
-
-    private showSubstructure<A extends StateObject<any, StateObject.Type<any>>, T extends StateTransformer<A, A>>(
-        state: PluginState,
-        b: StateBuilder.To<A, T>,
-        base: string,
-        st: ST.SubstructureType,
-        reprType: { name: string, params: any },
-        colorTheme: { name: string, params: any }
-    ) {
-        const cell = state.cells.get(this.mkStructRef(base, st));
-        if (cell) {
-            return b.to(cell)
-                .apply(StateTransforms.Representation.StructureRepresentation3D, { colorTheme, type: reprType }, { ref: this.mkVisRef(base, st) });
-        }
-        return b;
-    }
-
     private updateClipping() {
         if (!this.plugin.canvas3d)
             return;
@@ -493,6 +475,11 @@ class WatlasViewer {
         return this.baseRadius * this.radiusRatio;
     }
 
+    hasSubstructure(substru: ST.SubstructureType, base: string) {
+        const ref = this.mkStructRef(base, substru);
+        return this.plugin.state.data.cells.get(ref)?.obj?.data !== undefined;
+    }
+
     async hideAll(base: string) {
         await this.hideDensityMap(base);
         await this.hideStructure(base);
@@ -510,7 +497,7 @@ class WatlasViewer {
         const state = this.plugin.state.data;
 
         const b = state.build();
-        for (const st of (substructures ?? this.substructureTypes)) {
+        for (const st of (substructures ?? SubstructureTypes)) {
             const ref = this.mkVisRef(base, st);
             b.delete(ref);
         }
@@ -543,12 +530,12 @@ class WatlasViewer {
             .apply(RawData, { data }, { ref: ref + '_data' })
             .apply(StateTransforms.Model.TrajectoryFromPDB)
             .apply(StateTransforms.Model.ModelFromTrajectory, { modelIndex: 0 })
-            .apply(StateTransforms.Model.StructureFromModel, {}, { ref: ref + '_structure' });
+            .apply(StateTransforms.Model.StructureFromModel, {}, { ref: ref + '_model-structure' });
 
         // Add the entire structure first so we can make selections
         await PluginCommands.State.Update(this.plugin, { state: this.plugin.state.data, tree: b });
 
-        const structureCell = this.plugin.state.data.cells.get(ref + '_structure')!;
+        const structureCell = this.plugin.state.data.cells.get(ref + '_model-structure')!;
         let bb = this.plugin.state.data.build().to(structureCell);
         bb = this.loadSubstructure(bb, structureCell, 'nucleic', ref);
         bb = this.loadSubstructure(bb, structureCell, 'water', ref);
@@ -569,13 +556,11 @@ class WatlasViewer {
         return { min: stats.min, max: stats.max };
     }
 
-    extraStructurePartRepresentation(type: ST.NonNucleicType, ref: string): ST.SubstructureRepresentation | null {
-        if (this.plugin.state.data.cells.get(this.mkStructRef(ref, type))?.obj?.data === undefined)
-            return null; // Given structure does not contain given kind of non-nucleic data
-        const cell = this.plugin.state.data.cells.get(this.mkVisRef(ref, type));
-        if (cell === undefined)
-            return 'off';
-        return cell.params?.values.type.name ?? 'off';
+    async modifyDensityMap(base: string, iso: number, repr: FD.MapRepresentation | FD.OffRepresentation, color: Color) {
+        if (repr === 'off')
+            await this.hideDensityMap(base);
+        else
+            await this.showDensityMap(base, iso, repr, color);
     }
 
     resetCamera(radiusRatio?: number) {
@@ -589,127 +574,73 @@ class WatlasViewer {
         this.updateClipping();
     }
 
-    async setDensityMapAppearance(iso: number, style: FragmentDescription.MapStyle, color: Color, ref: string) {
-        const visualRef = ref + '_visual';
-        const state = this.plugin.state.data;
-        const cell = state.cells.get(visualRef);
-        if (!cell)
-            return;
-
-        const type = { name: 'isosurface', params: this.densityMapParams(iso, style) };
-        const colorTheme = { name: 'uniform', params: this.densityMapColors(color) };
-        const b = state.build().to(cell)
-            .update(StateTransforms.Representation.VolumeRepresentation3D, old => ({ ...old, colorTheme, type }));
-
-        await PluginCommands.State.Update(this.plugin, { state, tree: b });
-    }
-
-    async setNonNucleicAppearance(type: ST.NonNucleicType, repr: ST.SubstructureRepresentation, color: Color, colorTheme: ColorTheme.BuiltIn, ref: string) {
-        if (repr === 'off') {
-            await this.hideSubstructure(ref, type);
-            return;
-        }
-
-        const actualColor = Coloring.nonNucleicColor(type, color);
-        const reprTheme = { name: repr, params: { sizeFactor: 0.2, sizeAspectRatio: 0.35 } };
-        const coloringTheme = { name: colorTheme, params: this.colorThemeParams(actualColor, colorTheme) };
-
-        const state = this.plugin.state.data;
-        const visRef = this.mkVisRef(ref, type);
-        if (!state.cells.has(visRef)) {
-            let b = state.build().to(this.mkStructRef(ref, type));
-            b = this.showSubstructure(
-                state,
-                b,
-                ref,
-                type,
-                reprTheme,
-                coloringTheme
-            );
-
-            await PluginCommands.State.Update(this.plugin, { state, tree: b });
-        } else {
-            const b = state.build()
-                .to(visRef)
-                .update(
-                    StateTransforms.Representation.StructureRepresentation3D,
-                    old => ({
-                        ...old,
-                        type: reprTheme,
-                        colorTheme: coloringTheme
-                    })
-                );
-
-            await PluginCommands.State.Update(this.plugin, { state, tree: b });
-        }
-    }
-
-    async setStructureAppearance(appearances: StructureAppearance[], ref: string) {
-        const state = this.plugin.state.data;
-
-        let b = state.build().to(ref + '_structure');
-
-        for (const { kind, repr, colorTheme, color } of appearances) {
-            const visRef = this.mkVisRef(ref, kind);
-            if (!state.cells.has(visRef))
-                continue;
-
-            b = this.setSubstructureAppearance(
-                state,
-                b,
-                ref,
-                kind,
-                { name: repr, params: { sizeFactor: 0.2, sizeAspectRatio: 0.35 } },
-                { name: colorTheme, params: this.colorThemeParams(color, colorTheme) }
-            );
-        }
-
-        await PluginCommands.State.Update(this.plugin, { state, tree: b });
-    }
-
-    async showDensityMap(base: string, iso: number, style: FragmentDescription.MapStyle, color: Color) {
+    async showDensityMap(base: string, iso: number, representation: FD.MapRepresentation, color: Color) {
         const ref = base + '_visual';
         const parent = base + '_volume';
         const state = this.plugin.state.data;
-        if (state.transforms.has(ref) || !state.transforms.has(parent))
+        if (!state.transforms.has(parent))
             return;
 
-        const cell = state.cells.get(parent)!;
-        const type = { name: 'isosurface', params: this.densityMapParams(iso, style) };
+        const type = { name: 'isosurface', params: this.densityMapParams(iso, representation) };
         const colorTheme = { name: 'uniform', params: this.densityMapColors(color) };
-        const b = this.plugin.state.data.build().to(cell)
-            .apply(StateTransforms.Representation.VolumeRepresentation3D, { colorTheme, type }, { ref });
+        const b = state.build().toRoot();
+        if (!state.transforms.has(ref)) {
+            const cell = state.cells.get(parent)!;
+            b.to(cell).apply(StateTransforms.Representation.VolumeRepresentation3D, { colorTheme, type }, { ref });
+        } else {
+            b.to(ref).update(
+                StateTransforms.Representation.VolumeRepresentation3D,
+                old => (
+                    {
+                        ...old,
+                        colorTheme,
+                        type
+                    }
+                )
+            );
+        }
 
         await PluginCommands.State.Update(this.plugin, { state, tree: b });
     }
 
-    async showStructure(base: string, color: Color, nucleicTheme: ColorTheme.BuiltIn, waterTheme: ColorTheme.BuiltIn, showWaters: boolean) {
-        const structure = base + '_structure';
+    async showStructure(base: string, appearances: SubstructureAppearance[]) {
+        const structure = base + '_model-structure';
         const state = this.plugin.state.data;
-
         if (!state.transforms.has(structure))
             return;
 
-        let b = state.build().to(structure);
-        if (!state.transforms.has(this.mkVisRef(base, 'nucleic'))) {
-            b = this.showSubstructure(
-                state,
-                b,
-                base,
-                'nucleic',
-                { name: 'ball-and-stick', params: { sizeFactor: 0.2, sizeAspectRatio: 0.35 } },
-                { name: nucleicTheme, params: this.colorThemeParams(color, nucleicTheme) }
-            );
-        }
-        if (showWaters && !state.transforms.has(this.mkVisRef(base, 'water'))) {
-            b = this.showSubstructure(
-                state,
-                b,
-                base,
-                'water',
-                { name: 'ball-and-stick', params: { sizeFactor: 0.2, sizeAspectRatio: 0.35 } },
-                { name: waterTheme, params: this.colorThemeParams(color, waterTheme) }
-            );
+        const b = state.build();
+
+        for (const a of appearances) {
+            const struRef = this.mkStructRef(base, a.substru);
+            if (!state.transforms.has(struRef))
+                continue;
+            const ref = this.mkVisRef(base, a.substru);
+            const reprParams = { name: a.repr, params: { sizeFactor: 0.2, sizeAspectRatio: 0.35 } };
+            const theme = (a.repr !== 'ball-and-stick' && a.colorTheme === 'element-symbol') ? 'uniform' : a.colorTheme;
+            const colorParams = { name: theme, params: this.colorThemeParams(a.color, theme) }
+            if (!state.transforms.has(ref)) {
+                b.to(struRef)
+                    .apply(
+                        StateTransforms.Representation.StructureRepresentation3D,
+                        {
+                            type: reprParams,
+                            colorTheme: colorParams
+                        },
+                        { ref }
+                    );
+            } else {
+                b.to(ref).update(
+                    StateTransforms.Representation.StructureRepresentation3D,
+                    old => (
+                        {
+                            ...old,
+                            type: reprParams,
+                            colorTheme: colorParams
+                        }
+                    )
+                );
+            }
         }
 
         await PluginCommands.State.Update(this.plugin, { state, tree: b });
@@ -735,7 +666,7 @@ export interface OnFragmentStateChanged {
     (fragId: string): void;
 }
 
-type FragmentMap = Map<string, FragmentDescription.Description>;
+type FragmentMap = Map<string, FD.Description>;
 
 interface WatlasAppProps extends WatlasApp.Configuration {
     elemId: string;
@@ -747,7 +678,6 @@ interface WatlasAppState {
 }
 
 export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
-    private assignedHues: Map<string, number>;
     private viewer: WatlasViewer | null;
     private loadedFragments: string[];
     private onFragmentAdded: OnFragmentStateChanged | null = null;
@@ -764,52 +694,36 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
             showStepWaters: false,
         };
 
-        this.assignedHues = new Map();
         this.loadedFragments = [];
-        this.hue = Coloring.nextHue(0);
+        this.hue = ColorUtil.nextHue(0);
         this.fragments = new Map();
     }
 
-    private advancefragmentColors(base: string): { colors: Map<Resources.AllKinds, Color>, nextHue: number } {
+    private advanceFragmentColors() {
         let hue;
         let nextHue;
 
-        if (this.assignedHues.has(base)) {
-            hue = this.assignedHues.get(base)!;
-            nextHue = this.hue;
-        } else {
-            hue = this.hue;
-            nextHue = Coloring.nextHue(hue);
+        hue = this.hue;
+        nextHue = ColorUtil.nextHue(hue);
 
-            this.assignedHues.set(base, hue);
-        }
-
-        const colors = new Map<Resources.AllKinds, Color>([
-            ['reference', Coloring.baseColor(hue)],
-            ['base', Coloring.baseColor(hue)],
-            ['nucleotide', Coloring.nucleotideColor(hue)],
-            ['phosphate', Coloring.phosphateColor(hue)]
-        ]);
-
-        return { colors, nextHue };
+        return { colors: this.mkAutoColors(hue), nextHue };
     }
 
-    private async changeColor(clr: number, kind: Resources.AllKinds, base: string) {
+    private async changeColor(clr: number, kind: Resources.AllKinds, substru: ST.SubstructureType,  base: string) {
         const color = Color(clr);
         const frag = this.fragments.get(base)!;
-        frag.colors.set(kind, color);
 
-        /* Make sure that reference and base colors are the same as it is the current consensus */
-        if (kind === 'base')
-            frag.colors.set('reference', color);
-        else if (kind === 'reference')
-            frag.colors.set('base', color);
+        const coloring = frag.colors.get(kind)!.get(substru);
+        if (!coloring) {
+            console.warn(`Attempted to get non-existent Coloring ${kind}/${substru}`);
+            return;
+        }
 
-        await this.repaintStructures(frag, base);
-        await this.repaintDensityMaps(frag, base);
+        coloring.color = color;
+        frag.colors.get(kind)!.set(substru, coloring);
 
-        if (kind === 'base')
-            this.assignedHues.set(base, Colors.colorToHsv(clr).h);
+        await this.drawStructures(frag);
+        await this.drawDensityMaps(frag);
 
         this.forceUpdate();
 
@@ -846,66 +760,83 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
         this.forceUpdate();
     }
 
+    private async drawDensityMaps(frag: FD.Description) {
+        for (const dmRef of Array.from(frag.densityMaps.keys())) {
+            const dm = frag.densityMaps.get(dmRef)!;
+            if (reprIsOn(dm.representation)) {
+                const coloring = frag.colors.get(dmRef)!.get('water')!;
+                await this.viewer!.showDensityMap(baseRefToResRef(frag.fragId, dmRef, 'density-map'), dm.iso, dm.representation, coloring.color);
+            }
+        }
+    }
+
+    private async drawStructures(frag: FD.Description) {
+        for (const [kind, structs] of Array.from(frag.structures.entries())) {
+            const ref = baseRefToResRef(frag.fragId, kind, 'structure');
+            const appearances: SubstructureAppearance[] = [];
+            for (const [substru, stru] of Array.from(structs.entries())) {
+                if (reprIsOn(stru.representation)) {
+                    const coloring = frag.colors.get(kind)!.get(substru)!;
+                    appearances.push(
+                        {
+                            substru: substru,
+                            repr: stru.representation,
+                            color: coloring.color,
+                            colorTheme: coloring.theme,
+                        }
+                    );
+                }
+            }
+
+            await this.viewer!.showStructure(ref, appearances);
+        }
+    }
+
     private isLoaded(fragId: string) {
         return this.loadedFragments.includes(fragId);
     }
 
-    private async repaintDensityMaps(frag: FragmentDescription.Description, ref: string) {
-        for (const dmRef of Array.from(frag.densityMaps.keys())) {
-            const dm = frag.densityMaps.get(dmRef)!;
-            if (dm.shown)
-                await this.viewer!.setDensityMapAppearance(dm.iso, dm.style, frag.colors.get(dmRef)!, baseRefToResRef(ref, dmRef, 'density-map'));
-        }
+    private mkAutoColors(hue: number) {
+        return new Map<Resources.AllKinds, Map<ST.SubstructureType, FD.Coloring>>([
+            [
+                'reference', new Map<ST.SubstructureType, FD.Coloring>([
+                    ['nucleic', { color: ColorUtil.autoBaseColor(hue), theme: 'element-symbol' }],
+                    ['ligand', { color: ColorUtil.autoLigandColor(hue), theme: 'element-symbol' }],
+                    ['protein', { color: ColorUtil.autoProteinColor(hue), theme: 'uniform' }],
+                    ['water', { color: ColorUtil.autoWaterColor(hue), theme: 'uniform' }],
+                ])
+            ],
+            [
+                'base', new Map<ST.SubstructureType, FD.Coloring>([
+                    ['water', { color: ColorUtil.autoBaseColor(hue), theme: 'uniform' }],
+                ])
+            ],
+            [
+                'nucleotide', new Map<ST.SubstructureType, FD.Coloring>([
+                    ['water', { color: ColorUtil.autoNucleotideColor(hue), theme: 'uniform' }],
+                ])
+            ],
+            [
+                'phosphate', new Map<ST.SubstructureType, FD.Coloring>([
+                    ['water', { color: ColorUtil.autoPhosphateColor(hue), theme: 'uniform' }],
+                ])
+            ]
+        ]);
     }
 
-    private async repaintStructures(frag: FragmentDescription.Description, ref: string) {
-        for (const struRef of Array.from(frag.structures.keys())) {
-            const stru = frag.structures.get(struRef)!;
-            const resRef = baseRefToResRef(ref, struRef, 'structure');
-            const color = frag.colors.get(struRef)!;
 
-            if (stru.shown) {
-                const colorTheme = struRef === 'reference' ? 'element-symbol' : 'uniform';
-                const appearances: StructureAppearance[] = [{ kind: 'nucleic', repr: 'ball-and-stick', colorTheme, color }];
-                if (struRef !== 'reference')
-                    appearances.push({ kind: 'water', repr: 'ball-and-stick', colorTheme: 'uniform', color });
-
-                await this.viewer!.setStructureAppearance(appearances, resRef);
-            }
-        }
-
-        const extraSt: ST.NonNucleicType[] = ['protein', 'ligand'];
-        if (this.props.treatReferenceAsExtraPart && frag.structures.get('reference')!.shown)
-            extraSt.push('water');
-
-        const bResRef = baseRefToResRef(ref, 'reference', 'structure')
-        const bColor = frag.colors.get('reference')!;
-        for (const st of extraSt) {
-            const repr = frag.extraStructurePartsRepresentations.get(st)!;
-            if (repr && repr !== 'off')
-                await this.viewer!.setNonNucleicAppearance(st, repr, bColor, 'uniform', bResRef);
-        }
-    }
 
     private async resetColors() {
-        this.assignedHues.clear();
-
-        this.hue = Coloring.nextHue(0);
+        this.hue = ColorUtil.nextHue(0);
 
         for (const ref of Array.from(this.fragments.keys())) {
             const frag = this.fragments.get(ref)!;
-            frag.colors = new Map<Resources.AllKinds, Color>([
-                ['reference', Coloring.baseColor(this.hue)],
-                ['base', Coloring.baseColor(this.hue)],
-                ['nucleotide', Coloring.nucleotideColor(this.hue)],
-                ['phosphate', Coloring.phosphateColor(this.hue)],
-            ]);
+            frag.colors = this.mkAutoColors(this.hue);
 
-            await this.repaintStructures(frag, ref);
-            await this.repaintDensityMaps(frag, ref);
+            await this.drawStructures(frag);
+            await this.drawDensityMaps(frag);
 
-            this.assignedHues.set(ref, this.hue);
-            this.hue = Coloring.nextHue(this.hue);
+            this.hue = ColorUtil.nextHue(this.hue);
 
             if (this.onFragmentColorsChanged)
                 this.onFragmentColorsChanged(frag.fragId);
@@ -943,54 +874,24 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
         );
     }
 
-    private setNonNucleicAppearance(repr: ST.SubstructureRepresentation, type: ST.NonNucleicType, base: string) {
-        const frag = this.fragments.get(base)!;
-
-        const color = this.fragments.get(base)!.colors.get('reference')!;
-        const ref = baseRefToResRef(base, 'reference', 'structure');
-        frag.extraStructurePartsRepresentations.set(type, repr);
-        this.viewer!.setNonNucleicAppearance(type, repr, color, 'uniform', ref);
-
-        this.forceUpdate();
-    }
-
-    private async showFragmentInitial(frag: FragmentDescription.Description, isOnlyFragment: boolean) {
-        for (const [kind, stru] of Array.from(frag.structures.entries())) {
-            if (stru.shown) {
-                const color = frag.colors.get(kind)!;
-                const ref = baseRefToResRef(frag.fragId, kind, 'structure');
-                await this.viewer!.showStructure(ref, color, kind === 'reference' ? 'element-symbol' : 'uniform', 'uniform', kind !== 'reference');
-            }
-        }
-        for (const [kind, dm] of Array.from(frag.densityMaps.entries())) {
-            if (dm.shown) {
-                const color = frag.colors.get(kind)!;
-                const ref = baseRefToResRef(frag.fragId, kind, 'density-map');
-                await this.viewer!.showDensityMap(ref, dm.iso, dm.style, color);
-            }
-        }
-        for (const [type, repr] of Array.from(frag.extraStructurePartsRepresentations.entries())) {
-            if (repr && repr !== 'off') {
-                const color = frag.colors.get('reference')!;
-                const ref = baseRefToResRef(frag.fragId, 'reference', 'structure');
-                await this.viewer!.setNonNucleicAppearance(type, repr, color, 'uniform', ref);
-            }
-        }
+    private async showFragmentInitial(frag: FD.Description, isOnlyFragment: boolean) {
+        await this.drawStructures(frag);
+        await this.drawDensityMaps(frag);
 
         if (isOnlyFragment)
             this.viewer!.resetCamera();
     }
 
-    private updateFragmentDensityMap(data: FragmentDescription.DensityMap, base: string, kind: Resources.DensityMaps) {
+    private updateFragmentDensityMap(data: FD.DensityMap, base: string, kind: Resources.DensityMaps) {
         const frag = this.fragments.get(base)!;
         frag.densityMaps.set(kind, data);
 
         this.forceUpdate();
     }
 
-    private updateFragmentStructure(data: FragmentDescription.Structure, base: string, kind: Resources.Structures) {
+    private updateFragmentStructure(data: FD.Structure, substru: ST.SubstructureType, base: string, kind: Resources.Structures) {
         const frag = this.fragments.get(base)!;
-        frag.structures.set(kind, data);
+        frag.structures.get(kind)!.set(substru, data);
 
         this.forceUpdate();
     }
@@ -1022,47 +923,56 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
         const stepWaterMapIsoRange = this.viewer.isoRange(baseRefToResRef(fragId, 'nucleotide', 'density-map'));
         const phosWaterMapIsoRange = this.viewer.isoRange(baseRefToResRef(fragId, 'phosphate', 'density-map'));
 
-        const structures: Map<Resources.Structures, FragmentDescription.Structure> = new Map([
-            ['reference', { shown: shownStructures.includes('reference') }],
-            ['base', { shown: shownStructures.includes('base') }],
-            ['nucleotide', { shown: shownStructures.includes('nucleotide') }],
-            ['phosphate', { shown: shownStructures.includes('phosphate') }],
+        const structures: Map<Resources.Structures, Map<ST.SubstructureType, FD.Structure>> = new Map([
+            [
+                'reference', new Map<ST.SubstructureType, FD.Structure>(),
+            ],
+            [
+                'base', new Map<ST.SubstructureType, FD.Structure>(),
+            ],
+            [
+                'nucleotide', new Map<ST.SubstructureType, FD.Structure>()
+            ],
+            [
+                'phosphate', new Map<ST.SubstructureType, FD.Structure>(),
+            ]
         ]);
-        const densityMaps: Map<Resources.DensityMaps, FragmentDescription.DensityMap> = new Map([
+
+        for (const s of ['reference', 'base', 'nucleotide', 'phosphate'] as Resources.Structures[]) {
+            const ref = baseRefToResRef(fragId, s, 'structure')
+            const item = structures.get(s)!
+            for (const sub of SubstructureTypes) {
+                if (this.viewer!.hasSubstructure(sub, ref))
+                    item.set(sub, { representation: shownStructures.includes(s) ? DefaultSubstructureReprs[sub] : 'off' })
+            }
+            structures.set(s, item);
+        }
+
+        const densityMaps: Map<Resources.DensityMaps, FD.DensityMap> = new Map([
             ['base', {
-                shown: shownDensityMaps.includes('base'),
+                representation: shownDensityMaps.includes('base') ? DefaultDensityMapRepr : 'off',
                 iso: WatNAUtil.prettyIso(WatNAUtil.mid(baseWaterMapIsoRange), WatNAUtil.isoBounds(baseWaterMapIsoRange.min, baseWaterMapIsoRange.max).step),
                 isoRange: baseWaterMapIsoRange,
-                style: DefaultDensityMapStyle,
             }],
             ['nucleotide', {
-                shown: shownDensityMaps.includes('nucleotide'),
+                representation: shownDensityMaps.includes('nucleotide') ? DefaultDensityMapRepr : 'off',
                 iso: WatNAUtil.prettyIso(WatNAUtil.mid(stepWaterMapIsoRange), WatNAUtil.isoBounds(stepWaterMapIsoRange.min, stepWaterMapIsoRange.max).step),
                 isoRange: stepWaterMapIsoRange,
-                style: DefaultDensityMapStyle,
             }],
             ['phosphate', {
-                shown: shownDensityMaps.includes('phosphate'),
+                representation: shownDensityMaps.includes('phosphate') ? DefaultDensityMapRepr : 'off',
                 iso: WatNAUtil.prettyIso(WatNAUtil.mid(phosWaterMapIsoRange), WatNAUtil.isoBounds(phosWaterMapIsoRange.min, phosWaterMapIsoRange.max).step),
                 isoRange: phosWaterMapIsoRange,
-                style: DefaultDensityMapStyle,
             }],
         ]);
-        const { colors, nextHue } = this.advancefragmentColors(fragId);
+        const { colors, nextHue } = this.advanceFragmentColors();
 
-        const nnRef = baseRefToResRef(fragId, 'reference', 'structure');
-        const extraStructurePartsRepresentations = new Map<ST.NonNucleicType, ST.SubstructureRepresentation | null>([
-            ['water', this.viewer.extraStructurePartRepresentation('water', nnRef) === null ? null : 'ball-and-stick'],
-            ['ligand', this.viewer.extraStructurePartRepresentation('ligand', nnRef) === null ? null : 'off'],
-            ['protein', this.viewer.extraStructurePartRepresentation('protein', nnRef) === null ? null : 'cartoon'],
-        ]);
-        const frag: FragmentDescription.Description = {
+        const frag: FD.Description = {
             fragId,
             referenceName,
             structures,
             densityMaps,
             colors,
-            extraStructurePartsRepresentations,
         };
         const newFragments: FragmentMap = new Map([[fragId, frag]]);
 
@@ -1096,15 +1006,15 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
         switch (format) {
             case 'style':
                 return {
-                    base: Color.toStyle(frag.colors.get('base')!),
-                    phosphate: Color.toStyle(frag.colors.get('phosphate')!),
-                    nucleotide: Color.toStyle(frag.colors.get('nucleotide')!),
+                    base: Color.toStyle(frag.colors.get('base')!.get('water')!.color),
+                    phosphate: Color.toStyle(frag.colors.get('phosphate')!.get('water')!.color),
+                    nucleotide: Color.toStyle(frag.colors.get('nucleotide')!.get('water')!.color),
                 };
             case 'rgb':
                 return {
-                    base: Color.toRgb(frag.colors.get('base')!),
-                    phosphate: Color.toRgb(frag.colors.get('phosphate')!),
-                    nucleotide: Color.toRgb(frag.colors.get('nucleotide')!),
+                    base: Color.toRgb(frag.colors.get('base')!.get('water')!.color),
+                    phosphate: Color.toRgb(frag.colors.get('phosphate')!.get('water')!.color),
+                    nucleotide: Color.toRgb(frag.colors.get('nucleotide')!.get('water')!.color),
                 };
         }
     }
@@ -1203,48 +1113,45 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
                         <List
                             fragments={this.fragments}
                             showStepWaters={this.state.showStepWaters}
-                            onChangeColor={(clr, kind, base) => this.changeColor(clr, kind, base)}
-                            onChangeNonNucleicAppearance={(repr, type, base) => this.setNonNucleicAppearance(repr, type, base)}
+                            onChangeColor={(clr, kind, substru, base) => this.changeColor(clr, kind, substru, base)}
                             onDensityMapIsoChanged={(iso, kind, base) => {
                                 const ref = baseRefToResRef(base, kind, 'density-map');
                                 const frag = this.fragments.get(base)!;
                                 const dm = this.densityMapData(base, kind);
 
-                                this.viewer!.setDensityMapAppearance(iso, dm.style, frag.colors.get(kind)!, ref);
+                                if (reprIsOn(dm.representation))
+                                    this.viewer!.showDensityMap(ref, dm.iso, dm.representation, frag.colors.get(kind)!.get('water')!.color);
 
                                 this.updateFragmentDensityMap({ ...dm, iso }, base, kind);
                             }}
-                            onDensityMapStyleChanged={(style, kind, base) => {
-                                const ref = baseRefToResRef(base, kind, 'density-map');
-                                const frag = this.fragments.get(base)!;
-                                const dm = this.densityMapData(base, kind);
-
-                                this.viewer!.setDensityMapAppearance(dm.iso, style, frag.colors.get(kind)!, ref);
-
-                                this.updateFragmentDensityMap({ ...dm, style }, base, kind);
-                            }}
-                            onHideShowResource={(show, kind, type, base) => {
+                            onChangeResourceRepresentation={(repr, kind, type, substru, base) => {
                                 const frag = this.fragments.get(base)!;
                                 const ref = baseRefToResRef(base, kind, type);
 
                                 if (type === 'density-map') {
                                     const dm = frag.densityMaps.get(kind as Resources.DensityMaps)!;
-                                    if (show) {
-                                        const color = frag.colors.get(kind)!;
-                                        this.viewer!.showDensityMap(ref, dm.iso, dm.style, color);
-                                    } else
+                                    const color = frag.colors.get(kind)!.get(substru)!.color;
+                                    if (reprIsOn(repr))
+                                        this.viewer!.showDensityMap(ref, dm.iso, repr as FD.MapRepresentation, color);
+                                    else
                                         this.viewer!.hideDensityMap(ref);
 
-                                    this.updateFragmentDensityMap({ ...dm, shown: show }, base, kind as Resources.DensityMaps);
+                                    this.updateFragmentDensityMap({ ...dm, representation: repr as FD.MapRepresentation | FD.OffRepresentation }, base, kind as Resources.DensityMaps);
                                 } else {
-                                    const stru = frag.structures.get(kind)!;
-                                    if (show) {
-                                        const color = frag.colors.get(kind)!;
-                                        this.viewer!.showStructure(ref, color, kind === 'reference' ? 'element-symbol' : 'uniform', 'uniform', kind !== 'reference');
+                                    const stru = frag.structures.get(kind)!.get(substru)!;
+                                    const coloring = frag.colors.get(kind)!.get(substru)!;
+                                    if (reprIsOn(repr)) {
+                                        const appearances: SubstructureAppearance[] = [{
+                                            substru,
+                                            repr: repr as FD.StructureRepresentation,
+                                            color: coloring.color,
+                                            colorTheme: coloring.theme,
+                                        }];
+                                        this.viewer!.showStructure(ref, appearances);
                                     } else
-                                        this.viewer!.hideStructure(ref, kind === 'reference' && this.props.treatReferenceAsExtraPart ? ['nucleic'] : undefined);
+                                        this.viewer!.hideStructure(ref, [substru]);
 
-                                    this.updateFragmentStructure({ ...stru, shown: show }, base, kind);
+                                    this.updateFragmentStructure({ ...stru, representation: repr as FD.StructureRepresentation | FD.OffRepresentation }, substru, base, kind);
                                 }
                             }}
                             onRemoveClicked={base => {
@@ -1254,13 +1161,13 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
                             hydrationSitesName={this.props.hydrationSitesName}
                             hydrationDistributionName={this.props.hydrationDistributionName}
                             nucleotideWatersName={this.props.nucleotideWatersName}
-                            extraStructurePartsName={this.props.extraStructurePartsName}
-                            extraStructurePartsPlacement={this.props.extraStructurePartsPlacement}
-                            treatReferenceAsExtraPart={this.props.treatReferenceAsExtraPart}
+                            nonNucleicStructurePartsName={this.props.nonNucleicStructurePartsName}
+                            nonNucleicStructurePartsPlacement={this.props.nonNucleicStructurePartsPlacement}
+                            representationControlsStyle={this.props.representationControlsStyle}
                             pathPrefix={this.props.pathPrefix ?? ''}
                         />
                         <Controls
-                            disableStepWaters={this.props.disableStepWaters}
+                        disableStepWaters={this.props.disableStepWaters}
                             camClipRadius={this.state.camClipRadius}
                             getCanvasSize={() => {
                                 const elem = document.querySelector(`#${this.props.elemId}-viewer`);
@@ -1273,27 +1180,45 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
                                 this.viewer!.setCamClipRadius(radius);
                                 this.setState({ ...this.state, camClipRadius: radius });
                             }}
-                            onHideShowStepWaters={show => {
+                            onHideShowStepWaters={async (show) => {
                                 if (!show) {
                                     for (const [base, frag] of Array.from(this.fragments.entries())) {
-                                        const stru = frag.structures.get('nucleotide')!;
-                                        if (stru.shown)
-                                            this.viewer!.hideStructure(baseRefToResRef(base, 'nucleotide', 'structure'));
+                                        const structs = frag.structures.get('nucleotide');
+                                        if (!structs)
+                                            continue;
+                                        const substructs = Array.from(structs.keys())
+                                        await this.viewer!.hideStructure(baseRefToResRef(base, 'nucleotide', 'structure'), substructs);
 
-                                        const dm = frag.densityMaps.get('nucleotide')!;
-                                        if (dm.shown)
-                                            this.viewer!.hideDensityMap(baseRefToResRef(base, 'nucleotide', 'density-map'));
+                                        this.viewer!.hideDensityMap(baseRefToResRef(base, 'nucleotide', 'density-map'));
                                     }
                                 } else {
                                     for (const [base, frag] of Array.from(this.fragments.entries())) {
-                                        const color = frag.colors.get('nucleotide')!;
-                                        const stru = frag.structures.get('nucleotide')!;
-                                        if (stru.shown)
-                                            this.viewer!.showStructure(baseRefToResRef(base, 'nucleotide', 'structure'), color, 'uniform', 'uniform', true);
+                                        const structs = frag.structures.get('nucleotide');
+                                        if (!structs)
+                                            continue;
 
-                                        const dm = frag.densityMaps.get('nucleotide')!;
-                                        if (dm.shown)
-                                            this.viewer!.showDensityMap(baseRefToResRef(base, 'nucleotide', 'density-map'), dm.iso, dm.style, color);
+                                        const appearances: SubstructureAppearance[] = [];
+                                        for (const [substru, stru] of Array.from(structs.entries())) {
+                                            if (!reprIsOn(stru.representation))
+                                                continue;
+                                            const coloring = frag.colors.get('nucleotide')!.get(substru)!;
+                                            appearances.push({
+                                                substru,
+                                                repr: stru.representation,
+                                                color: coloring.color,
+                                                colorTheme: coloring.theme,
+                                            });
+                                        }
+
+                                        await this.viewer!.showStructure(baseRefToResRef(base, 'nucleotide', 'structure') , appearances);
+
+                                        const dm = frag.densityMaps.get('nucleotide');
+                                        if (!dm)
+                                            continue;
+                                        const coloring = frag.colors.get('nucleotide')!.get('water')!;
+                                        if (reprIsOn(dm.representation))
+                                            await this.viewer!.showDensityMap(baseRefToResRef(base, 'nucleotide', 'density-map'), dm.iso, dm.representation, coloring.color);
+
                                     }
                                 }
 
@@ -1318,18 +1243,17 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
 
 export namespace WatlasApp {
     export interface Configuration {
-        /* Text to display as caption of the extra structure part controls block */
-        extraStructurePartsName: string;
+        representationControlsStyle: RepresentationControlsStyle; 
+        /* Text to display as caption of the non-nucleic structure parts control block */
+        nonNucleicStructurePartsName: string;
         /* Text to display as caption of the hydration sites controls block */
         hydrationSitesName: string;
         /* Text to display as caption of the hydration distribution controls block */
         hydrationDistributionName: string;
         /* Name to display for the nucleotide (step) waters */
         nucleotideWatersName: string;
-        /* If true, reference structure controls will be displayed in the extra structure part controls block */
-        treatReferenceAsExtraPart: boolean;
-        /* Where to place the extra structure part controls block (on top or the bottom of the entire FragmentControls element */
-        extraStructurePartsPlacement: 'first' | 'last';
+        /* Where to place the non-nucleic structure parts controls block */
+        nonNucleicStructurePartsPlacement: 'first' | 'last';
         /* If true, the step waters will not be displayed */
         disableStepWaters: boolean;
         /* Path prefix, used to amend assets URLs */

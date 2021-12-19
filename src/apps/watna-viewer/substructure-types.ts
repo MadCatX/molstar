@@ -10,4 +10,3 @@
 
 export type NonNucleicType = 'protein' | 'ligand' | 'water';
 export type SubstructureType = 'nucleic' | NonNucleicType;
-export type SubstructureRepresentation = 'off' | 'ball-and-stick' | 'cartoon';

@@ -14,25 +14,31 @@ import { Color } from '../../mol-util/color';
 export type Range<T> = { min: T, max: T };
 
 export namespace FragmentDescription {
-    export type MapStyle = 'solid' | 'wireframe' | 'both';
+    export type ColorTheme = 'element-symbol' | 'uniform';
+    export type OffRepresentation = 'off';
+    export type StructureRepresentation = 'ball-and-stick' | 'cartoon';
+    export type MapRepresentation = 'solid' | 'wireframe' | 'both';
 
     export type DensityMap = {
-        shown: boolean;
+        representation: MapRepresentation | OffRepresentation;
         iso: number;
         isoRange: Range<number>;
-        style: MapStyle;
-    };
+    }
 
     export type Structure = {
-        shown: boolean;
+        representation: StructureRepresentation | OffRepresentation;
+    }
+
+    export type Coloring = {
+        color: Color;
+        theme: ColorTheme;
     }
 
     export interface Description {
         fragId: string;
         referenceName: { text: string; transform: boolean };
-        structures: Map<Resources.Structures, Structure>;
+        structures: Map<Resources.Structures, Map<ST.SubstructureType, Structure>>;
         densityMaps: Map<Resources.DensityMaps, DensityMap>;
-        colors: Map<Resources.AllKinds, Color>;
-        extraStructurePartsRepresentations: Map<ST.NonNucleicType, ST.SubstructureRepresentation | null>;
+        colors: Map<Resources.AllKinds, Map<ST.SubstructureType, Coloring>>;
     }
 }

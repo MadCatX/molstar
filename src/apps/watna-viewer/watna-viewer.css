@@ -76,10 +76,6 @@
     width: 0.75em;
 }
 
-.wnav-ntc-color-spacer {
-    width: 0.5em;
-}
-
 .wnav-ntc-fragment-container {
     font-family: sans-serif;
     margin: 0 0 2em 0;
@@ -88,7 +84,7 @@
 .wnav-ntc-fragment-densitymap-firstrow {
     display: grid;
     grid-column-gap: 1em;
-    grid-template-columns: 1fr auto auto;
+    grid-template-columns: 1fr auto;
 }
 
 .wnav-ntc-fragment-densitymap-secondrow {
@@ -100,13 +96,8 @@
 .wnav-ntc-fragment-header {
     align-items: center;
     display: flex;
+    gap: 0.1em;
     margin-bottom: 0.1em;
-}
-
-.wnav-ntc-fragment-hide-show-btns {
-    display: grid;
-    grid-column-gap: 0.5em;
-    grid-template-columns: auto auto 1fr;
 }
 
 .wnav-ntc-fragment-name {

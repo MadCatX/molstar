@@ -8,8 +8,8 @@
  */
 
 import * as React from 'react';
-import { FragmentControls } from './fragment-controls';
-import { FragmentDescription } from './fragment-description';
+import { FragmentControls, RepresentationControlsStyle } from './fragment-controls';
+import { FragmentDescription as FD } from './fragment-description';
 import { Resources } from './resources';
 import * as ST from './substructure-types';
 
@@ -35,36 +35,20 @@ export class List extends React.Component<List.Props, State> {
         return (
             <div className='wnav-ntc-fragments-list'>
                 {Array.from(this.props.fragments.entries()).sort((a, b) => cmpStr(a[0], b[0])).map(([base, v]) => {
-                    const expanded = this.state.fragmentsState.get(base) ?? true;
                     const props: FragmentControls.Props = {
                         ...v,
-                        expanded,
-                        extraStructurePartsName: this.props.extraStructurePartsName,
-                        extraStructurePartsPlacement: this.props.extraStructurePartsPlacement,
+                        nonNucleicStructurePartsName: this.props.nonNucleicStructurePartsName,
+                        nonNucleicStructurePartsPlacement: this.props.nonNucleicStructurePartsPlacement,
                         hydrationSitesName: this.props.hydrationSitesName,
                         hydrationDistributionName: this.props.hydrationDistributionName,
                         nucleotideWatersName: this.props.nucleotideWatersName,
                         showStepWaters: this.props.showStepWaters,
-                        treatReferenceAsExtraPart: this.props.treatReferenceAsExtraPart,
-                        onChangeColor: (clr, kind) => this.props.onChangeColor(clr, kind, base),
-                        onChangeNonNucleicAppearance: (repr, type) => this.props.onChangeNonNucleicAppearance(repr, type, base),
+                        onChangeColor: (clr, kind, substru) => this.props.onChangeColor(clr, kind, substru, base),
+                        onChangeResourceRepresentation: (repr, kind, type, substru) => this.props.onChangeResourceRepresentation(repr, kind, type, substru, base),
                         onDensityMapIsoChanged: (iso, kind) => this.props.onDensityMapIsoChanged(iso, kind, base),
-                        onDensityMapStyleChanged: (style, kind) => this.props.onDensityMapStyleChanged(style, kind, base),
-                        onHideShowResource: (show, kind, type) => this.props.onHideShowResource(show, kind, type, base),
-                        onHideShowClicked: () => {
-                            const curr = this.state.fragmentsState.get(base) ?? true;
-                            const newFragState = new Map(this.state.fragmentsState);
-                            newFragState.set(base, !curr);
-
-                            this.setState(
-                                {
-                                    ...this.state,
-                                    fragmentsState: newFragState,
-                                }
-                            );
-                        },
                         onRemoveClicked: () => this.props.onRemoveClicked(base),
                         pathPrefix: this.props.pathPrefix,
+                        representationControlsStyle: this.props.representationControlsStyle,
                     };
                     return (
                         <FragmentControls {...props} key={base} />
@@ -77,23 +61,15 @@ export class List extends React.Component<List.Props, State> {
 
 export namespace List {
     export interface OnChangeColor {
-        (clr: number, kind: Resources.AllKinds, base: string): void;
+        (clr: number, kind: Resources.AllKinds, substru: ST.SubstructureType,  base: string): void;
     }
 
-    export interface OnChangeNonNucleicAppearance {
-        (repr: ST.SubstructureRepresentation, type: ST.NonNucleicType, base: string): void;
+    export interface OnChangeResourceRepresentation {
+        (repr: FD.StructureRepresentation | FD.MapRepresentation | FD.OffRepresentation, kind: Resources.AllKinds, type: Resources.Type, substru: ST.SubstructureType, base: string): void;
     }
 
     export interface OnDensityMapIsoChanged {
         (iso: number, kind: Resources.DensityMaps, base: string): void;
-    }
-
-    export interface OnDensityMapStyleChanged {
-        (style: FragmentDescription.MapStyle, kind: Resources.DensityMaps, base: string): void;
-    }
-
-    export interface OnHideShowResource {
-        (show: boolean, kind: Resources.AllKinds, type: Resources.Type, base: string): void;
     }
 
     export interface OnRemoveClicked {
@@ -101,20 +77,18 @@ export namespace List {
     }
 
     export interface Props {
-        fragments: Map<string, FragmentDescription.Description>;
-        extraStructurePartsName: string;
-        extraStructurePartsPlacement: 'first' | 'last';
+        fragments: Map<string, FD.Description>;
+        nonNucleicStructurePartsName: string;
+        nonNucleicStructurePartsPlacement: 'first' | 'last';
         hydrationSitesName: string;
         hydrationDistributionName: string;
         nucleotideWatersName: string;
         showStepWaters: boolean;
-        treatReferenceAsExtraPart: boolean;
         onChangeColor: OnChangeColor;
-        onChangeNonNucleicAppearance: OnChangeNonNucleicAppearance;
+        onChangeResourceRepresentation: OnChangeResourceRepresentation;
         onDensityMapIsoChanged: OnDensityMapIsoChanged;
-        onDensityMapStyleChanged: OnDensityMapStyleChanged;
-        onHideShowResource: OnHideShowResource;
         onRemoveClicked: OnRemoveClicked;
         pathPrefix: string;
+        representationControlsStyle: RepresentationControlsStyle;
     }
 }
