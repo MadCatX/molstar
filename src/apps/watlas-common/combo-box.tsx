@@ -10,9 +10,13 @@
 import * as React from 'react';
 
 export class ComboBox extends React.Component<ComboBox.Props> {
+    private containerClass() {
+        return this.props.disabled ? 'wva-combobox-container wva-combobox-container-disabled' : 'wva-combobox-container';
+    }
+
     render() {
         return (
-            <div className='wva-combobox-container'>
+            <div className={this.containerClass()}>
                 <select
                     className='wva-combobox'
                     value={this.props.value}
@@ -34,5 +38,6 @@ export namespace ComboBox {
         value: string;
         onChange(value: string): void;
         pathPrefix: string;
+        disabled?: boolean;
     }
 }

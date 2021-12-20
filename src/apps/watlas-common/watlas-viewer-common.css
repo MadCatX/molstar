@@ -1,5 +1,13 @@
 /* vim: set sw=2 ts=2 sts=2 expandtab : */
 
+select {
+  -moz-appearance: none;
+  -webkit-appearamce: none;
+  appearance: none;
+  background: none;
+  border: 0;
+}
+
 .wva-added-measurement {
     display: grid;
     grid-template-columns: 1fr auto;
@@ -46,17 +54,13 @@
     z-index: 2;
 }
 
-.wva-combobox-disabled {
-    background-color: #aaa;
-}
-
 .wva-combobox-arrow {
     align-items: center;
     color: black;
     display: flex;
     left: -0.35em;
     position: relative;
-    z-index: 1;
+    z-index: 2;
 }
 
 .wva-combobox-arrow > img {
@@ -69,18 +73,12 @@
     display: flex;
     justify-content: center;
     position: relative;
+    transition: background-color 222ms;
+    width: min-content;
 }
 
-.wva-combobox-container-left-aligned {
-    display: flex;
-    justify-content: left;
-    position: relative;
-}
-
-.wva-combobox-container-right-aligned {
-    display: flex;
-    justify-content: right;
-    position: relative;
+.wva-combobox-container-disabled {
+    background-color: #aaa;
 }
 
 .wva-expanded-ctrl {
