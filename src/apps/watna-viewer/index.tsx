@@ -701,16 +701,13 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
     }
 
     private advanceFragmentColors() {
-        let hue;
-        let nextHue;
-
-        hue = this.hue;
-        nextHue = ColorUtil.nextHue(hue);
+        const hue = this.hue;
+        const nextHue = ColorUtil.nextHue(hue);
 
         return { colors: this.mkAutoColors(hue), nextHue };
     }
 
-    private async changeColor(clr: number, kind: Resources.AllKinds, substru: ST.SubstructureType,  base: string) {
+    private async changeColor(clr: number, kind: Resources.AllKinds, substru: ST.SubstructureType, base: string) {
         const color = Color(clr);
         const frag = this.fragments.get(base)!;
 
@@ -1170,7 +1167,7 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
                             pathPrefix={this.props.pathPrefix ?? ''}
                         />
                         <Controls
-                        disableStepWaters={this.props.disableStepWaters}
+                            disableStepWaters={this.props.disableStepWaters}
                             camClipRadius={this.state.camClipRadius}
                             getCanvasSize={() => {
                                 const elem = document.querySelector(`#${this.props.elemId}-viewer`);
@@ -1213,7 +1210,7 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
                                             });
                                         }
 
-                                        await this.viewer!.showStructure(baseRefToResRef(base, 'nucleotide', 'structure') , appearances);
+                                        await this.viewer!.showStructure(baseRefToResRef(base, 'nucleotide', 'structure'), appearances);
 
                                         const dm = frag.densityMaps.get('nucleotide');
                                         if (!dm)
@@ -1246,7 +1243,7 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
 
 export namespace WatlasApp {
     export interface Configuration {
-        representationControlsStyle: RepresentationControlsStyle; 
+        representationControlsStyle: RepresentationControlsStyle;
         /* Text to display as caption of the non-nucleic structure parts control block */
         nonNucleicStructurePartsName: string;
         /* Text to display as caption of the hydration sites controls block */

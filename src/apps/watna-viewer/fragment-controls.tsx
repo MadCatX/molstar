@@ -201,9 +201,7 @@ export class FragmentControls extends React.Component<FragmentControls.Props, { 
                             backgroundColor: rgbCss,
                             border: `0.15em solid ${rgbCss}`,
                         }}
-                        onClick={evt => {
-                            ColorPicker.create(evt, clr, clr => this.props.onChangeColor(clr, 'reference', 'nucleic'))
-                        }}
+                        onClick={evt => ColorPicker.create(evt, clr, clr => this.props.onChangeColor(clr, 'reference', 'nucleic'))}
                     />
                     <PushButton
                         className='wva-pushbutton wva-pushbutton-border wva-symbolic-pushbutton'

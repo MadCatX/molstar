@@ -61,7 +61,7 @@ export class List extends React.Component<List.Props, State> {
 
 export namespace List {
     export interface OnChangeColor {
-        (clr: number, kind: Resources.AllKinds, substru: ST.SubstructureType,  base: string): void;
+        (clr: number, kind: Resources.AllKinds, substru: ST.SubstructureType, base: string): void;
     }
 
     export interface OnChangeResourceRepresentation {
