@@ -21,6 +21,7 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
     private paletteRef: React.RefObject<HTMLCanvasElement>;
     private valueColumnRef: React.RefObject<HTMLCanvasElement>;
     private selfRef: React.RefObject<HTMLDivElement>;
+    private listenerAttached: boolean;
 
     constructor(props: ColorPicker.Props) {
         super(props);
@@ -28,6 +29,7 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
         this.paletteRef = React.createRef();
         this.valueColumnRef = React.createRef();
         this.selfRef = React.createRef();
+        this.listenerAttached = false;
 
         this.state = {
             h: 0,
@@ -61,6 +63,37 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
         if (overhang > 0)
             return this.props.top - 1.1 * overhang;
         return self.offsetTop;
+    }
+
+    private changeColorFromPalette(ex: number, ey: number) {
+        const tainer = this.selfRef.current!;
+        const palette = this.paletteRef.current!
+        let x = ex - tainer.offsetLeft - tainer.clientLeft - palette.offsetLeft - palette.clientLeft;
+        let y = ey - tainer.offsetTop - tainer.clientTop - palette.offsetTop - palette.clientTop;
+
+        if (x < 0)
+            x = 0;
+        else if (x >= palette.width)
+            x = palette.width - 1;
+        if (y < 0)
+            y = 0;
+        else if (y >= palette.height)
+            y = palette.height - 1;
+
+        const { h, s } = this.paletteCoordsToHueSat(x, y);
+        this.setState({ ...this.state, h, s });
+    }
+
+    private changeColorFromValue(ey: number) {
+        const tainer = this.selfRef.current!;
+        const valCol = this.valueColumnRef.current!
+        let y = ey - tainer.offsetTop - tainer.clientTop - valCol.offsetTop - valCol.clientTop;
+        if (y < 0)
+            y = 0;
+        else if (y >= valCol.height)
+            y = valCol.height - 1;
+        const v = this.valueColumnCoordToVal(y);
+        this.setState({ ...this.state, v });
     }
 
     private dispose() {
@@ -139,6 +172,26 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
         return { h, s };
     }
 
+    private onGlobalMouseMovedValue = (evt: MouseEvent) => {
+        if ((evt.buttons & 1) === 0) {
+            window.removeEventListener('mousemove', this.onGlobalMouseMovedValue);
+            this.listenerAttached = false;
+            return;
+        }
+
+        this.changeColorFromValue(evt.pageY);
+    }
+
+    private onGlobalMouseMovedPalette = (evt: MouseEvent) => {
+        if ((evt.buttons & 1) === 0) {
+            window.removeEventListener('mousemove', this.onGlobalMouseMovedPalette);
+            this.listenerAttached = false;
+            return;
+        }
+
+        this.changeColorFromPalette(evt.pageX, evt.pageY);
+    }
+
     private valueColumnCoordToVal(y: number) {
         const valCol = this.valueColumnRef.current!;
 
@@ -158,6 +211,11 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
             this.drawPalette()
             this.drawValueColumn();
         }
+    }
+
+    componentWillUnmount() {
+        window.removeEventListener('mousemove', this.onGlobalMouseMovedValue);
+        window.removeEventListener('mousemove', this.onGlobalMouseMovedPalette);
     }
 
     render() {
@@ -185,23 +243,18 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
                 >
                     <canvas
                         ref={this.paletteRef}
-                        onClick={evt => {
-                            const tainer = this.selfRef.current!;
-                            const palette = this.paletteRef.current!
-                            let x = evt.pageX - tainer.offsetLeft - tainer.clientLeft - palette.offsetLeft - palette.clientLeft;
-                            let y = evt.pageY - tainer.offsetTop - tainer.clientTop - palette.offsetTop - palette.clientTop;
-
-                            if (x < 0)
-                                x = 0;
-                            else if (x >= palette.width)
-                                x = palette.width - 1;
-                            if (y < 0)
-                                y = 0;
-                            else if (y >= palette.height)
-                                y = palette.height - 1;
-
-                            const { h, s } = this.paletteCoordsToHueSat(x, y);
-                            this.setState({ ...this.state, h, s });
+                        onMouseDown={evt => {
+                            if ((evt.buttons & 1) === 0 || this.listenerAttached)
+                                return;
+                            this.changeColorFromPalette(evt.pageX, evt.pageY);
+                            this.listenerAttached = true;
+                            window.addEventListener('mousemove', this.onGlobalMouseMovedPalette);
+                        }}
+                        onMouseUp={evt => {
+                            if (evt.buttons & 1) {
+                                window.removeEventListener('mousemove', this.onGlobalMouseMovedPalette);
+                                this.listenerAttached = false;
+                            }
                         }}
                         onWheel={evt => {
                             let h = this.state.h;
@@ -245,16 +298,18 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
                             height: '100%',
                             width: '1em',
                         }}
-                        onClick={evt => {
-                            const tainer = this.selfRef.current!;
-                            const valCol = this.valueColumnRef.current!
-                            let y = evt.pageY - tainer.offsetTop - tainer.clientTop - valCol.offsetTop - valCol.clientTop;
-                            if (y < 0)
-                                y = 0;
-                            else if (y >= valCol.height)
-                                y = valCol.height - 1;
-                            const v = this.valueColumnCoordToVal(y);
-                            this.setState({ ...this.state, v });
+                        onMouseDown={evt => {
+                            if ((evt.buttons & 1) === 0 || this.listenerAttached)
+                                return;
+                            this.changeColorFromValue(evt.pageY);
+                            this.listenerAttached = true;
+                            window.addEventListener('mousemove', this.onGlobalMouseMovedValue);
+                        }}
+                        onMouseUp={evt => {
+                            if (evt.buttons & 1) {
+                                window.removeEventListener('mousemove', this.onGlobalMouseMovedValue);
+                                this.listenerAttached = false;
+                            }
                         }}
                         onWheel={evt => {
                             if (evt.deltaY === 0)
