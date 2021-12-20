@@ -26,7 +26,7 @@ export const DefaultTrackballBindings = {
     dragPan: Binding([Trigger(B.Flag.Secondary, M.create()), Trigger(B.Flag.Primary, M.create({ control: true }))], 'Pan', 'Drag using ${triggers}'),
     dragZoom: Binding.Empty,
     dragFocus: Binding([Trigger(B.Flag.Forth, M.create())], 'Focus', 'Drag using ${triggers}'),
-    dragFocusZoom: Binding([Trigger(B.Flag.Auxilary, M.create())], 'Focus and zoom', 'Drag using ${triggers}'),
+    dragMoveInward: Binding([Trigger(B.Flag.Auxilary, M.create())], 'Move inward', 'Move camera inward using ${triggers}'),
 
     scrollZoom: Binding([Trigger(B.Flag.Auxilary, M.create())], 'Zoom', 'Scroll using ${triggers}'),
     scrollFocus: Binding([Trigger(B.Flag.Auxilary, M.create({ shift: true }))], 'Clip', 'Scroll using ${triggers}'),
@@ -129,6 +129,10 @@ namespace TrackballControls {
 
         const _panStart = Vec2();
         const _panEnd = Vec2();
+
+        let _inwardStart = 0;
+        let _inwardEnd = 0;
+        const _inwardDirection = Vec3();
 
         // Initial values for reseting
         const target0 = Vec3.clone(camera.target);
@@ -283,6 +287,20 @@ namespace TrackballControls {
             }
         }
 
+        function moveCameraInward() {
+            const factor = input.pixelRatio * p.panSpeed;
+            const moveBy = 2 * factor * (1 / camera.zoom) * camera.viewport.height * (_inwardEnd - _inwardStart);
+
+            Vec3.sub(_inwardDirection, camera.position, camera.target);
+            Vec3.normalize(_inwardDirection, _inwardDirection);
+            Vec3.scale(_inwardDirection, _inwardDirection, moveBy);
+
+            Vec3.add(camera.target, camera.target, _inwardDirection);
+            Vec3.add(camera.position, camera.position, _inwardDirection);
+
+            _inwardStart = _inwardEnd;
+        }
+
         /**
          * Ensure the distance between object and target is within the min/max distance
          * and not too large compared to `camera.state.radiusMax`
@@ -331,6 +349,7 @@ namespace TrackballControls {
             zoomCamera();
             focusCamera();
             panCamera();
+            moveCameraInward();
 
             Vec3.add(camera.position, camera.target, _eye);
             checkDistances();
@@ -368,7 +387,7 @@ namespace TrackballControls {
             const dragPan = Binding.match(p.bindings.dragPan, buttons, modifiers);
             const dragZoom = Binding.match(p.bindings.dragZoom, buttons, modifiers);
             const dragFocus = Binding.match(p.bindings.dragFocus, buttons, modifiers);
-            const dragFocusZoom = Binding.match(p.bindings.dragFocusZoom, buttons, modifiers);
+            const dragMoveInward = Binding.match(p.bindings.dragMoveInward, buttons, modifiers);
 
             getMouseOnCircle(pageX, pageY);
             getMouseOnScreen(pageX, pageY);
@@ -382,7 +401,7 @@ namespace TrackballControls {
                     Vec2.copy(_zRotCurr, mouseOnCircleVec2);
                     Vec2.copy(_zRotPrev, _zRotCurr);
                 }
-                if (dragZoom || dragFocusZoom) {
+                if (dragZoom) {
                     Vec2.copy(_zoomStart, mouseOnScreenVec2);
                     Vec2.copy(_zoomEnd, _zoomStart);
                 }
@@ -394,16 +413,17 @@ namespace TrackballControls {
                     Vec2.copy(_panStart, mouseOnScreenVec2);
                     Vec2.copy(_panEnd, _panStart);
                 }
+                if (dragMoveInward) {
+                    _inwardStart = mouseOnScreenVec2[1];
+                    _inwardEnd = _inwardStart;
+                }
             }
 
             if (dragRotate) Vec2.copy(_rotCurr, mouseOnCircleVec2);
             if (dragRotateZ) Vec2.copy(_zRotCurr, mouseOnCircleVec2);
-            if (dragZoom || dragFocusZoom) Vec2.copy(_zoomEnd, mouseOnScreenVec2);
+            if (dragZoom) Vec2.copy(_zoomEnd, mouseOnScreenVec2);
             if (dragFocus) Vec2.copy(_focusEnd, mouseOnScreenVec2);
-            if (dragFocusZoom) {
-                const dist = Vec3.distance(camera.state.position, camera.state.target);
-                camera.setState({ radius: dist / 5 });
-            }
+            if (dragMoveInward) _inwardEnd = mouseOnScreenVec2[1];
             if (dragPan) Vec2.copy(_panEnd, mouseOnScreenVec2);
         }
 
