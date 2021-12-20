@@ -191,13 +191,16 @@ export class FragmentControls extends React.Component<FragmentControls.Props, { 
 
     render() {
         const clr = this.props.colors.get('reference')!.get('nucleic')!.color;
-        const rgb = Color.toRgb(clr);
+        const rgbCss = (rgb => `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`)(Color.toRgb(clr));
         return (
             <div className='wnav-ntc-fragment-container'>
                 <div className='wnav-ntc-fragment-header'>
                     <div className='wnav-ntc-fragment-name'>{this.props.fragId}</div>
                     <div className='wnav-ntc-reference-color-box'
-                        style={{ backgroundColor: `rgb(${rgb[0]},${rgb[1]},${rgb[2]})` }}
+                        style={{
+                            backgroundColor: rgbCss,
+                            border: `0.15em solid ${rgbCss}`,
+                        }}
                         onClick={evt => {
                             ColorPicker.create(evt, clr, clr => this.props.onChangeColor(clr, 'reference', 'nucleic'))
                         }}
