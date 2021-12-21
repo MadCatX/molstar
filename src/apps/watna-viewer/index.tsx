@@ -621,7 +621,7 @@ class WatlasViewer {
             if (!state.transforms.has(struRef))
                 continue;
             const ref = this.mkVisRef(base, a.substru);
-            const reprParams = { name: a.repr, params: { sizeFactor: 0.2, sizeAspectRatio: 0.35 } };
+            const reprParams = { name: a.repr, params: { sizeFactor: 0.2, sizeAspectRatio: 0.35, aromaticBonds: false } };
             const theme = (a.repr !== 'ball-and-stick' && a.colorTheme === 'element-symbol') ? 'uniform' : a.colorTheme;
             const colorParams = { name: theme, params: this.colorThemeParams(a.color, theme) }
             if (!state.transforms.has(ref)) {

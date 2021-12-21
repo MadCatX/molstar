@@ -396,6 +396,7 @@ class WatAAViewer {
                     type: {
                         name: 'ball-and-stick', params: {
                             alpha: 0.5,
+                            aromaticBonds: false,
                         }
                     }
                 },
@@ -427,7 +428,9 @@ class WatAAViewer {
                     },
                     type: {
                         name: 'ball-and-stick',
-                        params: {}
+                        params: {
+                            aromaticBonds: false,
+                        }
                     }
                 },
                 {
