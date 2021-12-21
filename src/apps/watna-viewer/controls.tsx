@@ -8,8 +8,11 @@
  */
 
 import * as React from 'react';
+import { Presets as LightingPresets } from './lighting';
+import { ComboBox } from '../watlas-common/combo-box';
 import { PushButton } from '../watlas-common/push-button';
 import { SpinBox } from '../watlas-common/spin-box';
+import { Util } from '../watlas-common/util';
 
 const MinClip = 0.05;
 const MaxClip = 1.20;
@@ -22,6 +25,7 @@ interface State {
     imageKeepAspectRatio: boolean;
     imageDimsShown: boolean;
     imageTransparentBackground: boolean;
+    lightingMode: keyof typeof LightingPresets;
 }
 
 export class Controls extends React.Component<Controls.Props, State> {
@@ -34,6 +38,7 @@ export class Controls extends React.Component<Controls.Props, State> {
             imageKeepAspectRatio: true,
             imageDimsShown: false,
             imageTransparentBackground: true,
+            lightingMode: props.initialLightingMode,
         };
     }
 
@@ -186,6 +191,19 @@ export class Controls extends React.Component<Controls.Props, State> {
                         onClick={() => this.props.onResetCamera()}
                     />
                 </div>
+                <div className='wnav-ctrl-line wnav-ctrl-item'>
+                    <div className='wva-tight'>Lighting</div>
+                    <ComboBox
+                        value={this.state.lightingMode}
+                        options={Object.keys(LightingPresets).map(key => { return { caption: Util.capitalize(key), value: key } } )}
+                        onChange={value => {
+                            const mode = value as keyof typeof LightingPresets;
+                            this.props.onChangeLighting(mode);
+                            this.setState({ ...this.state, lightingMode: mode });
+                        }}
+                        pathPrefix={this.props.pathPrefix ?? ''}
+                    />
+                </div>
             </div>
         );
     }
@@ -198,6 +216,10 @@ export namespace Controls {
 
     export interface OnCamClipRadiusChanged {
         (radius: number): void;
+    }
+
+    export interface OnChangeLighting {
+        (mode: keyof typeof LightingPresets): void;
     }
 
     export interface OnHideShowStepWaters {
@@ -216,9 +238,11 @@ export namespace Controls {
         disableStepWaters: boolean;
         camClipRadius: number;
         getCanvasSize: CanvasSizeGetter;
+        initialLightingMode: keyof typeof LightingPresets;
         nucleotideWatersName: string;
         showStepWaters: boolean;
         onCamClipRadiusChanged: OnCamClipRadiusChanged;
+        onChangeLighting: OnChangeLighting;
         onHideShowStepWaters: OnHideShowStepWaters;
         onResetCamera: OnAction;
         onResetColors: OnAction;

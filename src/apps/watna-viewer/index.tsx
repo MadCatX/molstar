@@ -14,6 +14,7 @@ import { ColorUtil } from './color-util';
 import { Controls } from './controls';
 import { RepresentationControlsStyle } from './fragment-controls';
 import { FragmentDescription as FD } from './fragment-description';
+import { Presets as LightingPresets, Preset as LightingPreset } from './lighting';
 import { List } from './list';
 import { Resources } from './resources';
 import { WatNAUtil } from './watna-util';
@@ -56,6 +57,7 @@ import { lociLabel } from '../../mol-theme/label';
 const AnimationDurationMsec = 150;
 const DefaultDensityMapAlpha = 0.5;
 const DefaultDensityMapRepr = 'wireframe';
+const DefaultLightingMode = 'default';
 const DefaultSubstructureReprs: Record<ST.SubstructureType, FD.StructureRepresentation | FD.OffRepresentation> = {
     'nucleic': 'ball-and-stick',
     'ligand': 'ball-and-stick',
@@ -454,6 +456,25 @@ class WatlasViewer {
         PluginCommands.Camera.SetSnapshot(this.plugin, { snapshot, durationMs: AnimationDurationMsec });
     }
 
+    changeLighting(lighting: LightingPreset) {
+        PluginCommands.Canvas3D.SetSettings(
+            this.plugin,
+            {
+                settings: {
+                    ...lighting,
+                    postprocessing: {
+                        ...this.plugin.canvas3d!.props.postprocessing,
+                        ...lighting.canvas3d.postprocessing,
+                    },
+                    renderer: {
+                        ...this.plugin.canvas3d!.props.renderer,
+                        ...lighting.canvas3d.renderer,
+                    }
+                }
+            }
+        );
+    }
+
     getCanvasImage(width: number, height: number, transparentBackground: boolean) {
         const c = this.plugin.canvas3d!;
         const { colorBufferFloat, textureFloat } = c.webgl.extensions;
@@ -733,6 +754,11 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
             this.onFragmentColorsChanged(frag.fragId);
     }
 
+    private changeLighting(mode: keyof typeof LightingPresets) {
+        if (this.viewer)
+            this.viewer.changeLighting(LightingPresets[mode]);
+    }
+
     private densityMapData(base: string, kind: Resources.DensityMaps) {
         const frag = this.fragments.get(base)!;
 
@@ -908,6 +934,7 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
                 this.viewer = viewer;
                 WatlasViewerApi.bind(this, this.props.elemId);
                 this.forceUpdate(); /* Necessary to make sure that we pass the Molstar plugin to Measurements */
+                this.viewer.changeLighting(LightingPresets[DefaultLightingMode]);
                 if (this.props.onViewerInitialized)
                     this.props.onViewerInitialized();
             });
@@ -1182,11 +1209,13 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
                                     return { width: elem.clientWidth, height: elem.clientHeight };
                                 return { width: 0, height: 0 };
                             }}
+                            initialLightingMode={DefaultLightingMode}
                             showStepWaters={this.state.showStepWaters}
                             onCamClipRadiusChanged={radius => {
                                 this.viewer!.setCamClipRadius(radius);
                                 this.setState({ ...this.state, camClipRadius: radius });
                             }}
+                            onChangeLighting={mode => this.changeLighting(mode)}
                             onHideShowStepWaters={async (show) => {
                                 if (!show) {
                                     for (const [base, frag] of Array.from(this.fragments.entries())) {
