@@ -25,7 +25,7 @@ import { PluginContext } from '../../mol-plugin/context';
 import { PluginSpec } from '../../mol-plugin/spec';
 import { PluginStateObject as PSO } from '../../mol-plugin-state/objects';
 import { StateTransforms } from '../../mol-plugin-state/transforms';
-import { createPlugin } from '../../mol-plugin-ui';
+import { createPluginUI } from '../../mol-plugin-ui';
 import { PluginUIContext } from '../../mol-plugin-ui/context';
 import { DefaultPluginUISpec, PluginUISpec } from '../../mol-plugin-ui/spec';
 import { Representation } from '../../mol-repr/representation';
@@ -160,10 +160,13 @@ const WatAALociSelectionProvider = PluginBehavior.create({
 });
 
 class WatAAViewer {
-    plugin: PluginUIContext;
     private spinner: ReturnType<typeof setInterval> | null;
 
-    constructor(target: HTMLElement) {
+    constructor(public plugin: PluginUIContext) {
+        this.spinner = null;
+    }
+
+    static async create(target: HTMLElement) {
         const defaultSpec = DefaultPluginUISpec();
         const spec: PluginUISpec = {
             ...defaultSpec,
@@ -189,10 +192,10 @@ class WatAAViewer {
             },
         };
 
-        this.spinner = null;
-        this.plugin = createPlugin(target, spec);
+        const plugin = await createPluginUI(target, spec);
+        plugin.managers.interactivity.setProps({ granularity: 'element' });
 
-        this.plugin.managers.interactivity.setProps({ granularity: 'element' });
+        return new WatAAViewer(plugin);
     }
 
     private async hide(refs: string[]) {
@@ -725,12 +728,15 @@ export class WatAAApp extends React.Component<WatAAProps, WatAAState> {
         if (!elem)
             throw new Error('No element to display the viewer in');
 
-        if (!this.viewer)
-            this.viewer = new WatAAViewer(elem);
-
-        WAApi.bind(this, this.props.appId);
-
-        this.forceUpdate(); /* Necessary to make sure that we pass the Molstar plugin to Measurements */
+        if (!this.viewer) {
+            WatAAViewer.create(elem).then(viewer => {
+                this.viewer = viewer;
+                WAApi.bind(this, this.props.appId);
+                this.forceUpdate(); /* Necessary to make sure that we pass the Molstar plugin to Measurements */
+                if (this.props.onViewerInitialized)
+                    this.props.onViewerInitialized();
+            });
+        }
     }
 
     render() {
@@ -755,9 +761,14 @@ export class WatAAApp extends React.Component<WatAAProps, WatAAState> {
 }
 
 export namespace WatAAApp {
+    export interface ViewerInitializedCallback {
+        (): void;
+    }
+
     export interface Configuration {
         /* Path prefix, used to amend assets URLs */
         pathPrefix?: string;
+        onViewerInitialized?: ViewerInitializedCallback;
     }
 
     export function init(appId: string, configuration: Partial<Configuration>) {

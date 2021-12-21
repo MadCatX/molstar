@@ -30,7 +30,7 @@ import { PluginCommands } from '../../mol-plugin/commands';
 import { PluginContext } from '../../mol-plugin/context';
 import { PluginSpec } from '../../mol-plugin/spec';
 import { LociLabel } from '../../mol-plugin-state/manager/loci-label';
-import { createPlugin } from '../../mol-plugin-ui';
+import { createPluginUI } from '../../mol-plugin-ui';
 import { PluginUIContext } from '../../mol-plugin-ui/context';
 import { DefaultPluginUISpec, PluginUISpec } from '../../mol-plugin-ui/spec';
 import { PluginStateObject as PSO } from '../../mol-plugin-state/objects';
@@ -311,11 +311,13 @@ const WatlasLociLabelProvider = PluginBehavior.create({
 class WatlasViewer {
     readonly visualTagTails = SubstructureTypes.map(e => this.mkVisRef('', e));
 
-    plugin: PluginUIContext;
     baseRadius: number = 0;
     radiusRatio: number = DefaultRadiusRatio;
 
-    constructor(target: HTMLElement) {
+    constructor(public plugin: PluginUIContext) {
+    }
+
+    static async create(target: HTMLElement) {
         const defaultSpec = DefaultPluginUISpec();
         const spec: PluginUISpec = {
             ...defaultSpec,
@@ -342,10 +344,12 @@ class WatlasViewer {
             },
         };
 
-        this.plugin = createPlugin(target, spec);
+        const plugin = await createPluginUI(target, spec);
 
-        this.plugin.managers.interactivity.setProps({ granularity: 'element' });
-        this.plugin.selectionMode = true;
+        plugin.managers.interactivity.setProps({ granularity: 'element' });
+        plugin.selectionMode = true;
+
+        return new WatlasViewer(plugin);
     }
 
     private colorThemeParams(color: Color, theme: ColorTheme.BuiltIn) {
@@ -899,12 +903,15 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
         if (!elem)
             throw new Error('No element to render viewer');
 
-        if (!this.viewer)
-            this.viewer = new WatlasViewer(elem);
-
-        WatlasViewerApi.bind(this, this.props.elemId);
-
-        this.forceUpdate(); /* Necessary to make sure that we pass the Molstar plugin to Measurements */
+        if (!this.viewer) {
+            WatlasViewer.create(elem).then(viewer => {
+                this.viewer = viewer;
+                WatlasViewerApi.bind(this, this.props.elemId);
+                this.forceUpdate(); /* Necessary to make sure that we pass the Molstar plugin to Measurements */
+                if (this.props.onViewerInitialized)
+                    this.props.onViewerInitialized();
+            });
+        }
     }
 
     async add(fragId: string, paths: Resources.Paths, referenceName: { text: string; transform: boolean }, shownStructures: Resources.Structures[], shownDensityMaps: Resources.DensityMaps[]) {
@@ -1242,6 +1249,10 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
 }
 
 export namespace WatlasApp {
+    export interface ViewerInitializedCallback {
+        (): void;
+    }
+
     export interface Configuration {
         representationControlsStyle: RepresentationControlsStyle;
         /* Text to display as caption of the non-nucleic structure parts control block */
@@ -1258,6 +1269,8 @@ export namespace WatlasApp {
         disableStepWaters: boolean;
         /* Path prefix, used to amend assets URLs */
         pathPrefix?: string;
+        /* Function to call after the viewer initializes */
+        onViewerInitialized?: ViewerInitializedCallback;
     }
 
     export function init(elemId: string, configuration: Configuration) {
