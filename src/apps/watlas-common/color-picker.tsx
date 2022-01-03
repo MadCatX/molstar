@@ -21,7 +21,8 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
     private paletteRef: React.RefObject<HTMLCanvasElement>;
     private valueColumnRef: React.RefObject<HTMLCanvasElement>;
     private selfRef: React.RefObject<HTMLDivElement>;
-    private listenerAttached: boolean;
+    private mouseListenerAttached: boolean;
+    private touchListenerAttached: boolean;
 
     constructor(props: ColorPicker.Props) {
         super(props);
@@ -29,7 +30,8 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
         this.paletteRef = React.createRef();
         this.valueColumnRef = React.createRef();
         this.selfRef = React.createRef();
-        this.listenerAttached = false;
+        this.mouseListenerAttached = false;
+        this.touchListenerAttached = false;
 
         this.state = {
             h: 0,
@@ -175,7 +177,7 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
     private onGlobalMouseMovedValue = (evt: MouseEvent) => {
         if ((evt.buttons & 1) === 0) {
             window.removeEventListener('mousemove', this.onGlobalMouseMovedValue);
-            this.listenerAttached = false;
+            this.mouseListenerAttached = false;
             return;
         }
 
@@ -185,11 +187,21 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
     private onGlobalMouseMovedPalette = (evt: MouseEvent) => {
         if ((evt.buttons & 1) === 0) {
             window.removeEventListener('mousemove', this.onGlobalMouseMovedPalette);
-            this.listenerAttached = false;
+            this.mouseListenerAttached = false;
             return;
         }
 
         this.changeColorFromPalette(evt.pageX, evt.pageY);
+    }
+
+    private onGlobalTouchMovedPalette = (evt: TouchEvent) => {
+        if (evt.touches.length !== 0)
+            this.changeColorFromPalette(evt.touches[0].pageX, evt.touches[0].pageY);
+    }
+
+    private onGlobalTouchMovedValue = (evt: TouchEvent) => {
+        if (evt.touches.length !== 0)
+            this.changeColorFromValue(evt.touches[0].pageY);
     }
 
     private valueColumnCoordToVal(y: number) {
@@ -216,6 +228,8 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
     componentWillUnmount() {
         window.removeEventListener('mousemove', this.onGlobalMouseMovedValue);
         window.removeEventListener('mousemove', this.onGlobalMouseMovedPalette);
+        window.removeEventListener('touchmove', this.onGlobalTouchMovedValue);
+        window.removeEventListener('touchmove', this.onGlobalTouchMovedPalette);
     }
 
     render() {
@@ -242,75 +256,73 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
                     }}
                 >
                     <canvas
+                        width={360}
+                        height={256}
                         ref={this.paletteRef}
                         onMouseDown={evt => {
-                            if ((evt.buttons & 1) === 0 || this.listenerAttached)
+                            if ((evt.buttons & 1) === 0 || this.mouseListenerAttached)
                                 return;
                             this.changeColorFromPalette(evt.pageX, evt.pageY);
-                            this.listenerAttached = true;
+                            this.mouseListenerAttached = true;
                             window.addEventListener('mousemove', this.onGlobalMouseMovedPalette);
                         }}
                         onMouseUp={evt => {
                             if (evt.buttons & 1) {
                                 window.removeEventListener('mousemove', this.onGlobalMouseMovedPalette);
-                                this.listenerAttached = false;
+                                this.mouseListenerAttached = false;
                             }
                         }}
-                        onWheel={evt => {
-                            let h = this.state.h;
-                            let s = this.state.s;
-                            let xChanged = false;
-                            let yChanged = false;
+                        onTouchStart={evt => {
+                            if (this.touchListenerAttached)
+                                return;
 
-                            if (evt.deltaX !== 0) {
-                                h += Math.sign(evt.deltaX);
-                                if (h > 359)
-                                    h = 359;
-                                else if (h < 0)
-                                    h = 0;
-                                xChanged = true;
-                            }
-                            if (evt.altKey && evt.deltaY !== 0) {
-                                h += Math.sign(evt.deltaY);
-                                if (h > 359)
-                                    h = 359;
-                                else if (h < 0)
-                                    h = 0;
-                                xChanged = true;
-                            }
+                            window.addEventListener('touchmove', this.onGlobalTouchMovedPalette);
+                            this.touchListenerAttached = true;
+                            if (evt.touches.length !== 0)
+                                this.changeColorFromPalette(evt.touches[0].pageX, evt.touches[0].pageY);
 
-                            if (evt.deltaY !== 0 && !xChanged) {
-                                s -= 0.01 * Math.sign(evt.deltaY);
-                                if (s < 0)
-                                    s = 0;
-                                else if (s > 1)
-                                    s = 1;
-                                yChanged = true;
-                            }
-
-                            if (xChanged || yChanged)
-                                this.setState({ ...this.state, h, s });
+                        }}
+                        onTouchEnd={_evt => {
+                            window.removeEventListener('touchmove', this.onGlobalTouchMovedPalette);
+                            this.touchListenerAttached = false;
                         }}
                     />
                     <canvas
+                        width={30}
+                        height={256}
                         ref={this.valueColumnRef}
                         style={{
                             height: '100%',
                             width: '1em',
                         }}
                         onMouseDown={evt => {
-                            if ((evt.buttons & 1) === 0 || this.listenerAttached)
+                            if ((evt.buttons & 1) === 0 || this.mouseListenerAttached)
                                 return;
                             this.changeColorFromValue(evt.pageY);
-                            this.listenerAttached = true;
+                            this.mouseListenerAttached = true;
                             window.addEventListener('mousemove', this.onGlobalMouseMovedValue);
                         }}
                         onMouseUp={evt => {
                             if (evt.buttons & 1) {
                                 window.removeEventListener('mousemove', this.onGlobalMouseMovedValue);
-                                this.listenerAttached = false;
+                                this.mouseListenerAttached = false;
                             }
                         }}
+                        onTouchStart={evt => {
+                            if (this.touchListenerAttached)
+                                return;
+
+                            window.addEventListener('touchmove', this.onGlobalTouchMovedValue);
+                            this.touchListenerAttached = true;
+                            if (evt.touches.length !== 0)
+                                this.changeColorFromValue(evt.touches[0].pageY);
+
+                        }}
+                        onTouchEnd={_evt => {
+                            window.removeEventListener('touchmove', this.onGlobalTouchMovedValue);
+                            this.touchListenerAttached = false;
+                        }}
+
                         onWheel={evt => {
                             if (evt.deltaY === 0)
                                 return;
