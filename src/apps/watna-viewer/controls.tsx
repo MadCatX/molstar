@@ -195,7 +195,7 @@ export class Controls extends React.Component<Controls.Props, State> {
                     <div className='wva-tight'>Lighting</div>
                     <ComboBox
                         value={this.state.lightingMode}
-                        options={Object.keys(LightingPresets).map(key => { return { caption: Util.capitalize(key), value: key } } )}
+                        options={Object.keys(LightingPresets).map(key => { return { caption: Util.capitalize(key), value: key }; })}
                         onChange={value => {
                             const mode = value as keyof typeof LightingPresets;
                             this.props.onChangeLighting(mode);

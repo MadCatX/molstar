@@ -38,8 +38,8 @@ export const Presets = {
     'occluded': {
         canvas3d: <_Preset>{
             postprocessing: {
-               occlusion: { name: 'on',  params: { samples: 32, radius: 6, bias: 1.4, blurKernelSize: 15 } },
-               outline: { name: 'off', params: { } },
+                occlusion: { name: 'on', params: { samples: 32, radius: 6, bias: 1.4, blurKernelSize: 15 } },
+                outline: { name: 'off', params: { } },
             },
             renderer: {
                 ambientIntensity: 0.4,
