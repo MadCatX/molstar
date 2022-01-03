@@ -4,17 +4,14 @@ import { Colors } from './colors';
 import { PushButton } from './push-button';
 import { SpinBox } from './spin-box';
 
+const PALETTE_CURSOR_HALFSIZE = 10;
+const VALUE_CURSOR_THICKNESS = 3;
+
 interface State {
     h: number;
     s: number;
     v: number;
     restoreOnCancel: boolean;
-}
-
-function colorsMatch(a: State, b: State) {
-    return a.h === b.h &&
-           a.s === b.s &&
-           a.v === b.v;
 }
 
 export class ColorPicker extends React.Component<ColorPicker.Props, State> {
@@ -23,6 +20,9 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
     private selfRef: React.RefObject<HTMLDivElement>;
     private mouseListenerAttached: boolean;
     private touchListenerAttached: boolean;
+    private lastPaletteX: number;
+    private lastPaletteY: number;
+    private lastValueY: number;
 
     constructor(props: ColorPicker.Props) {
         super(props);
@@ -32,11 +32,15 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
         this.selfRef = React.createRef();
         this.mouseListenerAttached = false;
         this.touchListenerAttached = false;
+        this.lastPaletteX = 0;
+        this.lastPaletteY = 0;
+        this.lastValueY = 0;
 
+        const { h, s, v } = Colors.colorToHsv(this.props.initialColor);
         this.state = {
-            h: 0,
-            s: 0,
-            v: 0,
+            h,
+            s,
+            v,
             restoreOnCancel: false,
         };
     }
@@ -111,12 +115,57 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
         if (!ctx)
             return;
 
-        const hueStep = 360 / canvas.width;
-        const satStep = 1.0 / canvas.height;
+        this.drawPalleteInternal(ctx, canvas.width, canvas.height);
+        this.drawPaletteCursorInternal(ctx, canvas.width, canvas.height, this.state.h, this.state.s);
+    }
 
-        for (let x = 0; x < canvas.width; x++) {
+    private drawPalleteInternal(ctx: CanvasRenderingContext2D, width: number, height: number) {
+        const hueStep = 360 / width;
+        const satStep = 1.0 / height;
+
+        ctx.clearRect(0, 0, width, height);
+
+        for (let x = 0; x < width; x++) {
             const hue = hueStep * x;
-            for (let y = 0; y < canvas.height; y++) {
+            for (let y = 0; y < height; y++) {
+                const sat = 1.0 - satStep * y;
+
+                ctx.fillStyle = Colors.hsvToHexString(hue, sat, 1.0);
+                ctx.fillRect(x, y, 1, 1);
+            }
+        }
+    }
+
+    private drawPaletteCursor(hue: number, sat: number) {
+        if (!this.paletteRef.current)
+            return;
+
+        const canvas = this.paletteRef.current;
+        const ctx = canvas.getContext('2d');
+        if (!ctx)
+            return;
+
+        this.drawPaletteCursorInternal(ctx, canvas.width, canvas.height, hue, sat);
+    }
+
+    private drawPaletteCursorInternal(ctx: CanvasRenderingContext2D, width: number, height: number, hue: number, sat: number) {
+        const hueStep = 360 / width;
+        const satStep = 1.0 / height;
+        const fullSize = Math.floor(PALETTE_CURSOR_HALFSIZE * 2);
+
+        let fx = Math.floor(this.lastPaletteX - PALETTE_CURSOR_HALFSIZE - 1);
+        if (fx < 0) fx = 0;
+        let tx = fx + fullSize + 2;
+        if (tx > width) tx = width;
+
+        let fy = Math.floor(this.lastPaletteY - PALETTE_CURSOR_HALFSIZE - 1);
+        if (fy < 0) fy = 0;
+        let ty = fy + fullSize + 2;
+        if (ty > height) ty = height;
+
+        for (let x = fx; x < tx; x++) {
+            const hue = hueStep * x;
+            for (let y = fy; y < ty; y++) {
                 const sat = 1.0 - satStep * y;
 
                 ctx.fillStyle = Colors.hsvToHexString(hue, sat, 1.0);
@@ -124,18 +173,21 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
             }
         }
 
-        const x = this.state.h / hueStep;
-        const y = (1.0 - this.state.s) / satStep;
-
-        ctx.fillStyle = '#000000';
+        const cx = Math.round(hue / hueStep);
+        const cy = Math.round((1.0 - sat) / satStep);
 
         ctx.beginPath();
+        ctx.fillStyle = 'rgba(0, 0, 0, 1.0)';
         ctx.lineWidth = 2;
-        ctx.moveTo(x - 10, y);
-        ctx.lineTo(x + 10, y);
-        ctx.moveTo(x, y - 10);
-        ctx.lineTo(x, y + 10);
+        ctx.moveTo(cx - PALETTE_CURSOR_HALFSIZE, cy);
+        ctx.lineTo(cx + PALETTE_CURSOR_HALFSIZE, cy);
+        ctx.moveTo(cx, cy - PALETTE_CURSOR_HALFSIZE);
+        ctx.lineTo(cx, cy + PALETTE_CURSOR_HALFSIZE);
+        ctx.closePath();
         ctx.stroke();
+
+        this.lastPaletteX = cx;
+        this.lastPaletteY = cy;
     }
 
     private drawValueColumn() {
@@ -147,22 +199,58 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
         if (!ctx)
             return;
 
-        const w = canvas.width;
-        const valStep = 1.0 / canvas.height;
+        this.drawValueColumnInternal(ctx, canvas.width, canvas.height);
+        this.drawValueColumnCursorInternal(ctx, canvas.width, canvas.height, this.state.v);
+    }
 
-        for (let y = 0; y < canvas.height; y++) {
+    private drawValueColumnInternal(ctx: CanvasRenderingContext2D, width: number, height: number) {
+        const valStep = 1.0 / height;
+
+        for (let y = 0; y < height; y++) {
             const cv = 1.0 - y * valStep;
 
             ctx.fillStyle = Colors.hsvToHexString(this.state.h, this.state.s, cv);
-            ctx.fillRect(0, y, w, 1);
+            ctx.fillRect(0, y, width, 1);
+        }
+    }
+
+    private drawValueColumnCursor(val: number) {
+        if (!this.valueColumnRef.current)
+            return;
+
+        const canvas = this.valueColumnRef.current;
+        const ctx = canvas.getContext('2d');
+        if (!ctx)
+            return;
+
+        this.drawValueColumnCursorInternal(ctx, canvas.width, canvas.height, val);
+    }
+
+    private drawValueColumnCursorInternal(ctx: CanvasRenderingContext2D, width: number, height: number, val: number) {
+        const valStep = 1.0 / height;
+
+        let fy = Math.floor(this.lastValueY - 1);
+        if (fy < 0) fy = 0;
+        let ty = Math.floor(fy + VALUE_CURSOR_THICKNESS + 2);
+        if (ty > height)
+            ty = height;
+
+        for (let y = fy; y < ty; y++) {
+            const cv = 1.0 - y * valStep;
+
+            ctx.fillStyle = Colors.hsvToHexString(this.state.h, this.state.s, cv);
+            ctx.fillRect(0, y, width, 1);
         }
 
-        const y = (1.0 - this.state.v) / valStep;
+        const y = Math.round((1.0 - val) / valStep);
+        const halfWidth = Math.round(width / 2);
 
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(0, y, w / 2, 3);
-        ctx.fillStyle = '#000000';
-        ctx.fillRect(w / 2, y, w / 2, 3);
+        ctx.fillStyle = 'rgba(255, 255, 255, 1.0)';
+        ctx.fillRect(0, y, halfWidth, VALUE_CURSOR_THICKNESS);
+        ctx.fillStyle = 'rgba(0, 0, 0, 1.0)';
+        ctx.fillRect(halfWidth, y, width - halfWidth, VALUE_CURSOR_THICKNESS);
+
+        this.lastValueY = y;
     }
 
     private paletteCoordsToHueSat(x: number, y: number) {
@@ -214,14 +302,16 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
         this.drawPalette();
         this.drawValueColumn();
 
-        const { h, s, v } = Colors.colorToHsv(this.props.initialColor);
-        this.setState({ ...this.state, h, s, v });
+        this.setState({ ...this.state });
     }
 
     componentDidUpdate(prevProps: ColorPicker.Props, prevState: State) {
-        if (!colorsMatch(this.state, prevState)) {
-            this.drawPalette()
+        if (this.state.h !== prevState.h || this.state.s !== prevState.s) {
+            this.drawPaletteCursor(this.state.h, this.state.s);
             this.drawValueColumn();
+        }
+        if (this.state.v !== prevState.v) {
+            this.drawValueColumnCursor(this.state.v);
         }
     }
 
