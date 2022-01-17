@@ -261,13 +261,39 @@ select {
     grid-template-columns: 1fr 5em;
 }
 
-.wva-spinbox {
+.wva-spinbox-container {
+    border: 0.15em solid #ccc;
+    border-radius: 0;
+    display: grid;
+    grid-template-columns: auto 1fr;
+}
+
+.wva-spinbox-button {
+    flex: 1;
+    height: 0.6em;
+    text-align: center;
+}
+.wva-spinbox-button:hover {
+    background-color: #aaa;
+}
+
+.wva-spinbox-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.05em;
+    margin: 0.1em;
+}
+
+.wva-spinbox-input {
     -moz-appearance: none;
     -webkit-appearance: none;
     appearance: none;
+    border: none;
 
-    border: 0.15em solid #ccc;
-    border-radius: 0;
+    width: 100%;
+}
+.wva-spinbox-input:focus {
+    outline: none;
 }
 
 .wva-tight {

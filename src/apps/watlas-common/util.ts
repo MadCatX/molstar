@@ -7,11 +7,38 @@
  * @author Bohdan Schneider <Bohdan.Schneider@ibt.cas.cz>
  */
 
+const ZeroChar = '0'.charCodeAt(0);
+const NineChar = '9'.charCodeAt(0);
+const MinusChar = '-';
+
 export namespace Util {
     export function capitalize(s: string) {
         if (s.length > 1)
             return s.substring(0, 1).toUpperCase() + s.substring(1).toLowerCase();
         return s.toUpperCase();
+    }
+
+    export function parseIntStrict(obj: unknown, allowNegative = true) {
+        if (typeof obj === 'number')
+            return obj;
+        if (typeof obj !== 'string')
+            return NaN;
+
+        const s = obj.trim();
+
+        let idx = 0;
+        if (s[0] === MinusChar) {
+            if (!allowNegative)
+                return NaN;
+            idx++;
+        }
+        for (; idx < s.length; idx++) {
+            const code = s.charCodeAt(idx);
+            if (code < ZeroChar || code > NineChar)
+                return NaN;
+        }
+
+        return parseInt(s);
     }
 
     export function replaceEvery(s: string, what: string, by: string) {

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2018-2021 mol* contributors, licensed under MIT, See LICENSE file for more info.
+ * Copyright (c) 2018-2022 mol* contributors, licensed under MIT, See LICENSE file for more info.
  *
  * @author Lada Biedermannová <Lada.Biedermannova@ibt.cas.cz>
  * @author Jiří Černý <jiri.cerny@ibt.cas.cz>
@@ -104,7 +104,8 @@ export class FragmentControls extends React.Component<FragmentControls.Props, { 
                         max={bounds.max}
                         step={bounds.step}
                         onChange={v => this.props.onDensityMapIsoChanged(parseFloat(v), kind)}
-                        formatter={v => WatNAUtil.isoToFixed(v, bounds.step)}
+                        formatter={v => v ? WatNAUtil.isoToFixed(v, bounds.step) : ''}
+                        pathPrefix={this.props.pathPrefix}
                     />
                 </div>
             </div>

@@ -1,17 +1,59 @@
+/**
+ * Copyright (c) 2018-2022 mol* contributors, licensed under MIT, See LICENSE file for more info.
+ *
+ * @author Lada Biedermannová <Lada.Biedermannova@ibt.cas.cz>
+ * @author Jiří Černý <jiri.cerny@ibt.cas.cz>
+ * @author Michal Malý <michal.maly@ibt.cas.cz>
+ * @author Bohdan Schneider <Bohdan.Schneider@ibt.cas.cz>
+ */
+
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { Colors } from './colors';
 import { PushButton } from './push-button';
 import { SpinBox } from './spin-box';
+import { Util } from './util';
 
 const PALETTE_CURSOR_HALFSIZE = 10;
 const VALUE_CURSOR_THICKNESS = 3;
+
+const MIN_RGB = 0;
+const MAX_RGB = 255;
+const MIN_HUE = 0;
+const MAX_HUE = 359;
+const MIN_SATVAL = 0;
+const MAX_SATVAL = 100;
+
+function isRgbVal(v: number) {
+    if (isNaN(v))
+        return false;
+    return v >= MIN_RGB && v <= MAX_RGB;
+}
+
+function isHueVal(v: number) {
+    if (isNaN(v))
+        return false;
+    return v >= MIN_HUE && v <= MAX_HUE;
+}
+
+function isSatValVal(v: number) {
+    if (isNaN(v))
+        return false;
+    return v >= MIN_SATVAL && v <= MAX_SATVAL;
+}
 
 interface State {
     h: number;
     s: number;
     v: number;
     restoreOnCancel: boolean;
+
+    hIn: string;
+    sIn: string;
+    vIn: string;
+    rIn: string;
+    gIn: string;
+    bIn: string;
 }
 
 export class ColorPicker extends React.Component<ColorPicker.Props, State> {
@@ -37,11 +79,18 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
         this.lastValueY = 0;
 
         const { h, s, v } = Colors.colorToHsv(this.props.initialColor);
+        const { r, g, b } = Colors.colorToRgb(this.props.initialColor);
         this.state = {
-            h,
+            h: Math.round(h),
             s,
             v,
             restoreOnCancel: false,
+            hIn: h.toString(),
+            sIn: v.toString(),
+            vIn: s.toString(),
+            rIn: r.toString(),
+            gIn: g.toString(),
+            bIn: b.toString(),
         };
     }
 
@@ -87,7 +136,7 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
             y = palette.height - 1;
 
         const { h, s } = this.paletteCoordsToHueSat(x, y);
-        this.setState({ ...this.state, h, s });
+        this.updateColorHsv({ h, s, v: this.state.v });
     }
 
     private changeColorFromValue(ey: number) {
@@ -99,7 +148,7 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
         else if (y >= valCol.height)
             y = valCol.height - 1;
         const v = this.valueColumnCoordToVal(y);
-        this.setState({ ...this.state, v });
+        this.updateColorHsv({ h: this.state.h, s: this.state.s, v });
     }
 
     private dispose() {
@@ -280,17 +329,48 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
         }
 
         this.changeColorFromPalette(evt.pageX, evt.pageY);
-    }
+    };
 
     private onGlobalTouchMovedPalette = (evt: TouchEvent) => {
         if (evt.touches.length !== 0)
             this.changeColorFromPalette(evt.touches[0].pageX, evt.touches[0].pageY);
+    };
+
+    private updateColorHsv(hsv: { h: number, s: number, v: number }) {
+        const rgb = Colors.hsv2rgb(hsv.h, hsv.s, hsv.v);
+        this.updateColor(rgb, hsv);
+    }
+
+    private updateColorRgb(rgb: { r: number, g: number, b: number }) {
+        const hsv = Colors.rgb2hsv(rgb.r, rgb.g, rgb.b);
+        this.updateColor(rgb, hsv);
+    }
+
+    private updateColor(rgb: { r: number, g: number, b: number }, hsv: { h: number, s: number, v: number }) {
+        let update: Partial<State> = { ...hsv };
+        if (this.state.rIn === '')
+            update = { ...update, rIn: rgb.r.toString() };
+        if (this.state.gIn === '')
+            update = { ...update, gIn: rgb.g.toString() };
+        if (this.state.bIn === '')
+            update = { ...update, bIn: rgb.b.toString() };
+        if (this.state.hIn === '')
+            update = { ...update, hIn: hsv.h.toString() };
+        if (this.state.sIn === '')
+            update = { ...update, sIn: hsv.s.toString() };
+        if (this.state.vIn === '')
+            update = { ...update, vIn: hsv.v.toString() };
+
+        this.setState({
+            ...this.state,
+            ...update,
+        });
     }
 
     private onGlobalTouchMovedValue = (evt: TouchEvent) => {
         if (evt.touches.length !== 0)
             this.changeColorFromValue(evt.touches[0].pageY);
-    }
+    };
 
     private valueColumnCoordToVal(y: number) {
         const valCol = this.valueColumnRef.current!;
@@ -456,39 +536,63 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
                 >
                     <div>R</div>
                     <SpinBox
-                        min={0}
-                        max={255}
+                        min={MIN_RGB}
+                        max={MAX_RGB}
                         step={1}
-                        value={Math.round(Colors.hsv2rgb(this.state.h, this.state.s, this.state.v).r)}
-                        onChange={r => {
-                            const { g, b } = Colors.hsv2rgb(this.state.h, this.state.s, this.state.v);
-                            const { h, s, v } = Colors.rgb2hsv(parseInt(r), g, b);
-                            this.setState({ ...this.state, h, s, v });
+                        value={this.state.rIn === '' ? null : Math.round(Colors.hsv2rgb(this.state.h, this.state.s, this.state.v).r)}
+                        onChange={rIn => {
+                            if (rIn === '')
+                                this.setState({ ...this.state, rIn });
+                            else {
+                                const r = Util.parseIntStrict(rIn, false);
+                                if (!isRgbVal(r))
+                                    return;
+
+                                const { g, b } = Colors.hsv2rgb(this.state.h, this.state.s, this.state.v);
+                                this.updateColorRgb({ r, g, b });
+                            }
                         }}
+                        pathPrefix={this.props.pathPrefix}
                     />
                     <div>G</div>
                     <SpinBox
-                        min={0}
-                        max={255}
+                        min={MIN_RGB}
+                        max={MAX_RGB}
                         step={1}
-                        value={Math.round(Colors.hsv2rgb(this.state.h, this.state.s, this.state.v).g)}
-                        onChange={g => {
-                            const { r, b } = Colors.hsv2rgb(this.state.h, this.state.s, this.state.v);
-                            const { h, s, v } = Colors.rgb2hsv(r, parseInt(g), b);
-                            this.setState({ ...this.state, h, s, v });
+                        value={this.state.gIn === '' ? null : Math.round(Colors.hsv2rgb(this.state.h, this.state.s, this.state.v).g)}
+                        onChange={gIn => {
+                            if (gIn === '')
+                                this.setState({ ...this.state, gIn });
+                            else {
+                                const g = Util.parseIntStrict(gIn, false);
+                                if (!isRgbVal(g))
+                                    return;
+
+                                const { r, b } = Colors.hsv2rgb(this.state.h, this.state.s, this.state.v);
+                                this.updateColorRgb({ r, g, b });
+                            }
                         }}
+                        pathPrefix={this.props.pathPrefix}
                     />
                     <div>B</div>
                     <SpinBox
-                        min={0}
-                        max={255}
+                        min={MIN_RGB}
+                        max={MAX_RGB}
                         step={1}
-                        value={Math.round(Colors.hsv2rgb(this.state.h, this.state.s, this.state.v).b)}
-                        onChange={b => {
-                            const { r, g } = Colors.hsv2rgb(this.state.h, this.state.s, this.state.v);
-                            const { h, s, v } = Colors.rgb2hsv(r, g, parseInt(b));
-                            this.setState({ ...this.state, h, s, v });
+                        value={this.state.bIn === '' ? null : Math.round(Colors.hsv2rgb(this.state.h, this.state.s, this.state.v).b)}
+                        onChange={bIn => {
+                            if (bIn === '')
+                                this.setState({ ...this.state, bIn });
+                            else {
+                                const b = Util.parseIntStrict(bIn, false);
+                                if (!isRgbVal(b))
+                                    return;
+
+                                const { r, g } = Colors.hsv2rgb(this.state.h, this.state.s, this.state.v);
+                                this.updateColorRgb({ r, g, b });
+                            }
                         }}
+                        pathPrefix={this.props.pathPrefix}
                     />
                 </div>
                 <div
@@ -501,33 +605,60 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
                 >
                     <div>H</div>
                     <SpinBox
-                        min={0}
-                        max={360}
+                        min={MIN_HUE}
+                        max={MAX_HUE}
                         step={1}
-                        value={Math.round(this.state.h)}
-                        onChange={h => {
-                            this.setState({ ...this.state, h: parseInt(h) });
+                        value={this.state.hIn === '' ? null : Math.round(this.state.h)}
+                        onChange={hIn => {
+                            if (hIn === '')
+                                this.setState({ ...this.state, hIn });
+                            else {
+                                const h = Util.parseIntStrict(hIn, false);
+                                if (!isHueVal(h))
+                                    return;
+
+                                this.updateColorHsv({ h, s: this.state.s, v: this.state.v });
+                            }
                         }}
+                        pathPrefix={this.props.pathPrefix}
                     />
                     <div>S</div>
                     <SpinBox
-                        min={0}
-                        max={100}
+                        min={MIN_SATVAL}
+                        max={MAX_SATVAL}
                         step={1}
-                        value={Math.round(this.state.s * 100)}
-                        onChange={s => {
-                            this.setState({ ...this.state, s: parseInt(s) / 100 });
+                        value={this.state.sIn === '' ? null : Math.round(this.state.s * 100)}
+                        onChange={sIn => {
+                            if (sIn === '')
+                                this.setState({ ...this.state, sIn });
+                            else {
+                                const s = Util.parseIntStrict(sIn, false);
+                                if (!isSatValVal(s))
+                                    return;
+
+                                this.updateColorHsv({ h: this.state.h, s: s / 100, v: this.state.v });
+                            }
                         }}
+                        pathPrefix={this.props.pathPrefix}
                     />
                     <div>V</div>
                     <SpinBox
-                        min={0}
-                        max={100}
+                        min={MIN_SATVAL}
+                        max={MAX_SATVAL}
                         step={1}
-                        value={Math.round(this.state.v * 100)}
-                        onChange={v => {
-                            this.setState({ ...this.state, v: parseInt(v) / 100 });
+                        value={this.state.vIn === '' ? null : Math.round(this.state.v * 100)}
+                        onChange={vIn => {
+                            if (vIn === '')
+                                this.setState({ ...this.state, vIn });
+                            else {
+                                const v = Util.parseIntStrict(vIn, false);
+                                if (!isSatValVal(v))
+                                    return;
+
+                                this.updateColorHsv({ h: this.state.h, s: this.state.s, v: v / 100 });
+                            }
                         }}
+                        pathPrefix={this.props.pathPrefix}
                     />
                 </div>
                 <div
@@ -578,9 +709,10 @@ export namespace ColorPicker {
         top: number;
         onColorPicked: OnColorPicked;
         parentElement: HTMLElement;
+        pathPrefix: string;
     }
 
-    export function create<T>(evt: React.MouseEvent<T, MouseEvent>, initialColor: number, handler: OnColorPicked) {
+    export function create<T>(evt: React.MouseEvent<T, MouseEvent>, initialColor: number, handler: OnColorPicked, pathPrefix = '') {
         const tainer = document.createElement('div');
 
         ReactDOM.render(
@@ -590,6 +722,7 @@ export namespace ColorPicker {
                 top={evt.clientY}
                 onColorPicked={handler}
                 parentElement={tainer}
+                pathPrefix={pathPrefix}
             />,
             tainer
         );

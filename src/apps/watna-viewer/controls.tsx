@@ -83,6 +83,7 @@ export class Controls extends React.Component<Controls.Props, State> {
                                         } else
                                             this.setState({ ...this.state, imageWidth: w });
                                     }}
+                                    pathPrefix={this.props.pathPrefix}
                                 />
                                 <div className='wva-tight'>Height</div>
                                 <SpinBox
@@ -102,6 +103,7 @@ export class Controls extends React.Component<Controls.Props, State> {
                                         } else
                                             this.setState({ ...this.state, imageHeight: h });
                                     }}
+                                    pathPrefix={this.props.pathPrefix}
                                 />
                             </div>
                         </div>
@@ -180,7 +182,8 @@ export class Controls extends React.Component<Controls.Props, State> {
                             max={MaxClip}
                             step={ClipStep}
                             onChange={v => this.props.onCamClipRadiusChanged(parseFloat(v))}
-                            formatter={v => v.toFixed(2)}
+                            formatter={v => v?.toFixed(2) ?? ''}
+                            pathPrefix={this.props.pathPrefix}
                         />
                     </div>
                 </div>
@@ -201,7 +204,7 @@ export class Controls extends React.Component<Controls.Props, State> {
                             this.props.onChangeLighting(mode);
                             this.setState({ ...this.state, lightingMode: mode });
                         }}
-                        pathPrefix={this.props.pathPrefix ?? ''}
+                        pathPrefix={this.props.pathPrefix}
                     />
                 </div>
             </div>
@@ -247,6 +250,6 @@ export namespace Controls {
         onResetCamera: OnAction;
         onResetColors: OnAction;
         onSaveViewAsImage: OnSaveViewAsImage;
-        pathPrefix?: string;
+        pathPrefix: string;
     }
 }
