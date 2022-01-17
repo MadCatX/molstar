@@ -15,7 +15,7 @@ import { Util, SupportedFormats } from './util';
 import { DnatcoPluginSpec } from './dnatcopluginspec';
 import { Sphere3D } from '../../mol-math/geometry';
 import { Loci } from '../../mol-model/loci';
-import { createPlugin } from '../../mol-plugin-ui';
+import { createPluginUI } from '../../mol-plugin-ui';
 import { PluginUIContext } from '../../mol-plugin-ui/context';
 import { PluginCommands } from '../../mol-plugin/commands';
 import { InteractivityManager } from '../../mol-plugin-state/manager/interactivity';
@@ -97,13 +97,13 @@ class DnatcoWrapper {
 
     plugin: PluginUIContext;
 
-    init(target: HTMLElement, radiusRatio: number) {
+    async init(target: HTMLElement, radiusRatio: number) {
         this.currentSelectedStepInfo = null;
         this.currentModelIndex = 0;
         this.numberOfModels = 0;
         this.baseRadius = 0;
         this.radiusRatio = radiusRatio < MinimumRadiusRatio ? MinimumRadiusRatio : radiusRatio;
-        this.plugin = createPlugin(target,
+        this.plugin = await createPluginUI(target,
             {
                 ...this.DnatcoPluginSpecImpl,
                 behaviors: [

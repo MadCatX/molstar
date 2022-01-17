@@ -152,6 +152,7 @@ export namespace Util {
                 type: repr,
                 typeParams: {
                     sizeFactor,
+                    aromaticBonds: false,
                 },
                 color: colorTheme,
                 colorParams: (() => {
@@ -514,6 +515,10 @@ export namespace Util {
                 void 0,
                 {
                     type: repr,
+                    typeParams: {
+                        aromaticBonds: false,
+                    },
+
                     ...(repr === 'ball-and-stick' ? { color: 'element-symbol' as ColorTheme.BuiltIn, colorParams: { carbonColor: 'element-symbol' } } : {}),
                 }
             ),
