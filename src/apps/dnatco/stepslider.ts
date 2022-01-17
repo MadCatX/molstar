@@ -55,7 +55,7 @@ export namespace StepSlider {
         const eILast = cI === chainOffsets.length - 1 ? unit.elements[unit.elements.length - 1] : chainOffsets[cI + 1] - 1;
 
         // Find what residue we belong to and move to the desired residue
-        let rI = residueIndices[eI] + by;
+        const rI = residueIndices[eI] + by;
 
         if (rI < 0 || rI >= residueOffsets.length)
             return undefined; // We cannot go outside the structure
@@ -76,7 +76,7 @@ export namespace StepSlider {
             }
         }
 
-        let newElements: StructureElement.Loci['elements'][0][] = [];
+        const newElements: StructureElement.Loci['elements'][0][] = [];
         newElements[newElements.length] = { unit: elem.unit, indices: SortedArray.ofSortedArray(newIndices) };
 
         // Now we construct a new Loci that is made up of all elements of the residue we moved to

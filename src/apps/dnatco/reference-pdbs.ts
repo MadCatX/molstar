@@ -7,6 +7,7 @@
 
 import { References } from './conformers';
 
+/* eslint-disable @typescript-eslint/indent */
 export namespace ReferencePdbs {
     export type Map = Record<References, string>;
     export const data: Map = {

@@ -13,7 +13,7 @@ import { Script } from '../../mol-script/script';
 
 export namespace Selecting {
     function reduceElemList(list: string[]) {
-        return list.reduce((a, c) => a + " .`" + c + "`", '');
+        return list.reduce((a, c) => a + ' .`' + c + '`', '');
     }
 
     function conditionsToStatement(op: string, conditions: string[]) {
@@ -31,7 +31,7 @@ export namespace Selecting {
     }
 
     function makeBackboneTest(ring: RingTypes, resno: number, isFirst: boolean, altId: string|null, insCode: string|null, ignoreDetails: boolean) {
-        let conds: string[] = [];
+        const conds: string[] = [];
 
         const dependent = reduceElemList(BackboneAtoms.ringDependent.get(ring)!);
         let atoms = reduceElemList(isFirst ? BackboneAtoms.firstResidue : BackboneAtoms.secondResidue);
@@ -56,7 +56,7 @@ export namespace Selecting {
         if (nextStep !== undefined)
             conds.push(makeResidueTest(nextStep.resnoSecond, nextStep.altIdSecond, nextStep.insCodeSecond, ignoreDetails));
 
-        let code = conditionsToStatement('or', conds);
+        const code = conditionsToStatement('or', conds);
         return conditionsToStatement('and', [`= atom.chain \`${currentStep.asymId}\``, code]);
     }
 
@@ -68,7 +68,7 @@ export namespace Selecting {
     }
 
     function makeHalfStepTest(resno: number, altId: string|null, insCode: string|null, ignoreDetails: boolean, backbone?: string) {
-        let conds: string[] = [];
+        const conds: string[] = [];
 
         conds.push(`= atom.resno ${resno}`);
         if (ignoreDetails === false) {
@@ -91,7 +91,7 @@ export namespace Selecting {
     }
 
     function makeResidueOtherAltPosTest(asymId: string, resno: number, altId: string) {
-        let conds: string[] = [];
+        const conds: string[] = [];
 
         conds.push(`= atom.chain \`${asymId}\``);
         conds.push(`= atom.resno ${resno}`);
@@ -104,7 +104,7 @@ export namespace Selecting {
         const firstResidue = makeResidueTest(info.resnoFirst, info.altIdFirst, info.insCodeFirst, ignoreDetails, ringFirst, true);
         const secondResidue = makeResidueTest(info.resnoSecond, info.altIdSecond, info.insCodeSecond, ignoreDetails, ringSecond, false);
 
-        return conditionsToStatement('or', [ firstResidue, secondResidue ]);
+        return conditionsToStatement('or', [firstResidue, secondResidue]);
     }
 
     export function selectBackbone(structure: PSO.Molecule.Structure, ringFirst: RingTypes, ringSecond: RingTypes, resnoFirst: number, resnoSecond: number, asymId: string|null, altIdFirst: string|null, altIdSecond: string|null, insCodeFirst: string|null, insCodeSecond: string|null) {
@@ -153,7 +153,7 @@ export namespace Selecting {
     }
 
     export function selectBlock(prevStep: StepInfo|undefined, currentStep: StepInfo, nextStep: StepInfo|undefined, surroundings: number, ignoreDetails: boolean = false) {
-        let code = makeBlockTest(prevStep, currentStep, nextStep, ignoreDetails);
+        const code = makeBlockTest(prevStep, currentStep, nextStep, ignoreDetails);
         const entireBlock = Script.toExpression(Script(`(sel.atom.atom-groups :atom-test (${code}))`, 'mol-script'));
 
         if (surroundings > 0) {
@@ -186,9 +186,9 @@ export namespace Selecting {
         const P = makeElementTest('P', info.asymId, info.resnoSecond, info.altIdSecond, info.insCodeSecond);
 
         const O3Scr = Script(`(sel.atom.atom-groups :atom-test (${O3}))`, 'mol-script');
-        const PScr =  Script(`(sel.atom.atom-groups :atom-test (${P}))`, 'mol-script');
+        const PScr = Script(`(sel.atom.atom-groups :atom-test (${P}))`, 'mol-script');
 
-        return [ Script.toLoci(O3Scr, structure.data), Script.toLoci(PScr, structure.data) ];
+        return [Script.toLoci(O3Scr, structure.data), Script.toLoci(PScr, structure.data)];
     }
 
     export function selectElementFromPyramid(structure: PSO.Molecule.Structure, element: string) {

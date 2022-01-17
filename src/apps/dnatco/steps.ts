@@ -35,7 +35,7 @@ export class StepInfo {
 
 export namespace Steps {
     function getCompoundAndAltId(piece: string): [Compounds, string|null] {
-        let segments = piece.split('.');
+        const segments = piece.split('.');
 
         if (segments.length < 1 || segments.length > 2)
             throw new Error('Invalid compound/altId piece');
@@ -58,7 +58,7 @@ export namespace Steps {
     }
 
     function getPdbxModelNum(piece: string): number {
-        let segments = piece.split('-');
+        const segments = piece.split('-');
 
         switch (segments.length) {
             case 1:

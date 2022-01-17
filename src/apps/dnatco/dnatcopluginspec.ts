@@ -63,7 +63,7 @@ const DnatcoSelectLociBehaviors = PluginBehavior.create({
 
             const stepId = DnatcoNaming.makeStepId(locationFirst, idFirst, idSecond, this.ctx);
             spec.lociSelectedCallback(stepId);
-        }
+        };
 
         register() {
             const lociIsEmpty = (current: Representation.Loci) => Loci.isEmpty(current.loci);

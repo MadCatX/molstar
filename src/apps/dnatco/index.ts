@@ -225,7 +225,7 @@ class DnatcoWrapper {
         if (newIndex >= this.numberOfModels)
             throw new Error('Invalid model index');
 
-        await Util.removeIfPresent(this.plugin, [ ID.mkRef(ID.SCE, ID.Confal), ID.mkRef(ID.Visual, ID.Confal) ]);
+        await Util.removeIfPresent(this.plugin, [ID.mkRef(ID.SCE, ID.Confal), ID.mkRef(ID.Visual, ID.Confal)]);
 
         await PluginCommands.State.ApplyAction(this.plugin, {
             state: this.plugin.state.data,
@@ -293,7 +293,7 @@ class DnatcoWrapper {
         this.setDefaultBaseRadius();
 
         const tree = await Util.visualiseNotSelected(this.plugin, Selecting.SelectAllScript, this.notSelectedRepr);
-        PluginCommands.State.Update(this.plugin, { state: this.plugin.state.data, tree } );
+        PluginCommands.State.Update(this.plugin, { state: this.plugin.state.data, tree });
         this.resetCamera();
 
         this.loadDensityMap(this.showDensityDiffMap);
@@ -469,7 +469,7 @@ class DnatcoWrapper {
         this.currRef = (currRef === '' || currRef === 'NANT') ? undefined : currRef as References;
         this.nextRef = (nextRef === '' || nextRef === 'NANT') ? undefined : nextRef as References;
 
-        this.superposeInternal()
+        this.superposeInternal();
     }
 
     async superposeRmsd(currRef: string) {
@@ -499,14 +499,14 @@ class DnatcoWrapper {
     }
 
     async setBallsColors(colors: { which: string, color: string }[]) {
-        for ( const { which, color } of colors)
+        for (const { which, color } of colors)
             this.customBallsColorMap.set(which, Color(parseInt(color.split('#')[1], 16)));
 
         Util.updateBallsVisual(this.plugin, this.customBallsColorMap, this.customBallsVisibleMap, this.ballsTransparent);
     }
 
     async setPyramidsColors(colors: { group: string, color: string }[]) {
-        for ( const { group, color } of colors)
+        for (const { group, color } of colors)
             this.customPyramidsColorMap.set(group, Color(parseInt(color.split('#')[1], 16)));
 
         Util.updatePyramidsVisual(
@@ -585,7 +585,7 @@ class DnatcoWrapper {
     }
 
     async toggleBallsVisible(visibility: { which: string, visible: boolean }[]) {
-        for ( const { which, visible } of visibility) {
+        for (const { which, visible } of visibility) {
             this.customBallsVisibleMap.set(which + 'U', visible);
             this.customBallsVisibleMap.set(which + 'L', visible);
         }
@@ -611,7 +611,7 @@ class DnatcoWrapper {
     }
 
     async togglePyramidsVisible(visibility: { group: string, visible: boolean }[]) {
-        for ( const { group, visible } of visibility) {
+        for (const { group, visible } of visibility) {
             this.customPyramidsVisibleMap.set(group, visible);
         }
 
@@ -674,7 +674,7 @@ class DnatcoWrapper {
     async toggleHetero(show: boolean) {
         if (show) {
             const state = this.plugin.state.data;
-            let b = state.build().to(BMRef);
+            const b = state.build().to(BMRef);
             Util.visualHetero(this.plugin, b, 'ball-and-stick').commit();
         } else {
             Util.removeIfPresent(
@@ -695,7 +695,7 @@ class DnatcoWrapper {
 
             PluginCommands.State.Update(this.plugin, { state, tree: b });
         } else {
-            Util.removeIfPresent(this.plugin, [ ID.mkRef(ID.SCE, ID.Protein), ID.mkRef(ID.Visual, ID.Protein) ]);
+            Util.removeIfPresent(this.plugin, [ID.mkRef(ID.SCE, ID.Protein), ID.mkRef(ID.Visual, ID.Protein)]);
         }
     }
 
@@ -715,7 +715,7 @@ class DnatcoWrapper {
 
             PluginCommands.State.Update(this.plugin, { state, tree: b });
         } else {
-            Util.removeIfPresent(this.plugin, [ ID.mkRef(ID.SCE, ID.Water), ID.mkRef(ID.Visual, ID.Water) ]);
+            Util.removeIfPresent(this.plugin, [ID.mkRef(ID.SCE, ID.Water), ID.mkRef(ID.Visual, ID.Water)]);
         }
     }
 }

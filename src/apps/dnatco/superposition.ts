@@ -5,7 +5,7 @@
  * @author Jiří Černý (jiri.cerny@ibt.cas.cz)
  */
 
-import { References, Util as CUtil,  compoundRingTypes, RingTypes, BackboneAtoms } from './conformers';
+import { References, Util as CUtil, compoundRingTypes, RingTypes, BackboneAtoms } from './conformers';
 import { Identifiers as ID } from './identifiers';
 import { Util } from './util';
 import { ReferencePdbs } from './reference-pdbs';
@@ -22,7 +22,7 @@ import { OrderedSet } from '../../mol-data/int';
 import { SymmetryOperator } from '../../mol-math/geometry/symmetry-operator';
 import { MinimizeRmsd } from '../../mol-math/linear-algebra/3d/minimize-rmsd';
 
-const Green =  Color(0x008000);
+const Green = Color(0x008000);
 const DarkBlue = Color(0x0000FF);
 const Cyan = Color(0x00FFFF);
 
@@ -96,7 +96,7 @@ export namespace Superposition {
         const positionsSets: MinimizeRmsd.Positions[] = [];
 
         for (const s of sets) {
-            const pos =  MinimizeRmsd.Positions.empty(s.points.length);
+            const pos = MinimizeRmsd.Positions.empty(s.points.length);
 
             const { x, y, z } = s.conformation;
             s.points.forEach((v, idx) => {
@@ -114,8 +114,8 @@ export namespace Superposition {
     function reorderAtoms(backbone: StructureElement.Loci, resnoFirst: number, resnoSecond: number, firstRing: RingTypes, secondRing: RingTypes) {
         const reordered: ElementIndex[] = [];
 
-        const firstAtoms = [ ...BackboneAtoms.firstResidue, ...BackboneAtoms.ringDependent.get(firstRing)! ];
-        const secondAtoms = [ ...BackboneAtoms.secondResidue, ...BackboneAtoms.ringDependent.get(secondRing)! ];
+        const firstAtoms = [...BackboneAtoms.firstResidue, ...BackboneAtoms.ringDependent.get(firstRing)!];
+        const secondAtoms = [...BackboneAtoms.secondResidue, ...BackboneAtoms.ringDependent.get(secondRing)!];
 
         const elem = backbone.elements[0];
         const indicesToCheck: number[] = [];
@@ -132,8 +132,7 @@ export namespace Superposition {
                 return true;
             }
             return false;
-        }
-
+        };
 
         for (const atomName of firstAtoms) {
             for (let idx = 0; idx < indicesToCheck.length; idx++) {

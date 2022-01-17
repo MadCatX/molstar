@@ -89,14 +89,14 @@ export namespace Util {
     }
 
     function makeBallsParameters(ctx: PluginContext, colors: Map<string, Color>, visible: Map<string, boolean>, transparent: boolean) {
-        let typeParams = {} as PD.Values<NtcBallsRepresentationParams>;
+        const typeParams = {} as PD.Values<NtcBallsRepresentationParams>;
         for (const k of Reflect.ownKeys(NtcBallsRepresentationParams) as (keyof NtcBallsRepresentationParams)[]) {
             if (NtcBallsRepresentationParams[k].type === 'boolean')
                 (typeParams[k] as any) = visible.get(k) ?? NtcBallsRepresentationParams[k]['defaultValue'];
         }
         typeParams.alpha = transparent ? 0.5 : 1.0;
 
-        let colorParams = {} as PD.Values<NtcBallsColorThemeParams>;
+        const colorParams = {} as PD.Values<NtcBallsColorThemeParams>;
         for (const k of Reflect.ownKeys(NtcBallsColorThemeParams) as (keyof NtcBallsColorThemeParams)[]) {
             colorParams[k] = colors.get(k) ?? NtcBallsColorThemeParams[k]['defaultValue'];
         }
@@ -116,14 +116,14 @@ export namespace Util {
     }
 
     function makePyramidsParameters(ctx: PluginContext, colors: Map<string, Color>, visible: Map<string, boolean>, transparent: boolean) {
-        let typeParams = {} as PD.Values<ConfalPyramidsParams>;
+        const typeParams = {} as PD.Values<ConfalPyramidsParams>;
         for (const k of Reflect.ownKeys(ConfalPyramidsParams) as (keyof ConfalPyramidsParams)[]) {
             if (ConfalPyramidsParams[k].type === 'boolean')
                 (typeParams[k] as any) = visible.get(k) ?? ConfalPyramidsParams[k]['defaultValue'];
         }
         typeParams.alpha = transparent ? 0.5 : 1.0;
 
-        let colorParams = {} as PD.Values<ConfalPyramidsColorThemeParams>;
+        const colorParams = {} as PD.Values<ConfalPyramidsColorThemeParams>;
         for (const k of Reflect.ownKeys(ConfalPyramidsColorThemeParams) as (keyof ConfalPyramidsColorThemeParams)[]) {
             colorParams[k] = colors.get(k) ?? ConfalPyramidsColorThemeParams[k]['defaultValue'];
         }
@@ -176,16 +176,16 @@ export namespace Util {
     }
 
     function trajectoryFromRawData(b: StateBuilder.To<PSO.Root>, data: string, format: SupportedFormats): StateBuilder.To<PSO.Molecule.Trajectory> {
-        let bb = b.apply(StateTransforms.Data.RawData, { data });
+        const bb = b.apply(StateTransforms.Data.RawData, { data });
         return modelToTrajectory(bb, format);
     }
 
     export async function addSelectedStructure(ctx: PluginContext, expression: Expression, tag: string) {
         const ref = ID.mkRef(ID.Structure, tag);
-        await removeIfPresent(ctx, [ ref ]);
+        await removeIfPresent(ctx, [ref]);
 
         const state = ctx.state.data;
-        let b = state.build().to(BMRef);
+        const b = state.build().to(BMRef);
         return b.apply(
             StateTransforms.Model.StructureSelectionFromExpression,
             { expression },
@@ -271,21 +271,21 @@ export namespace Util {
     }
 
     export function getBaseModel(ctx: PluginContext): PSO.Molecule.Structure {
-        let state = ctx.state.data;
+        const state = ctx.state.data;
         if (!state.transforms.has(BMRef))
             throw new Error('Base model reference not found in current data state');
         return state.select(BMRef)[0].obj as PSO.Molecule.Structure;
     }
 
     export async function getModel(ctx: PluginContext, b: StateBuilder.To<PSO.Root>, url: string, format: SupportedFormats, gzipped: boolean, modelIndex = 0, tag?: string) {
-        let bb = await (async () => {
+        const bb = await (async () => {
             if (gzipped) {
-                const blob = await ctx.fetch({url, type: 'binary'}).runInContext(SyncRuntimeContext);
+                const blob = await ctx.fetch({ url, type: 'binary' }).runInContext(SyncRuntimeContext);
                 const inflated = uint8ToString(await ungzip(SyncRuntimeContext, blob));
 
                 return trajectoryFromRawData(b, inflated, format);
             } else {
-                let _b = b.apply(StateTransforms.Data.Download, { url, isBinary: false });
+                const _b = b.apply(StateTransforms.Data.Download, { url, isBinary: false });
                 return modelToTrajectory(_b, format);
             }
         })();
@@ -335,8 +335,8 @@ export namespace Util {
 
     export async function removeIfPresent(ctx: PluginContext, refs: string[]) {
         const state = ctx.state.data;
-        let b = state.build();
-        for (let ref of refs) {
+        const b = state.build();
+        for (const ref of refs) {
             if (state.transforms.has(ref)) {
                 b.delete(ref);
             }
@@ -378,7 +378,7 @@ export namespace Util {
 
         const params = makeBallsParameters(ctx, colors, visible, transparent);
 
-        let b = ctx.state.data.build().to(ID.mkRef(ID.Visual, ID.Balls));
+        const b = ctx.state.data.build().to(ID.mkRef(ID.Visual, ID.Balls));
         b.update(params).commit();
     }
 
@@ -391,7 +391,7 @@ export namespace Util {
 
         const params = makePyramidsParameters(ctx, colors, visible, transparent);
 
-        let b = ctx.state.data.build().to(ID.mkRef(ID.Visual, ID.Confal));
+        const b = ctx.state.data.build().to(ID.mkRef(ID.Visual, ID.Confal));
         b.update(params).commit();
     }
 
@@ -529,7 +529,7 @@ export namespace Util {
     export async function visualiseOtherAltPos(ctx: PluginContext, expr: Expression) {
         await removeIfPresent(ctx, [ID.mkRef(ID.SCE, ID.OtherAltPos), ID.mkRef(ID.Visual, ID.OtherAltPos)]);
 
-        let b = (await addSelectedStructure(ctx, expr, ID.OtherAltPos));
+        const b = (await addSelectedStructure(ctx, expr, ID.OtherAltPos));
         return visual(ctx, b, 'ball-and-stick', ID.OtherAltPos, Color.fromRgb(210, 210, 210), 0.1);
     }
 
@@ -578,18 +578,22 @@ export namespace Util {
     export async function visualiseNotSelected(ctx: PluginContext, script: Script, repr: SRR.BuiltIn) {
         await removeIfPresent(ctx, [ID.mkRef(ID.SCE, ID.NotSelected), ID.mkRef(ID.Visual, ID.NotSelected)]);
 
-        let b = (await addSelectedStructure(ctx, Script.toExpression(script), ID.NotSelected));
+        const b = (await addSelectedStructure(ctx, Script.toExpression(script), ID.NotSelected));
         return visual(ctx, b, repr, ID.NotSelected);
     }
 
     export async function visualiseSelected(ctx: PluginContext, expr: Expression) {
         await removeIfPresent(
             ctx,
-            [ID.mkRef(ID.SCE, ID.Selected), ID.mkRef(ID.Visual, ID.Selected),
-             ID.mkRef(ID.SCE, ID.OtherAltPos), ID.mkRef(ID.SCE, ID.OtherAltPos)],
+            [
+                ID.mkRef(ID.SCE, ID.Selected),
+                ID.mkRef(ID.Visual, ID.Selected),
+                ID.mkRef(ID.SCE, ID.OtherAltPos),
+                ID.mkRef(ID.SCE, ID.OtherAltPos),
+            ],
         );
 
-        let b = (await addSelectedStructure(ctx, expr, ID.Selected));
+        const b = (await addSelectedStructure(ctx, expr, ID.Selected));
         return visual(ctx, b, 'ball-and-stick', ID.Selected);
     }
 }

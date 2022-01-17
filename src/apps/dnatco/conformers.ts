@@ -24,6 +24,7 @@ export type References =
     'OP01' | 'OP1S' | 'OP02' | 'OP03' | 'OP04' | 'OP05' | 'OP06' | 'OP07' | 'OP08' | 'OP09' | 'OP10' | 'OP11' | 'OP12' | 'OP13' | 'OP14' | 'OP15' | 'OP16' | 'OP17' | 'OP18' | 'OP19' | 'OP20' | 'OP21' | 'OP22' | 'OP23' | 'OP24' | 'OP25' | 'OP26' | 'OP27' | 'OP28' | 'OP29' | 'OP30' | 'OP31' | 'OPS1' |
     'ZZ01' | 'ZZ1S' | 'ZZ02' | 'ZZ2S' | 'ZZS1' | 'ZZS2';
 
+/* eslint-disable array-bracket-spacing, no-multi-spaces */
 export const referenceSequences: Map<References, Compounds[]> = new Map([
     ['AA00', [ 'A',  'G']],
     ['AA01', ['DC', 'DG']],
@@ -122,7 +123,9 @@ export const referenceSequences: Map<References, Compounds[]> = new Map([
     ['ZZS1', ['DG', 'DC']],
     ['ZZS2', ['DG', 'DC']],
 ]);
+/* eslint-enable array-bracket-spacing, no-multi-spaces */
 
+/* eslint-disable array-bracket-spacing, no-multi-spaces */
 export const compoundRingTypes: Map<Compounds, RingTypes> = new Map([
     [  'A', 'purine'],
     [  'G', 'purine'],
@@ -200,13 +203,16 @@ export const compoundRingTypes: Map<Compounds, RingTypes> = new Map([
     ['F2T', 'pyrimidine'],
     ['XFC', 'pyrimidine']
 ]);
+/* eslint-enable array-bracket-spacing, no-multi-spaces */
 
 export namespace BackboneAtoms {
-    export const firstResidue = [ "C5'", "C4'", "O4'", "C3'", "O3'", "C1'" ];
-    export const secondResidue = [ "P", "O5'", "C5'", "C4'", "O4'", "C3'", "O3'", "C1'" ];
+    export const firstResidue = ["C5'", "C4'", "O4'", "C3'", "O3'", "C1'"];
+    /* eslint-disable @typescript-eslint/quotes */
+    export const secondResidue = ["P", "O5'", "C5'", "C4'", "O4'", "C3'", "O3'", "C1'"];
+    /* eslint-enable @typescript-eslint/quotes */
     export const ringDependent: Map<RingTypes, string[]> = new Map([
-        ['purine', [ 'N9',  'C4' ] ],
-        ['pyrimidine', [ 'N1',  'C2' ] ]
+        ['purine', ['N9', 'C4']],
+        ['pyrimidine', ['N1', 'C2']],
     ]);
 }
 
