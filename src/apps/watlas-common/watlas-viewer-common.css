@@ -127,14 +127,14 @@ select {
 }
 
 .wva-highlighted-item {
-    background-color: #ccc;
+    background-color: #f0f0f0;
 }
 
 .wva-hoverable-item {
     transition: background-color 222ms;
 }
 .wva-hoverable-item:hover {
-    background-color: #ccc;
+    background-color: #f0f0f0;
 }
 
 .wva-measurements-container {
