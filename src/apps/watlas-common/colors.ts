@@ -17,7 +17,7 @@ function ntxs(num: number) {
 
 export namespace Colors {
     export function colorFromRgb(r: number, g: number, b: number) {
-        return Color.fromRgb(r, g, b)
+        return Color.fromRgb(r, g, b);
     }
 
     export function colorFromHsv(h: number, s: number, v: number) {

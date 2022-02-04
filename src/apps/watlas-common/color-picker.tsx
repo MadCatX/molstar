@@ -122,7 +122,7 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
 
     private changeColorFromPalette(ex: number, ey: number) {
         const tainer = this.selfRef.current!;
-        const palette = this.paletteRef.current!
+        const palette = this.paletteRef.current!;
         let x = ex - tainer.offsetLeft - tainer.clientLeft - palette.offsetLeft - palette.clientLeft;
         let y = ey - tainer.offsetTop - tainer.clientTop - palette.offsetTop - palette.clientTop;
 
@@ -141,7 +141,7 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
 
     private changeColorFromValue(ey: number) {
         const tainer = this.selfRef.current!;
-        const valCol = this.valueColumnRef.current!
+        const valCol = this.valueColumnRef.current!;
         let y = ey - tainer.offsetTop - tainer.clientTop - valCol.offsetTop - valCol.clientTop;
         if (y < 0)
             y = 0;
@@ -319,7 +319,7 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
         }
 
         this.changeColorFromValue(evt.pageY);
-    }
+    };
 
     private onGlobalMouseMovedPalette = (evt: MouseEvent) => {
         if ((evt.buttons & 1) === 0) {

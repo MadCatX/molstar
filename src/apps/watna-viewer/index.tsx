@@ -644,7 +644,7 @@ class WatlasViewer {
             const ref = this.mkVisRef(base, a.substru);
             const reprParams = { name: a.repr, params: { sizeFactor: 0.2, sizeAspectRatio: 0.35, aromaticBonds: false } };
             const theme = (a.repr !== 'ball-and-stick' && a.colorTheme === 'element-symbol') ? 'uniform' : a.colorTheme;
-            const colorParams = { name: theme, params: this.colorThemeParams(a.color, theme) }
+            const colorParams = { name: theme, params: this.colorThemeParams(a.color, theme) };
             if (!state.transforms.has(ref)) {
                 b.to(struRef)
                     .apply(
@@ -971,11 +971,11 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
         ]);
 
         for (const s of ['reference', 'base', 'nucleotide', 'phosphate'] as Resources.Structures[]) {
-            const ref = baseRefToResRef(fragId, s, 'structure')
-            const item = structures.get(s)!
+            const ref = baseRefToResRef(fragId, s, 'structure');
+            const item = structures.get(s)!;
             for (const sub of SubstructureTypes) {
                 if (this.viewer!.hasSubstructure(sub, ref))
-                    item.set(sub, { representation: shownStructures.includes(s) ? DefaultSubstructureReprs[sub] : 'off' })
+                    item.set(sub, { representation: shownStructures.includes(s) ? DefaultSubstructureReprs[sub] : 'off' });
             }
             structures.set(s, item);
         }
@@ -1222,7 +1222,7 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
                                         const structs = frag.structures.get('nucleotide');
                                         if (!structs)
                                             continue;
-                                        const substructs = Array.from(structs.keys())
+                                        const substructs = Array.from(structs.keys());
                                         await this.viewer!.hideStructure(baseRefToResRef(base, 'nucleotide', 'structure'), substructs);
 
                                         this.viewer!.hideDensityMap(baseRefToResRef(base, 'nucleotide', 'density-map'));
