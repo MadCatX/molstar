@@ -324,34 +324,40 @@ export class Measurements extends PurePluginUIComponent<Measurements.Props, Stat
         this.props.plugin.managers.structure.measurement.addDistance(loci[0].loci, loci[1].loci);
     }
 
+    private measurementsInner(cells: StructureMeasurementCell[], kind: string) {
+        const entries: JSX.Element[] = [];
+        if (cells.length === 0)
+            return [];
+
+        entries.push(<div className='wva-measurements-section-caption' key={kind}>{kind}</div>);
+        for (const c of cells) {
+            entries.push(
+                <AddedMeasurement
+                    key={c.transform.ref}
+                    kind={kind}
+                    cell={c}
+                    plugin={this.props.plugin!}
+                    pathPrefix={this.props.pathPrefix}
+                    delete={() => {
+                        PluginCommands.State.RemoveObject(this.props.plugin!, { state: c.parent!, ref: c.transform.parent, removeParentGhosts: true })
+                            .then(() => Util.triggerResize());
+                    }}
+                />
+            );
+        }
+
+        return entries;
+    }
+
     private measurements() {
         if (!this.props.plugin)
             return [];
 
         const measurements = this.props.plugin.managers.structure.measurement.state;
-
         const entries: JSX.Element[] = [];
-        for (const e of [{ k: 'distances', l: 'Distance' }, { k: 'angles', l: 'Angle' }, { k: 'dihedrals', l: 'Dihedral' }] as { k: keyof StructureMeasurementManagerState, l: string }[]) {
-            const msmts = measurements[e.k] as StructureMeasurementCell[];
-            if (msmts.length > 0)
-                entries.push(<div className='wva-measurements-section-caption' key={e.k}>{capitalize(e.k)}</div>);
-            for (const m of measurements[e.k] as StructureMeasurementCell[]) {
-                const elem = (
-                    <AddedMeasurement
-                        key={m.transform.ref}
-                        kind={e.l}
-                        cell={m}
-                        plugin={this.props.plugin}
-                        pathPrefix={this.props.pathPrefix}
-                        delete={() => {
-                            PluginCommands.State.RemoveObject(this.props.plugin!, { state: m.parent!, ref: m.transform.parent, removeParentGhosts: true })
-                                .then(() => Util.triggerResize());
-                        }}
-                    />
-                );
-                entries.push(elem);
-            }
-        }
+
+        for (const kind of ['distances', 'angles', 'dihedrals'] as (keyof typeof measurements)[])
+            entries.push(...this.measurementsInner(measurements[kind] as StructureMeasurementCell[], capitalize(kind)));
 
         return entries;
     }
