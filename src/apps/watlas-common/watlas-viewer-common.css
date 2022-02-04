@@ -2,7 +2,7 @@
 
 select {
   -moz-appearance: none;
-  -webkit-appearamce: none;
+  -webkit-appearance: none;
   appearance: none;
   background: none;
   border: 0;
@@ -138,6 +138,8 @@ select {
 }
 
 .wva-measurements-container {
+    display: flex;
+    flex-direction: column;
     height: 100%;
     width: 20em;
 }
@@ -327,4 +329,15 @@ select {
 .wva-vertical {
     writing-mode: vertical-rl;
     transform: rotate(180deg);
+}
+
+.wva-vertically-scrollable {
+    overflow-y: scroll;
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.wva-vertically-scrollable::-webkit-scrollbar {
+    display: none;
 }

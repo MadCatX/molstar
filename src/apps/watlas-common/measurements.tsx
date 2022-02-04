@@ -467,7 +467,7 @@ export class Measurements extends PurePluginUIComponent<Measurements.Props, Stat
                             enabled={history.length > 3}
                         />}
                     </div>
-                    <div className='wva-spaced-flex-vertical'>
+                    <div className='wva-spaced-flex-vertical wva-vertically-scrollable' style={{ flex: 1 }}>
                         {this.measurements()}
                     </div>
                     <div className='wva-spaced-flex-vertical'>
