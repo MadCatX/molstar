@@ -264,6 +264,7 @@ select {
 }
 
 .wva-spinbox-container {
+    background-color: white;
     border: 0.15em solid #ccc;
     border-radius: 0;
     display: grid;
