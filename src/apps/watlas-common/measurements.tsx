@@ -453,21 +453,21 @@ export class Measurements extends PurePluginUIComponent<Measurements.Props, Stat
                     <div className='wva-spaced-flex-vertical'>
                         {<PushButton
                             className='wva-pushbutton wva-pushbutton-border wva-padded-pushbutton'
-                            classNameDisabled='wva-pushbutton-disabled wva-padded-pushbutton'
+                            classNameDisabled='wva-pushbutton-disabled wva-pushbutton-border wva-padded-pushbutton'
                             text='Distance'
                             onClick={() => this.measureDistance()}
                             enabled={history.length > 1}
                         />}
                         {<PushButton
                             className='wva-pushbutton wva-pushbutton-border wva-padded-pushbutton'
-                            classNameDisabled='wva-pushbutton-disabled wva-padded-pushbutton'
+                            classNameDisabled='wva-pushbutton-disabled wva-pushbutton-border wva-padded-pushbutton'
                             text='Angle'
                             onClick={() => this.measureAngle()}
                             enabled={history.length > 2}
                         />}
                         {<PushButton
                             className='wva-pushbutton wva-pushbutton-border wva-padded-pushbutton'
-                            classNameDisabled='wva-pushbutton-disabled wva-padded-pushbutton'
+                            classNameDisabled='wva-pushbutton-disabled wva-pushbutton-border wva-padded-pushbutton'
                             text='Dihedral'
                             onClick={() => this.measureDihedral()}
                             enabled={history.length > 3}
