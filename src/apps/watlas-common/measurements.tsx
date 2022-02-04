@@ -439,7 +439,7 @@ export class Measurements extends PurePluginUIComponent<Measurements.Props, Stat
                 onStateChanged={ isCollapsed => this.setState({ ...this.state, expanded: !isCollapsed }) }
                 pathPrefix={this.props.pathPrefix}
             >
-                <div className='wva-measurements-container'>
+                <div className={`wva-measurements-container-${this.props.orientation}`}>
                     <div className='wva-measurements-current-sel-list'>
                         <div className='wva-block-subcaption'>Current selection</div>
                         {this.selections()}

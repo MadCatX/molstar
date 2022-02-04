@@ -137,11 +137,20 @@ select {
     background-color: #f0f0f0;
 }
 
-.wva-measurements-container {
+.wva-measurements-container-vertical {
     display: flex;
     flex-direction: column;
     height: 100%;
     width: 20em;
+}
+
+.wva-measurements-container-horizontal {
+  column-gap: 0.2em;
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-columns: 50% 1fr;
+  grid-template-rows: 1fr auto;
+  height: 100%;
 }
 
 .wva-measurements-current-sel-list {
