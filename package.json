@@ -20,7 +20,7 @@
     "rebuild": "npm run clean && npm run build",
     "build-viewer": "npm run build-tsc && npm run build-extra && npm run build-webpack-viewer",
     "build-tsc": "concurrently \"tsc --incremental\" \"tsc --build tsconfig.commonjs.json --incremental\"",
-    "build-extra": "cpx \"src/**/*.{scss,html,ico}\" lib/",
+    "build-extra": "cpx \"src/**/*.{scss,css,html,ico,svg}\" lib/",
     "build-webpack": "webpack --mode production --config ./webpack.config.production.js",
     "build-webpack-viewer": "webpack --mode production --config ./webpack.config.viewer.js",
     "watch": "concurrently -c \"green,green,gray,gray\" --names \"tsc,srv,ext,wpc\" --kill-others \"npm:watch-tsc\" \"npm:watch-servers\" \"npm:watch-extra\" \"npm:watch-webpack\"",
@@ -28,7 +28,7 @@
     "watch-viewer-debug": "concurrently -c \"green,gray,gray\" --names \"tsc,ext,wpc\" --kill-others \"npm:watch-tsc\" \"npm:watch-extra\" \"npm:watch-webpack-viewer-debug\"",
     "watch-tsc": "tsc --watch --incremental",
     "watch-servers": "tsc --build tsconfig.commonjs.json --watch --incremental",
-    "watch-extra": "cpx \"src/**/*.{scss,html,ico}\" lib/ --watch",
+    "watch-extra": "cpx \"src/**/*.{scss,css,html,ico,svg}\" lib/ --watch",
     "watch-webpack": "webpack -w --mode development --stats minimal",
     "watch-webpack-viewer": "webpack -w --mode development --stats minimal --config ./webpack.config.viewer.js",
     "watch-webpack-viewer-debug": "webpack -w --mode development --stats minimal --config ./webpack.config.viewer.debug.js",
@@ -108,6 +108,7 @@
     "cpx2": "^4.2.0",
     "crypto-browserify": "^3.12.0",
     "css-loader": "^6.7.1",
+    "css-minimizer-webpack-plugin": "^3.4.1",
     "eslint": "^8.11.0",
     "extra-watch-webpack-plugin": "^1.0.3",
     "file-loader": "^6.2.0",
@@ -151,8 +152,7 @@
     "swagger-ui-dist": "^4.6.2",
     "tslib": "^2.3.1",
     "util.promisify": "^1.1.1",
-    "xhr2": "^0.2.1",
-    "copy-webpack-plugin": "^9.0.1"
+    "xhr2": "^0.2.1"
   },
   "peerDependencies": {
     "react": "^17.0.2 || ^16.14.0",

@@ -22,6 +22,7 @@ import { DihedralData } from '../../mol-repr/shape/loci/dihedral';
 import { DistanceData } from '../../mol-repr/shape/loci/distance';
 import { angleLabel, dihedralLabel, distanceLabel, lociLabel } from '../../mol-theme/label';
 import { FiniteArray } from '../../mol-util/type-helpers';
+import './assets/imgs/x-red.svg';
 
 export class SelectedStructureElement extends PurePluginUIComponent<SelectedStructureElement.Props, SelectedStructureElement.State> {
     constructor(props: SelectedStructureElement.Props) {

@@ -38,6 +38,10 @@ import { Binding } from '../../mol-util/binding';
 import { ButtonsType, ModifiersKeys } from '../../mol-util/input/input-observer';
 import { MarkerAction } from '../../mol-util/marker-action';
 import { ParamDefinition as PD } from '../../mol-util/param-definition';
+import './index.html';
+import './wataa-viewer.css';
+import './molstar.css';
+import '../watlas-common/watlas-viewer-common.css';
 
 const SPIN_ANIM_PERIOD_MS = 50;
 const SPIN_ANIM_DPS = -12; // Rotation speed in degrees per second

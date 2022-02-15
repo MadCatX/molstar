@@ -53,6 +53,10 @@ import { StateTreeSpine } from '../../mol-state/tree/spine';
 import { StateSelection } from '../../mol-state';
 import { ColorTheme } from '../../mol-theme/color';
 import { lociLabel } from '../../mol-theme/label';
+import './index.html';
+import './watna-viewer.css';
+import './molstar.css';
+import '../watlas-common/watlas-viewer-common.css';
 
 const AnimationDurationMsec = 150;
 const DefaultDensityMapAlpha = 0.5;

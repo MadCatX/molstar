@@ -8,6 +8,8 @@
  */
 
 import * as React from 'react';
+import './assets/imgs/triangle-up.svg';
+import './assets/imgs/triangle-down.svg';
 
 function defaultFormatter(v: number|null) {
     if (v === null)

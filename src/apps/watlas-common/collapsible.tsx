@@ -1,6 +1,9 @@
 import * as React from 'react';
 
 import { PushButton } from './push-button';
+import './assets/imgs/triangle-up.svg';
+import './assets/imgs/triangle-down.svg';
+import './assets/imgs/triangle-left.svg';
 
 interface State {
     isCollapsed: boolean;

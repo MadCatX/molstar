@@ -8,6 +8,7 @@
  */
 
 import * as React from 'react';
+import './assets/imgs/triangle-down.svg';
 
 export class ComboBox extends React.Component<ComboBox.Props> {
     private containerClass() {
