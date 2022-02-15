@@ -11,7 +11,7 @@ import * as React from 'react';
 import { Collapsible } from './collapsible';
 import { PushButton } from './push-button';
 import { Util } from './util';
-import { Loci } from '../../mol-model/loci';
+import { EmptyLoci, Loci } from '../../mol-model/loci';
 import { PluginCommands } from '../../mol-plugin/commands';
 import { PluginUIContext } from '../../mol-plugin-ui/context';
 import { PurePluginUIComponent } from '../../mol-plugin-ui/base';
@@ -20,7 +20,7 @@ import { StructureSelectionHistoryEntry } from '../../mol-plugin-state/manager/s
 import { AngleData } from '../../mol-repr/shape/loci/angle';
 import { DihedralData } from '../../mol-repr/shape/loci/dihedral';
 import { DistanceData } from '../../mol-repr/shape/loci/distance';
-import { angleLabel, dihedralLabel, distanceLabel } from '../../mol-theme/label';
+import { angleLabel, dihedralLabel, distanceLabel, lociLabel } from '../../mol-theme/label';
 import { FiniteArray } from '../../mol-util/type-helpers';
 
 export class SelectedStructureElement extends PurePluginUIComponent<SelectedStructureElement.Props, SelectedStructureElement.State> {
@@ -201,11 +201,11 @@ export class AddedMeasurement extends PurePluginUIComponent<AddedMeasurement.Pro
     private getLabel() {
         const sel = this.getCellSelections();
 
-        if (!sel) return 'N/A';
+        if (!sel) return lociLabel(this.props.cell.obj?.data.repr.getLoci() ?? EmptyLoci);
         if (sel.pairs) return distanceLabel(sel.pairs[0], { condensed: true });
         if (sel.triples) return angleLabel(sel.triples[0], { condensed: true });
         if (sel.quads) return dihedralLabel(sel.quads[0], { condensed: true });
-        return 'N/A';
+        return lociLabel(this.props.cell.obj?.data.repr.getLoci() ?? EmptyLoci);
     }
 
     private highlightInViewer() {
@@ -299,6 +299,13 @@ export class Measurements extends PurePluginUIComponent<Measurements.Props, Stat
         };
     }
 
+    private addLabel() {
+        if (!this.props.plugin)
+            return;
+        const loci = this.props.plugin.managers.structure.selection.additionsHistory;
+        this.props.plugin.managers.structure.measurement.addLabel(loci[0].loci);
+    }
+
     private clearOrderLabels() {
         this.props.plugin?.managers.structure.measurement.addOrderLabels([]);
     }
@@ -356,7 +363,7 @@ export class Measurements extends PurePluginUIComponent<Measurements.Props, Stat
         const measurements = this.props.plugin.managers.structure.measurement.state;
         const entries: JSX.Element[] = [];
 
-        for (const kind of ['distances', 'angles', 'dihedrals'] as (keyof typeof measurements)[])
+        for (const kind of ['labels', 'distances', 'angles', 'dihedrals'] as (keyof typeof measurements)[])
             entries.push(...this.measurementsInner(measurements[kind] as StructureMeasurementCell[], capitalize(kind)));
 
         return entries;
@@ -438,7 +445,7 @@ export class Measurements extends PurePluginUIComponent<Measurements.Props, Stat
 
         return (
             <Collapsible
-                caption='Measurements'
+                caption='Labels and Measurements'
                 initialState='collapsed'
                 orientation={this.props.orientation}
                 dontGrow={true}
@@ -451,6 +458,13 @@ export class Measurements extends PurePluginUIComponent<Measurements.Props, Stat
                         {this.selections()}
                     </div>
                     <div className='wva-spaced-flex-vertical'>
+                        {<PushButton
+                            className='wva-pushbutton wva-pushbutton-border wva-padded-pushbutton'
+                            classNameDisabled='wva-pushbutton-disabled wva-pushbutton-border wva-padded-pushbutton'
+                            text='Label'
+                            onClick={() => this.addLabel()}
+                            enabled={history.length > 0}
+                        />}
                         {<PushButton
                             className='wva-pushbutton wva-pushbutton-border wva-padded-pushbutton'
                             classNameDisabled='wva-pushbutton-disabled wva-pushbutton-border wva-padded-pushbutton'
