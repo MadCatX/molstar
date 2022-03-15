@@ -9,8 +9,7 @@ const tests = [
 ];
 
 module.exports = [
-    createApp('viewer', 'molstar'),
-    createApp('docking-viewer', 'molstar'),
+    createApp('rednatco', 'molstar'),
     ...examples.map(createExample),
     ...tests.map(createBrowserTest)
 ];
