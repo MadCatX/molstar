@@ -40,6 +40,7 @@ const sharedConfig = {
     plugins: [
         new ExtraWatchWebpackPlugin({
             files: [
+                './lib/**/*.css',
                 './lib/**/*.scss',
                 './lib/**/*.html'
             ],
