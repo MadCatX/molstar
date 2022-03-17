@@ -281,7 +281,6 @@ select {
 }
 
 .wva-spinbox-button {
-    flex: 1;
     height: 0.6em;
     text-align: center;
 }

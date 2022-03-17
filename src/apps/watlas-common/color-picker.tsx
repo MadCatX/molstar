@@ -103,7 +103,7 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
         const right = self.offsetLeft + self.clientWidth;
         const overhang = right - bw;
         if (overhang > 0)
-            return this.props.left - 1.1 * overhang;
+            return bw - self.clientWidth - 25;
         return self.offsetLeft;
     }
 
@@ -116,7 +116,7 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
         const bottom = self.offsetTop + self.clientHeight;
         const overhang = bottom - bh;
         if (overhang > 0)
-            return this.props.top - 1.1 * overhang;
+            return bh - self.clientHeight - 25;
         return self.offsetTop;
     }
 
@@ -385,7 +385,7 @@ export class ColorPicker extends React.Component<ColorPicker.Props, State> {
         this.setState({ ...this.state });
     }
 
-    componentDidUpdate(prevProps: ColorPicker.Props, prevState: State) {
+    componentDidUpdate(_prevProps: ColorPicker.Props, prevState: State) {
         if (this.state.h !== prevState.h || this.state.s !== prevState.s) {
             this.drawPaletteCursor(this.state.h, this.state.s);
             this.drawValueColumn();
@@ -714,6 +714,7 @@ export namespace ColorPicker {
 
     export function create<T>(evt: React.MouseEvent<T, MouseEvent>, initialColor: number, handler: OnColorPicked, pathPrefix = '') {
         const tainer = document.createElement('div');
+        document.body.appendChild(tainer);
 
         ReactDOM.render(
             <ColorPicker
@@ -726,7 +727,5 @@ export namespace ColorPicker {
             />,
             tainer
         );
-
-        document.body.appendChild(tainer);
     }
 }
