@@ -198,7 +198,7 @@ const WatlasLociSelectionProvider = PluginBehavior.create({
         private spine: StateTreeSpine.Impl;
         private lociMarkProvider = (reprLoci: Representation.Loci, action: MarkerAction, noRender?: boolean) => {
             if (!this.ctx.canvas3d) return;
-            this.ctx.canvas3d.mark({ loci: reprLoci.loci }, action, noRender);
+            this.ctx.canvas3d.mark({ loci: reprLoci.loci }, action);
         };
         private applySelectMark(ref: string, clear?: boolean) {
             const cell = this.ctx.state.data.cells.get(ref);
