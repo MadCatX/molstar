@@ -24,6 +24,16 @@ const sharedConfig = {
                 }]
             },
             {
+                test: /\.svg$/,
+                use: [{
+                    loader: 'file-loader',
+                    options: {
+                        outputPath: 'assets/imgs',
+                        name: '[name].[ext]'
+                    }
+                }]
+            },
+            {
                 test: /\.(s*)css$/,
                 use: [
                     MiniCssExtractPlugin.loader,
