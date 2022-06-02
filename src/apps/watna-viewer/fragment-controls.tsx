@@ -69,7 +69,10 @@ export class FragmentControls extends React.Component<FragmentControls.Props, { 
     }
 
     private renderDensityMapControl(caption: string, kind: Resources.DensityMaps, substru: ST.SubstructureType) {
-        const dm = this.props.densityMaps.get(kind)!;
+        const dm = this.props.densityMaps.get(kind);
+        if (!dm)
+            return undefined;
+
         const bounds = WatNAUtil.isoBounds(dm.isoRange.min, dm.isoRange.max);
         const isoFixed = WatNAUtil.isoToFixed(dm.iso, bounds.step);
         return (
@@ -127,7 +130,11 @@ export class FragmentControls extends React.Component<FragmentControls.Props, { 
     }
 
     private renderStructureControlRepresentations(caption: string, kind: Resources.Structures, substru: ST.SubstructureType, options: { value: FD.StructureRepresentation | FD.OffRepresentation, caption: string }[]) {
-        const stru = this.props.structures.get(kind)!.get(substru);
+        const cell = this.props.structures.get(kind);
+        if (!cell)
+            return undefined;
+
+        const stru = cell.get(substru);
         if (!stru)
             return undefined;
         return (
@@ -144,7 +151,11 @@ export class FragmentControls extends React.Component<FragmentControls.Props, { 
     }
 
     private renderStructureControlOnOff(caption: string, kind: Resources.Structures, substru: ST.SubstructureType) {
-        const stru = this.props.structures.get(kind)!.get(substru);
+        const cell = this.props.structures.get(kind);
+        if (!cell)
+            return undefined;
+
+        const stru = cell.get(substru);
         if (!stru)
             return undefined;
         return (

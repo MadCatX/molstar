@@ -130,9 +130,14 @@ function reprIsOn<T>(repr: T | FD.OffRepresentation): repr is T {
 }
 
 type DownloadedResource = {
-    data: string|Uint8Array;
+    data: string|Uint8Array|null;
     kind: Resources.AllKinds;
     type: Resources.Type
+};
+
+class FailedResource {
+    constructor(public reason: string, public resource: DownloadedResource) {
+    }
 };
 
 type SubstructureAppearance = {
@@ -144,8 +149,16 @@ type SubstructureAppearance = {
 
 async function downloadResource(url: string, kind: Resources.AllKinds, type: Resources.Type) {
     const resp = await fetch(url);
-    if (!resp.ok)
-        throw new Error(`Cannot download ${url}: ${resp.statusText}`);
+    if (!resp.ok) {
+        throw new FailedResource(
+            `Cannot download ${url}: ${resp.statusText}`,
+            {
+                data: null,
+                kind: kind,
+                type: type,
+            }
+        );
+    }
 
     if (type === 'density-map') {
         const blob = await resp.blob();
@@ -157,26 +170,23 @@ async function downloadResource(url: string, kind: Resources.AllKinds, type: Res
     }
 }
 
-async function download(srcs: { url: string, kind: Resources.AllKinds, type: Resources.Type }[]) {
+async function download(srcs: { url: string, kind: Resources.AllKinds, type: Resources.Type }[]): Promise<{ succeeded: DownloadedResource[], failed: FailedResource[] }> {
     const pending: Promise<DownloadedResource>[] = [];
 
     for (const src of srcs)
         pending.push(downloadResource(src.url, src.kind, src.type));
 
-    const resources: DownloadedResource[] = [];
-    const errors: string[] = [];
+    const succeeded: DownloadedResource[] = [];
+    const failed: FailedResource[] = [];
     for (const p of pending) {
         try {
-            resources.push(await p);
+            succeeded.push(await p);
         } catch (e) {
-            errors.push(e.toString());
+            failed.push(e);
         }
     }
 
-    if (errors.length > 0)
-        throw errors;
-
-    return resources;
+    return { succeeded, failed };
 }
 
 const WatlasLociSelectionBindings = {
@@ -505,6 +515,13 @@ class WatlasViewer {
         return this.baseRadius * this.radiusRatio;
     }
 
+    hasResource(base: string) {
+        const state = this.plugin.state.data;
+        const ref = base + '_data';
+
+        return state.cells.has(ref);
+    }
+
     hasSubstructure(substru: ST.SubstructureType, base: string) {
         const ref = this.mkStructRef(base, substru);
         return this.plugin.state.data.cells.get(ref)?.obj?.data !== undefined;
@@ -576,7 +593,9 @@ class WatlasViewer {
     }
 
     isoRange(ref: string) {
-        const cell = this.plugin.state.data.cells.get(ref + '_volume')!;
+        const cell = this.plugin.state.data.cells.get(ref + '_volume');
+        if (!cell)
+            return { min: 0, max: 0 };
 
         // Allow me a question here.
         // How is a person who does not suffer from a personality disorder
@@ -828,6 +847,10 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
         return this.loadedFragments.includes(fragId);
     }
 
+    private isResourceRequired(kind: Resources.AllKinds) {
+        return kind === 'reference';
+    }
+
     private mkAutoColors(hue: number) {
         return new Map<Resources.AllKinds, Map<ST.SubstructureType, FD.Coloring>>([
             [
@@ -955,26 +978,18 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
         if (this.fragments.has(fragId))
             return;
 
-        const baseWaterMapIsoRange = this.viewer.isoRange(baseRefToResRef(fragId, 'base', 'density-map'));
-        const stepWaterMapIsoRange = this.viewer.isoRange(baseRefToResRef(fragId, 'nucleotide', 'density-map'));
-        const phosWaterMapIsoRange = this.viewer.isoRange(baseRefToResRef(fragId, 'phosphate', 'density-map'));
-
         const structures: Map<Resources.Structures, Map<ST.SubstructureType, FD.Structure>> = new Map([
             [
                 'reference', new Map<ST.SubstructureType, FD.Structure>(),
-            ],
-            [
-                'base', new Map<ST.SubstructureType, FD.Structure>(),
-            ],
-            [
-                'nucleotide', new Map<ST.SubstructureType, FD.Structure>()
-            ],
-            [
-                'phosphate', new Map<ST.SubstructureType, FD.Structure>(),
             ]
         ]);
 
-        for (const s of ['reference', 'base', 'nucleotide', 'phosphate'] as Resources.Structures[]) {
+        for (const s of ['base', 'nucleotide', 'phosphate'] as Resources.Structures[]) {
+            if (this.viewer!.hasResource(baseRefToResRef(fragId, s, 'structure')))
+                structures.set(s, new Map<ST.SubstructureType, FD.Structure>());
+        }
+
+        for (const s of Array.from(structures.keys())) {
             const ref = baseRefToResRef(fragId, s, 'structure');
             const item = structures.get(s)!;
             for (const sub of SubstructureTypes) {
@@ -984,23 +999,23 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
             structures.set(s, item);
         }
 
-        const densityMaps: Map<Resources.DensityMaps, FD.DensityMap> = new Map([
-            ['base', {
-                representation: shownDensityMaps.includes('base') ? DefaultDensityMapRepr : 'off',
-                iso: WatNAUtil.prettyIso(WatNAUtil.mid(baseWaterMapIsoRange), WatNAUtil.isoBounds(baseWaterMapIsoRange.min, baseWaterMapIsoRange.max).step),
-                isoRange: baseWaterMapIsoRange,
-            }],
-            ['nucleotide', {
-                representation: shownDensityMaps.includes('nucleotide') ? DefaultDensityMapRepr : 'off',
-                iso: WatNAUtil.prettyIso(WatNAUtil.mid(stepWaterMapIsoRange), WatNAUtil.isoBounds(stepWaterMapIsoRange.min, stepWaterMapIsoRange.max).step),
-                isoRange: stepWaterMapIsoRange,
-            }],
-            ['phosphate', {
-                representation: shownDensityMaps.includes('phosphate') ? DefaultDensityMapRepr : 'off',
-                iso: WatNAUtil.prettyIso(WatNAUtil.mid(phosWaterMapIsoRange), WatNAUtil.isoBounds(phosWaterMapIsoRange.min, phosWaterMapIsoRange.max).step),
-                isoRange: phosWaterMapIsoRange,
-            }],
-        ]);
+        const densityMaps: Map<Resources.DensityMaps, FD.DensityMap> = new Map();
+        for (const s of ['base', 'reference', 'phosphate'] as Resources.DensityMaps[]) {
+            const ref = baseRefToResRef(fragId, s, 'density-map');
+            if (!this.viewer!.hasResource(ref))
+                continue;
+
+            const isoRange = this.viewer.isoRange(ref);
+            densityMaps.set(
+                s,
+                {
+                    representation: shownDensityMaps.includes('base') ? DefaultDensityMapRepr : 'off',
+                    iso: WatNAUtil.prettyIso(WatNAUtil.mid(isoRange), WatNAUtil.isoBounds(isoRange.min, isoRange.max).step),
+                    isoRange,
+                }
+            );
+        }
+
         const { colors, nextHue } = this.advanceFragmentColors();
 
         const frag: FD.Description = {
@@ -1065,7 +1080,7 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
         if (!this.viewer)
             return;
 
-        const pending: { fragId: string, prom: Promise<DownloadedResource[]>}[] = [];
+        const pending: { fragId: string, prom: Promise<{ succeeded: DownloadedResource[], failed: FailedResource[] }>}[] = [];
 
         for (const frag of fragments) {
             if (this.isLoaded(frag.fragId))
@@ -1074,26 +1089,32 @@ export class WatlasApp extends React.Component<WatlasAppProps, WatlasAppState> {
             pending.push({ fragId: frag.fragId, prom: download(links) });
         }
 
-        let errors: string[] = [];
+        const errors: string[] = [];
         let ctr = 0;
         for (const p of pending) {
-            try {
-                const resources = await p.prom;
+            const resources = await p.prom;
 
-                for (const r of resources) {
-                    if (r.type === 'density-map')
-                        await this.viewer!.loadDensityMap(r.data as Uint8Array, mkResRef(p.fragId, r.kind, 'density-map'));
+            let hasCriticalFails = false;
+            for (const fail of resources.failed) {
+                if (this.isResourceRequired(fail.resource.kind)) {
+                    errors.push(fail.reason);
+                    hasCriticalFails = true;
+                }
+            }
+
+            if (!hasCriticalFails) {
+                for (const succ of resources.succeeded) {
+                    if (succ.type === 'density-map')
+                        await this.viewer!.loadDensityMap(succ.data as Uint8Array, mkResRef(p.fragId, succ.kind, 'density-map'));
                     else
-                        await this.viewer!.loadStructure(r.data as string, mkResRef(p.fragId, r.kind, 'structure'));
+                        await this.viewer!.loadStructure(succ.data as string, mkResRef(p.fragId, succ.kind, 'structure'));
                 }
 
                 this.loadedFragments.push(p.fragId);
-            } catch (e) {
-                errors = errors.concat(e);
-            } finally {
-                if (callback)
-                    callback(++ctr, fragments.length);
             }
+
+            if (callback)
+                callback(++ctr, fragments.length);
         }
 
         if (errors.length > 0)
