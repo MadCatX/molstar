@@ -1,4 +1,5 @@
 import { BasePairsLadderProvider } from './property';
+import { BasePairsLadderTypes } from './types';
 import { BasePairs } from '../property';
 import { Location } from '../../../mol-model/location';
 import { CustomProperty } from '../../../mol-model-props/common/custom-property';
@@ -15,8 +16,16 @@ const DefaultColor = Color(0xFFAAFF);
 const ErrorColor = Color(0xFFA10A);
 
 const LadderColors = ColorMap({
+    'Hoogsteen': Color(0x0F0FCD),
+    'Sugar': Color(0xFF0000),
+    'WW_Standard': Color(0x6BED00),
+    'WW_Non_Standard': Color(0xFFFF00),
+    'Cis_Ball': Color(0xFAFAFA),
+    'Trans_Ball': Color(0x363636),
     Default: DefaultColor,
 });
+
+const StandardBases = ['A', 'C', 'G', 'U', 'DA', 'DC', 'DG', 'DT'];
 
 export const BasePairsLadderColorThemeParams = {
     colors: PD.MappedStatic('default', {
@@ -34,7 +43,28 @@ export function BasePairsLadderColorTheme(ctx: ThemeDataContext, props: PD.Value
     const colorMap = props.colors.name === 'default' ? LadderColors : props.colors.params;
 
     function color(location: Location, isSecondary: boolean): Color {
-        return DefaultColor;
+        if (BasePairsLadderTypes.isLocation(location)) {
+            const { object, pair } = location.data;
+
+            if (object.kind === 'base') {
+                const { base } = object;
+                if (base.base_edge === 'watson-crick') {
+                    if (StandardBases.includes(pair.a.comp_id) && StandardBases.includes(pair.b.comp_id)) {
+                        return colorMap.WW_Standard;
+                    } else {
+                        return colorMap.WW_Non_Standard;
+                    }
+                } else if (base.base_edge === 'hoogsteen') return colorMap.Hoogsteen;
+                else if (base.base_edge === 'sugar') return colorMap.Sugar;
+            } else {
+                if (pair.orientation === 'cis') return colorMap.Cis_Ball;
+                else return colorMap.Trans_Ball;
+            }
+
+            return colorMap.Default;
+        } else {
+            return DefaultColor;
+        }
     }
 
     return {

@@ -7,7 +7,7 @@ import { Model } from '../../mol-model/structure';
 import { MmcifFormat } from '../../mol-model-formats/structure/mmcif';
 import { ParamDefinition as PD } from '../../mol-util/param-definition';
 
-export type Pairings = PropertyWrapper<{} | undefined>;
+export type Pairings = PropertyWrapper<BasePairsTypes.BasePairs | undefined>;
 
 export const BasePairsParams = {};
 export type BasePairsParams = typeof BasePairsParams;
@@ -52,7 +52,7 @@ export namespace BasePairs {
         list: Table<typeof BasePairs.Schema.ndb_base_pair_list>
     ) {
         const basePairs = new Array<BasePairsTypes.BasePair>();
-        const mapByModel = new Array<BasePairsTypes.MappedChains>();
+        // const mapByModel = new Array<BasePairsTypes.MappedChains>();
 
         const { _rowCount: annotation_row_count } = annotation;
         const { _rowCount: list_row_count } = list;
@@ -62,30 +62,9 @@ export namespace BasePairs {
         for (let i = 0; i < annotation_row_count; i++) {
             const bp = getBasePair(i, annotation, list);
             basePairs.push(bp);
-
-            const modelIdx = bp.PDB_model_number - 1;
-            if (mapByModel.length < modelIdx || !mapByModel[modelIdx]) {
-                mapByModel[modelIdx] = new Map<string, BasePairsTypes.MappedResidues>();
-            }
-
-            const mapByChains = mapByModel[modelIdx];
-
-            // We need to do this symmetrically for both residues
-            {
-                const residuesOnChain = mapByChains.get(bp.asym_id_1) ?? new Map<number, number>();
-                if (!!residuesOnChain.get(bp.seq_id_1)) throw new Error(`Multiple Base Pairs defined for model ${bp.PDB_model_number}, asym_id ${bp.asym_id_1}, seq_id ${bp.seq_id_1}`);
-
-                residuesOnChain.set(bp.seq_id_1, basePairs.length - 1);
-            }
-            {
-                const residuesOnChain = mapByChains.get(bp.asym_id_2) ?? new Map<number, number>();
-                if (!!residuesOnChain.get(bp.seq_id_2)) throw new Error(`Multiple Base Pairs defined for model ${bp.PDB_model_number}, asym_id ${bp.asym_id_2}, seq_id ${bp.seq_id_2}`);
-
-                residuesOnChain.set(bp.seq_id_2, basePairs.length - 1);
-            }
         }
 
-        return { basePairs, mapByModel };
+        return { basePairs };
     }
 
     export function getCifData(model: Model) {
@@ -129,7 +108,7 @@ function intoBaseEdge(edge: string) {
 function intoOrientation(os: string) {
     const o = os[0];
     if (o === 'c') return 'cis';
-    else if (o === 'w') return 'trans';
+    else if (o === 't') return 'trans';
 
     throw new Error(`Unknown orientation ${o}`);
 }
@@ -151,22 +130,26 @@ function getBasePair(
 
     return {
         PDB_model_number: list.PDB_model_number.value(listIndex),
-        asym_id_1: list.asym_id_1.value(listIndex),
-        entity_id_1: list.entity_id_1.value(listIndex),
-        seq_id_1: list.seq_id_1.value(listIndex),
-        comp_id_1: list.comp_id_1.value(listIndex),
-        PDB_ins_code_1: list.PDB_ins_code_1.value(listIndex),
-        alt_id_1: list.alt_id_1.value(listIndex),
-        struct_oper_id_1: list.struct_oper_id_1.value(listIndex),
-        asym_id_2: list.asym_id_2.value(listIndex),
-        entity_id_2: list.entity_id_2.value(listIndex),
-        seq_id_2: list.seq_id_2.value(listIndex),
-        comp_id_2: list.comp_id_2.value(listIndex),
-        PDB_ins_code_2: list.PDB_ins_code_2.value(listIndex),
-        alt_id_2: list.alt_id_2.value(listIndex),
-        struct_oper_id_2: list.struct_oper_id_2.value(listIndex),
         orientation: intoOrientation(annotation.orientation.value(index)),
-        base_edge_1: intoBaseEdge(annotation.base_1_edge.value(index)),
-        base_edge_2: intoBaseEdge(annotation.base_2_edge.value(index)),
+        a: {
+            asym_id: list.asym_id_1.value(listIndex),
+            entity_id: list.entity_id_1.value(listIndex),
+            seq_id: list.seq_id_1.value(listIndex),
+            comp_id: list.comp_id_1.value(listIndex),
+            PDB_ins_code: list.PDB_ins_code_1.value(listIndex),
+            alt_id: list.alt_id_1.value(listIndex),
+            struct_oper_id: list.struct_oper_id_1.value(listIndex),
+            base_edge: intoBaseEdge(annotation.base_1_edge.value(index)),
+        },
+        b: {
+            asym_id: list.asym_id_2.value(listIndex),
+            entity_id: list.entity_id_2.value(listIndex),
+            seq_id: list.seq_id_2.value(listIndex),
+            comp_id: list.comp_id_2.value(listIndex),
+            PDB_ins_code: list.PDB_ins_code_2.value(listIndex),
+            alt_id: list.alt_id_2.value(listIndex),
+            struct_oper_id: list.struct_oper_id_2.value(listIndex),
+            base_edge: intoBaseEdge(annotation.base_2_edge.value(index)),
+        }
     };
 }
