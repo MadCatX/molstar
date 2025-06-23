@@ -5,6 +5,7 @@ import { BasePairsLadderRepresentationProvider } from './representation';
 import { StructureRepresentationPresetProvider, PresetStructureRepresentations } from '../../../mol-plugin-state/builder/structure/representation-preset';
 import { StateObjectRef } from '../../../mol-state';
 import { Task } from '../../../mol-task';
+import { BasePairsTypes } from '../types';
 
 export const BasePairsLadderPreset = StructureRepresentationPresetProvider({
     id: 'preset-structure-representation-base-pairs-ladder',
@@ -39,3 +40,28 @@ export const BasePairsLadderPreset = StructureRepresentationPresetProvider({
         return { components: { ...components, ladder }, representations: { ...representations, ladderRepr } };
     }
 });
+
+const EdgeAbbrev = {
+    'hoogsteen': 'H',
+    'sugar': 'S',
+    'watson-crick': 'W',
+} as const;
+function westhofAbbrev(pair: BasePairsTypes.BasePair) {
+    const ct = pair.orientation === 'cis' ? 'c' : 't';
+    const edges = [EdgeAbbrev[pair.a.base_edge], EdgeAbbrev[pair.b.base_edge]];
+    if (edges[0].charCodeAt(0) > edges[1].charCodeAt(1)) edges.reverse();
+
+    return `${ct}${edges.join('')}`;
+}
+
+function formatBase(base: BasePairsTypes.BaseInPair) {
+    return `<b>${base.comp_id} ${base.seq_id}${base.PDB_ins_code}${base.alt_id.length > 0 ? ` (alt ${base.alt_id})` : ''}`
+}
+
+const RemoveNewline = /\r?\n/g;
+export function basePairLabel(pair: BasePairsTypes.BasePair) {
+    return `
+        <b>${westhofAbbrev(pair)}</b><br />
+        <b>${formatBase(pair.a)} ${formatBase(pair.b)}</b>
+    `.replace(RemoveNewline, '');
+}

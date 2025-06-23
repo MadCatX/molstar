@@ -207,7 +207,7 @@ function createBasePairsLadderMesh(ctx: VisualContext, unit: Unit, structure: St
 }
 
 function getBasePairsLadderLoci(pickingId: PickingId, structureGroup: StructureGroup, id: number) {
-    const { objectId, instanceId } = pickingId;
+    const { groupId, objectId, instanceId } = pickingId;
     if (objectId !== id) return EmptyLoci;
 
     const { structure } = structureGroup;
@@ -218,12 +218,22 @@ function getBasePairsLadderLoci(pickingId: PickingId, structureGroup: StructureG
     const data = BasePairsLadderProvider.get(structure.model)?.value?.data;
     if (!data) return EmptyLoci;
 
-    // To be implemented
-    return EmptyLoci;
+    // Each base pair is drawn with 3 mesh groups
+    const meshGroupsCount = data.basePairs.length * 3;
+
+    if (groupId > meshGroupsCount) return EmptyLoci;
+
+    const basePairIdx = Math.floor(groupId / 3);
+    const offsetGroupId = basePairIdx * 3 + (meshGroupsCount + 1) * instanceId;
+
+    return BasePairsLadderTypes.Loci(data.basePairs, [basePairIdx], [offsetGroupId], undefined);
 }
 
 function eachBasePairsLadderStep(loci: Loci, structureGroup: StructureGroup, apply: (interval: Interval) => boolean) {
-    // To be implemented
+    if (BasePairsLadderTypes.isLoci(loci)) {
+        const offsetGroupId = loci.elements[0];
+        return apply(Interval.ofBounds(offsetGroupId, offsetGroupId + 3));
+    }
     return false;
 }
 
