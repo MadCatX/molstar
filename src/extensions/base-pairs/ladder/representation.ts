@@ -4,7 +4,6 @@ import { BasePairsTypes } from '../types';
 import { Interval, Segmentation } from '../../../mol-data/int';
 import { Mesh } from '../../../mol-geo/geometry/mesh/mesh';
 import { PickingId } from '../../../mol-geo/geometry/picking';
-//import { Sphere3D } from '../../../mol-math/geometry/primitives/sphere3d';
 import { LocationIterator } from '../../../mol-geo/util/location-iterator';
 import { EmptyLoci, Loci } from '../../../mol-model/loci';
 import { NullLocation } from '../../../mol-model/location';
@@ -37,14 +36,15 @@ function calcMidpoint(mp: Vec3, v: Vec3, w: Vec3) {
     Vec3.add(mp, mp, w);
 }
 
-function findAtomInRange(name: string, start: number, end: number, structure: Structure, unit: Unit) {
+function findAtomInRange(name: string, altId: string, start: number, end: number, structure: Structure, unit: Unit) {
     const loc = StructureElement.Location.create(structure, unit, -1 as ElementIndex);
 
     for (let eI = start; eI < end; eI++) {
         loc.element = loc.unit.elements[eI];
         const elName = StructureProperties.atom.label_atom_id(loc);
+        const elAltId = StructureProperties.atom.label_alt_id(loc);
 
-        if (elName === name) return loc.element;
+        if (elName === name && elAltId === altId) return loc.element;
     }
 
     return -1 as ElementIndex;
@@ -119,9 +119,12 @@ function getAnchorAtoms(bp: BasePairsTypes.BasePair, structure: Structure, unit:
 
     const firstAnchorAtomName = firstBaseType.isPyrimidine ? 'N1' : 'N9';
     const secondAnchorAtomName = secondBaseType.isPyrimidine ? 'N1' : 'N9';
+    const [firstAltId, secondAltId] = renderedResidueInfo.isSecond
+        ? [bp.b.alt_id, bp.a.alt_id]
+        : [bp.a.alt_id, bp.b.alt_id];
 
-    const firstAtom = findAtomInRange(firstAnchorAtomName, renderedResidue.residue.start, renderedResidue.residue.end, structure, renderedResidue.unit);
-    const secondAtom = findAtomInRange(secondAnchorAtomName, opposingResidue.residue.start, opposingResidue.residue.end, structure, opposingResidue.unit);
+    const firstAtom = findAtomInRange(firstAnchorAtomName, firstAltId, renderedResidue.residue.start, renderedResidue.residue.end, structure, renderedResidue.unit);
+    const secondAtom = findAtomInRange(secondAnchorAtomName, secondAltId, opposingResidue.residue.start, opposingResidue.residue.end, structure, opposingResidue.unit);
 
     if (firstAtom === -1 || secondAtom === -1) return void 0;
 
