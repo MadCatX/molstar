@@ -51,11 +51,12 @@ function findAtomInRange(name: string, start: number, end: number, structure: St
 }
 
 function findResidue(asymId: string, seqId: number, insCode: string, structure: Structure) {
-    for (const unit of structure.units) {
-        if (!Unit.isAtomic(unit)) continue;
-
-        const r = findResidueInUnit(asymId, seqId, insCode, structure, unit);
-        if (r) return r;
+    for (const symGroup of structure.unitSymmetryGroups) {
+        for (const unit of symGroup.units) {
+            if (!Unit.isAtomic(unit)) continue;
+            const r = findResidueInUnit(asymId, seqId, insCode, structure, unit);
+            if (r) return r;
+        }
     }
 
     return void 0;
@@ -75,10 +76,10 @@ function findResidueInUnit(asymId: string, seqId: number, insCode: string, struc
             loc.element = loc.unit.elements[residue.start];
 
             const rAsymId = StructureProperties.chain.label_asym_id(loc);
+            if (rAsymId !== asymId) break;
+
             const rSeqId = StructureProperties.residue.label_seq_id(loc);
             const rInsCode = StructureProperties.residue.pdbx_PDB_ins_code(loc);
-
-            if (rAsymId !== asymId) break;
             if (rSeqId === seqId && rInsCode === insCode) return { residue, unit };
         }
     }
@@ -104,17 +105,11 @@ const midpoint = Vec3();
 
 function getAnchorAtoms(bp: BasePairsTypes.BasePair, structure: Structure, unit: Unit.Atomic) {
     const renderedResidueInfo = findResidueToRender(bp, structure, unit);
-    if (!renderedResidueInfo) {
-        console.log('no RR');
-        return void 0;
-    }
+    if (!renderedResidueInfo) return void 0;
     const opposingResidue = renderedResidueInfo.isSecond
         ? findResidue(bp.a.asym_id, bp.a.seq_id, bp.a.PDB_ins_code, structure)
         : findResidue(bp.b.asym_id, bp.b.seq_id, bp.b.PDB_ins_code, structure);
-    if (!opposingResidue) {
-        console.log('no OR');
-        return void 0;
-    }
+    if (!opposingResidue) return void 0;
 
     const { r: renderedResidue } = renderedResidueInfo;
 
@@ -183,10 +178,7 @@ function createBasePairsLadderMesh(ctx: VisualContext, unit: Unit, structure: St
         if (bp.PDB_model_number !== structure.model.modelNum) continue;
 
         const anchors = getAnchorAtoms(bp, structure, unit);
-        if (!anchors) {
-            console.log('no anchors');
-            continue;
-        }
+        if (!anchors) continue;
         const { firstAtom, secondAtom, renderOpposing, isSecond } = anchors;
 
         calcMidpoint(midpoint, firstAtom, secondAtom);

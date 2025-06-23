@@ -52,8 +52,6 @@ export namespace BasePairs {
         list: Table<typeof BasePairs.Schema.ndb_base_pair_list>
     ) {
         const basePairs = new Array<BasePairsTypes.BasePair>();
-        // const mapByModel = new Array<BasePairsTypes.MappedChains>();
-
         const { _rowCount: annotation_row_count } = annotation;
         const { _rowCount: list_row_count } = list;
 
