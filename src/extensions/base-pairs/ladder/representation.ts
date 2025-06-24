@@ -4,7 +4,7 @@ import { BasePairsTypes } from '../types';
 import { Interval, Segmentation } from '../../../mol-data/int';
 import { Mesh } from '../../../mol-geo/geometry/mesh/mesh';
 import { PickingId } from '../../../mol-geo/geometry/picking';
-import { LocationIterator } from '../../../mol-geo/util/location-iterator';
+import { EmptyLocationIterator, LocationIterator } from '../../../mol-geo/util/location-iterator';
 import { EmptyLoci, Loci } from '../../../mol-model/loci';
 import { NullLocation } from '../../../mol-model/location';
 import { ElementIndex, Structure, StructureElement, StructureProperties, Unit } from '../../../mol-model/structure';
@@ -50,10 +50,12 @@ function findAtomInRange(name: string, altId: string, start: number, end: number
     return -1 as ElementIndex;
 }
 
-function findResidue(asymId: string, seqId: number, insCode: string, structure: Structure) {
+function findResidue(operId: string, asymId: string, seqId: number, insCode: string, structure: Structure) {
     for (const symGroup of structure.unitSymmetryGroups) {
         for (const unit of symGroup.units) {
             if (!Unit.isAtomic(unit)) continue;
+            if (!unit.conformation.operator.assembly?.operList.includes(operId)) continue;
+
             const r = findResidueInUnit(asymId, seqId, insCode, structure, unit);
             if (r) return r;
         }
@@ -87,11 +89,11 @@ function findResidueInUnit(asymId: string, seqId: number, insCode: string, struc
     return void 0;
 }
 
-function findResidueToRender(bp: BasePairsTypes.BasePair, structure: Structure, unit: Unit.Atomic) {
-    let r = findResidueInUnit(bp.a.asym_id, bp.a.seq_id, bp.a.PDB_ins_code, structure, unit);
+function findResidueToRender(bp: BasePairsTypes.BasePair, structure: Structure) {
+    let r = findResidue(bp.a.struct_oper_id, bp.a.asym_id, bp.a.seq_id, bp.a.PDB_ins_code, structure);
     if (r) return { r, isSecond: false };
 
-    r = findResidueInUnit(bp.b.asym_id, bp.b.seq_id, bp.b.PDB_ins_code, structure, unit);
+    r = findResidue(bp.b.struct_oper_id, bp.b.asym_id, bp.b.seq_id, bp.b.PDB_ins_code, structure);
     if (r) return { r, isSecond: true };
 }
 
@@ -103,12 +105,12 @@ const firstAnchorPos = Vec3();
 const secondAnchorPos = Vec3();
 const midpoint = Vec3();
 
-function getAnchorAtoms(bp: BasePairsTypes.BasePair, structure: Structure, unit: Unit.Atomic) {
-    const renderedResidueInfo = findResidueToRender(bp, structure, unit);
+function getAnchorAtoms(bp: BasePairsTypes.BasePair, structure: Structure, _unit: Unit.Atomic) {
+    const renderedResidueInfo = findResidueToRender(bp, structure);
     if (!renderedResidueInfo) return void 0;
     const opposingResidue = renderedResidueInfo.isSecond
-        ? findResidue(bp.a.asym_id, bp.a.seq_id, bp.a.PDB_ins_code, structure)
-        : findResidue(bp.b.asym_id, bp.b.seq_id, bp.b.PDB_ins_code, structure);
+        ? findResidue(bp.a.struct_oper_id, bp.a.asym_id, bp.a.seq_id, bp.a.PDB_ins_code, structure)
+        : findResidue(bp.b.struct_oper_id, bp.b.asym_id, bp.b.seq_id, bp.b.PDB_ins_code, structure);
     if (!opposingResidue) return void 0;
 
     const { r: renderedResidue } = renderedResidueInfo;
@@ -128,8 +130,8 @@ function getAnchorAtoms(bp: BasePairsTypes.BasePair, structure: Structure, unit:
 
     if (firstAtom === -1 || secondAtom === -1) return void 0;
 
-    renderedResidue.unit.conformation.invariantPosition(firstAtom, firstAnchorPos);
-    opposingResidue.unit.conformation.invariantPosition(secondAtom, secondAnchorPos);
+    renderedResidue.unit.conformation.position(firstAtom, firstAnchorPos);
+    opposingResidue.unit.conformation.position(secondAtom, secondAnchorPos);
 
     return {
         firstAtom: firstAnchorPos,
@@ -144,11 +146,11 @@ function createBasePairsLadderIterator(structureGroup: StructureGroup): Location
     const instanceCount = group.units.length;
 
     const data = BasePairsLadderProvider.get(structure.model)?.value?.data;
-    if (!data) return LocationIterator(0, 1, 1, () => NullLocation);
+    if (!data) return EmptyLocationIterator;
 
     const no = 3 * data.basePairs.length;
 
-    const getLocation = (groupIndex: number, instanceIndex: number) => {
+    const getLocation = (groupIndex: number) => {
         const pair = data.basePairs[Math.floor(groupIndex / 3)];
         if (!pair) return NullLocation;
 
@@ -167,6 +169,7 @@ function createBasePairsLadderIterator(structureGroup: StructureGroup): Location
 
 function createBasePairsLadderMesh(ctx: VisualContext, unit: Unit, structure: Structure, theme: Theme, props: PD.Values<BasePairsLadderMeshParams>, mesh?: Mesh) {
     if (!Unit.isAtomic(unit)) return Mesh.createEmpty(mesh);
+    if (!unit.conformation.operator.isIdentity) return Mesh.createEmpty();
 
     const data = BasePairsLadderProvider.get(structure.model)?.value?.data;
     if (!data) return Mesh.createEmpty(mesh);

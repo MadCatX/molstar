@@ -20,7 +20,7 @@ export namespace BasePairsTypes {
         comp_id: string,
         PDB_ins_code: string,
         alt_id: string,
-        struct_oper_id: string
+        struct_oper_id: string,
         base_edge: BaseEdge,
     }
 }
