@@ -54,7 +54,9 @@ function findResidue(operId: string, asymId: string, seqId: number, insCode: str
     for (const symGroup of structure.unitSymmetryGroups) {
         for (const unit of symGroup.units) {
             if (!Unit.isAtomic(unit)) continue;
-            if (!unit.conformation.operator.assembly?.operList.includes(operId)) continue;
+            if (!unit.conformation.operator.assembly?.operList.includes(operId)) {
+                continue;
+            }
 
             const r = findResidueInUnit(asymId, seqId, insCode, structure, unit);
             if (r) return r;
@@ -89,14 +91,6 @@ function findResidueInUnit(asymId: string, seqId: number, insCode: string, struc
     return void 0;
 }
 
-function findResidueToRender(bp: BasePairsTypes.BasePair, structure: Structure) {
-    let r = findResidue(bp.a.struct_oper_id, bp.a.asym_id, bp.a.seq_id, bp.a.PDB_ins_code, structure);
-    if (r) return { r, isSecond: false };
-
-    r = findResidue(bp.b.struct_oper_id, bp.b.asym_id, bp.b.seq_id, bp.b.PDB_ins_code, structure);
-    if (r) return { r, isSecond: true };
-}
-
 function isUsableBaseType(bt: { isPurine: boolean, isPyrimidine: boolean }) {
     return bt.isPurine !== bt.isPyrimidine;
 }
@@ -105,39 +99,34 @@ const firstAnchorPos = Vec3();
 const secondAnchorPos = Vec3();
 const midpoint = Vec3();
 
-function getAnchorAtoms(bp: BasePairsTypes.BasePair, structure: Structure, _unit: Unit.Atomic) {
-    const renderedResidueInfo = findResidueToRender(bp, structure);
-    if (!renderedResidueInfo) return void 0;
-    const opposingResidue = renderedResidueInfo.isSecond
-        ? findResidue(bp.a.struct_oper_id, bp.a.asym_id, bp.a.seq_id, bp.a.PDB_ins_code, structure)
-        : findResidue(bp.b.struct_oper_id, bp.b.asym_id, bp.b.seq_id, bp.b.PDB_ins_code, structure);
-    if (!opposingResidue) return void 0;
+function getAnchorAtoms(bp: BasePairsTypes.BasePair, structure: Structure) {
+    const firstResidue = findResidue(bp.a.struct_oper_id, bp.a.asym_id, bp.a.seq_id, bp.a.PDB_ins_code, structure);
+    if (!firstResidue) {
+        return void 0;
+    }
+    const secondResidue = findResidue(bp.b.struct_oper_id, bp.b.asym_id, bp.b.seq_id, bp.b.PDB_ins_code, structure);
+    if (!secondResidue) {
+        return void 0;
+    }
 
-    const { r: renderedResidue } = renderedResidueInfo;
-
-    const firstBaseType = getNucleotideBaseType(renderedResidue.unit, renderedResidue.residue.index);
-    const secondBaseType = getNucleotideBaseType(opposingResidue.unit, opposingResidue.residue.index);
+    const firstBaseType = getNucleotideBaseType(firstResidue.unit, firstResidue.residue.index);
+    const secondBaseType = getNucleotideBaseType(secondResidue.unit, secondResidue.residue.index);
     if (!isUsableBaseType(firstBaseType) || !isUsableBaseType(secondBaseType)) return void 0;
 
     const firstAnchorAtomName = firstBaseType.isPyrimidine ? 'N1' : 'N9';
     const secondAnchorAtomName = secondBaseType.isPyrimidine ? 'N1' : 'N9';
-    const [firstAltId, secondAltId] = renderedResidueInfo.isSecond
-        ? [bp.b.alt_id, bp.a.alt_id]
-        : [bp.a.alt_id, bp.b.alt_id];
 
-    const firstAtom = findAtomInRange(firstAnchorAtomName, firstAltId, renderedResidue.residue.start, renderedResidue.residue.end, structure, renderedResidue.unit);
-    const secondAtom = findAtomInRange(secondAnchorAtomName, secondAltId, opposingResidue.residue.start, opposingResidue.residue.end, structure, opposingResidue.unit);
+    const firstAtom = findAtomInRange(firstAnchorAtomName, bp.a.alt_id, firstResidue.residue.start, firstResidue.residue.end, structure, firstResidue.unit);
+    const secondAtom = findAtomInRange(secondAnchorAtomName, bp.b.alt_id, secondResidue.residue.start, secondResidue.residue.end, structure, secondResidue.unit);
 
     if (firstAtom === -1 || secondAtom === -1) return void 0;
 
-    renderedResidue.unit.conformation.position(firstAtom, firstAnchorPos);
-    opposingResidue.unit.conformation.position(secondAtom, secondAnchorPos);
+    firstResidue.unit.conformation.position(firstAtom, firstAnchorPos);
+    secondResidue.unit.conformation.position(secondAtom, secondAnchorPos);
 
     return {
         firstAtom: firstAnchorPos,
         secondAtom: secondAnchorPos,
-        renderOpposing: bp.a.asym_id === bp.b.asym_id,
-        isSecond: renderedResidueInfo.isSecond,
     };
 }
 
@@ -183,22 +172,20 @@ function createBasePairsLadderMesh(ctx: VisualContext, unit: Unit, structure: St
         const bp = basePairs[idx];
         if (bp.PDB_model_number !== structure.model.modelNum) continue;
 
-        const anchors = getAnchorAtoms(bp, structure, unit);
-        if (!anchors) continue;
-        const { firstAtom, secondAtom, renderOpposing, isSecond } = anchors;
+        const anchors = getAnchorAtoms(bp, structure);
+        if (!anchors) {
+            continue;
+        }
+        const { firstAtom, secondAtom } = anchors;
 
         calcMidpoint(midpoint, firstAtom, secondAtom);
 
-        mb.currentGroup = 3 * idx + (isSecond ? 1 : 0);
+        mb.currentGroup = 3 * idx;
         addCylinder(mb, firstAtom, midpoint, 1.0, cylinderProps);
-        if (renderOpposing) {
-            mb.currentGroup = 3 * idx + (isSecond ? 0 : 1);
-            addCylinder(mb, midpoint, anchors.secondAtom, 1.0, cylinderProps);
-        }
-        if (!isSecond) {
-            mb.currentGroup = 3 * idx + 2;
-            addSphere(mb, midpoint, 1.3, 4);
-        }
+        mb.currentGroup = 3 * idx + 1;
+        addCylinder(mb, midpoint, anchors.secondAtom, 1.0, cylinderProps);
+        mb.currentGroup = 3 * idx + 2;
+        addSphere(mb, midpoint, 1.3, 4);
     }
 
     return MeshBuilder.getMesh(mb);
