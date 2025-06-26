@@ -25,7 +25,10 @@ import { BasePairsLadderTypes } from './types';
 import { addSphere } from '../../../mol-geo/geometry/mesh/builder/sphere';
 
 const BasePairsLadderMeshParams = {
-    ...UnitsMeshParams
+    ...UnitsMeshParams,
+    barRadius: PD.Numeric(0.5, { min: 0.1, max: 5.0, step: 0.1 }),
+    barScale: PD.Numeric(1.0, { min: 0.1, max: 2.0, step: 0.1 }),
+    ballRadius: PD.Numeric(1.3, { min: 0.1, max: 5.0, step: 0.1 }),
 };
 type BasePairsLadderMeshParams = typeof BasePairsLadderMeshParams;
 
@@ -166,7 +169,7 @@ function createBasePairsLadderMesh(ctx: VisualContext, unit: Unit, structure: St
 
     const { basePairs } = data;
 
-    const cylinderProps = { topCap: true, bottomCap: true, radiusTop: 0.5, radiusBottom: 0.5, radialSegments: 8 };
+    const cylinderProps = { topCap: true, bottomCap: true, radiusTop: props.barRadius, radiusBottom: props.barRadius, radialSegments: 8 };
     const mb = MeshBuilder.createState(basePairs.length * 8, basePairs.length * 8 / structure.models.length, mesh);
 
     for (let idx = 0; idx < basePairs.length; idx++) {
@@ -182,11 +185,11 @@ function createBasePairsLadderMesh(ctx: VisualContext, unit: Unit, structure: St
         calcMidpoint(midpoint, firstAtom, secondAtom);
 
         mb.currentGroup = 3 * idx;
-        addCylinder(mb, firstAtom, midpoint, 1.0, cylinderProps);
+        addCylinder(mb, midpoint, firstAtom, props.barScale, cylinderProps);
         mb.currentGroup = 3 * idx + 1;
-        addCylinder(mb, midpoint, anchors.secondAtom, 1.0, cylinderProps);
+        addCylinder(mb, midpoint, secondAtom, props.barScale, cylinderProps);
         mb.currentGroup = 3 * idx + 2;
-        addSphere(mb, midpoint, 1.3, 4);
+        addSphere(mb, midpoint, props.ballRadius, 4);
     }
 
     return MeshBuilder.getMesh(mb);
@@ -230,17 +233,26 @@ function BasePairsLadderVisual(materialId: number): UnitsVisual<BasePairsLadderM
         createLocationIterator: createBasePairsLadderIterator,
         getLoci: getBasePairsLadderLoci,
         eachLocation: eachBasePairsLadderStep,
-        setUpdateState: (state: VisualUpdateState, newProps: PD.Values<BasePairsLadderMeshParams>, currentProps: PD.Values<BasePairsLadderMeshParams>) => {},
+        setUpdateState: (state: VisualUpdateState, newProps: PD.Values<BasePairsLadderMeshParams>, currentProps: PD.Values<BasePairsLadderMeshParams>) => {
+            state.createGeometry = (
+                newProps.quality !== currentProps.quality ||
+                newProps.doubleSided !== currentProps.doubleSided ||
+                newProps.alpha !== currentProps.alpha ||
+                newProps.barRadius !== currentProps.barRadius ||
+                newProps.barScale !== currentProps.barScale ||
+                newProps.ballRadius !== currentProps.ballRadius
+            );
+        },
     }, materialId);
 }
 const BasePairsLadderVisuals = {
-    'base-pairs-ladder-symbol': (ctx: RepresentationContext, getParams: RepresentationParamsGetter<Structure, UnitsMeshParams>) => UnitsRepresentation('Base Pairs Ladder Symbol Mesh', ctx, getParams, BasePairsLadderVisual),
+    'base-pairs-ladder-symbol': (ctx: RepresentationContext, getParams: RepresentationParamsGetter<Structure, BasePairsLadderParams>) => UnitsRepresentation('Base Pairs Ladder Symbol Mesh', ctx, getParams, BasePairsLadderVisual),
 } as const;
 
 const BasePairsLadderParams = {
-    ...UnitsMeshParams
+    ...BasePairsLadderMeshParams,
 };
-type BasePairsLadderParams = typeof BasePairsLadderMeshParams;
+type BasePairsLadderParams = typeof BasePairsLadderParams;
 
 export type BasePairsLadderRepresentation = StructureRepresentation<BasePairsLadderParams>;
 export function BasePairsLadderRepresentation(ctx: RepresentationContext, getParams: RepresentationParamsGetter<Structure, BasePairsLadderParams>): BasePairsLadderRepresentation {
