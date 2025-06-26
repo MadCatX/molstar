@@ -210,7 +210,7 @@ function getBasePairsLadderLoci(pickingId: PickingId, structureGroup: StructureG
     if (groupId > meshGroupsCount) return EmptyLoci;
 
     const basePairIdx = Math.floor(groupId / 3);
-    const offsetGroupId = basePairIdx * 3 + (meshGroupsCount + 1) * instanceId;
+    const offsetGroupId = basePairIdx * 3 + meshGroupsCount * instanceId;
 
     return BasePairsLadderTypes.Loci(data.basePairs, [basePairIdx], [offsetGroupId], undefined);
 }
