@@ -162,7 +162,6 @@ function createBasePairsLadderIterator(structureGroup: StructureGroup): Location
 
 function createBasePairsLadderMesh(ctx: VisualContext, unit: Unit, structure: Structure, theme: Theme, props: PD.Values<BasePairsLadderMeshParams>, mesh?: Mesh) {
     if (!Unit.isAtomic(unit)) return Mesh.createEmpty(mesh);
-    if (!unit.conformation.operator.isIdentity) return Mesh.createEmpty();
 
     const data = BasePairsLadderProvider.get(structure.model)?.value?.data;
     if (!data) return Mesh.createEmpty(mesh);
