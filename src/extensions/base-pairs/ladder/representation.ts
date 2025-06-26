@@ -99,8 +99,9 @@ const firstAnchorPos = Vec3();
 const secondAnchorPos = Vec3();
 const midpoint = Vec3();
 
-function getAnchorAtoms(bp: BasePairsTypes.BasePair, structure: Structure) {
-    const firstResidue = findResidue(bp.a.struct_oper_id, bp.a.asym_id, bp.a.seq_id, bp.a.PDB_ins_code, structure);
+function getAnchorAtoms(bp: BasePairsTypes.BasePair, structure: Structure, unit: Unit.Atomic) {
+    if (!unit.conformation.operator.assembly?.operList.includes(bp.a.struct_oper_id)) return void 0;
+    const firstResidue = findResidueInUnit(bp.a.asym_id, bp.a.seq_id, bp.a.PDB_ins_code, structure, unit);
     if (!firstResidue) {
         return void 0;
     }
@@ -172,7 +173,7 @@ function createBasePairsLadderMesh(ctx: VisualContext, unit: Unit, structure: St
         const bp = basePairs[idx];
         if (bp.PDB_model_number !== structure.model.modelNum) continue;
 
-        const anchors = getAnchorAtoms(bp, structure);
+        const anchors = getAnchorAtoms(bp, structure, unit);
         if (!anchors) {
             continue;
         }
