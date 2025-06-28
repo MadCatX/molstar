@@ -7,6 +7,7 @@ export namespace BasePairsTypes {
         orientation: 'cis' | 'trans',
         a: BaseInPair,
         b: BaseInPair,
+        is_complementary: boolean,
     };
 
     export interface BasePairs {

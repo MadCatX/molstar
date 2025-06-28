@@ -111,6 +111,20 @@ function intoOrientation(os: string) {
     throw new Error(`Unknown orientation ${o}`);
 }
 
+const ComplementaryBases = [
+    ['A', 'U'],
+    ['C', 'G'],
+    ['DA', 'DT'],
+    ['DC', 'DG']
+];
+function isBpComplementary(a: string, b: string) {
+    for (const [pa, pb] of ComplementaryBases) {
+        if ((pa === a && pb === b) || (pa === b && pb === a)) return true;
+    }
+
+    return false;
+}
+
 function getBasePair(
     index: number,
     annotation: Table<typeof BasePairs.Schema.ndb_base_pair_annotation>,
@@ -126,14 +140,18 @@ function getBasePair(
     }
     if (listIndex === -1) throw new Error(`base_pair_id ${base_pair_id} not present in ndb_base_pair_list table`);
 
+    const comp_id_a = list.comp_id_1.value(listIndex);
+    const comp_id_b = list.comp_id_2.value(listIndex);
+
     return {
         PDB_model_number: list.PDB_model_number.value(listIndex),
         orientation: intoOrientation(annotation.orientation.value(index)),
+        is_complementary: isBpComplementary(comp_id_a, comp_id_b),
         a: {
             asym_id: list.asym_id_1.value(listIndex),
             entity_id: list.entity_id_1.value(listIndex),
             seq_id: list.seq_id_1.value(listIndex),
-            comp_id: list.comp_id_1.value(listIndex),
+            comp_id: comp_id_a,
             PDB_ins_code: list.PDB_ins_code_1.value(listIndex),
             alt_id: list.alt_id_1.value(listIndex),
             struct_oper_id: list.struct_oper_id_1.value(listIndex),
@@ -143,7 +161,7 @@ function getBasePair(
             asym_id: list.asym_id_2.value(listIndex),
             entity_id: list.entity_id_2.value(listIndex),
             seq_id: list.seq_id_2.value(listIndex),
-            comp_id: list.comp_id_2.value(listIndex),
+            comp_id: comp_id_b,
             PDB_ins_code: list.PDB_ins_code_2.value(listIndex),
             alt_id: list.alt_id_2.value(listIndex),
             struct_oper_id: list.struct_oper_id_2.value(listIndex),
