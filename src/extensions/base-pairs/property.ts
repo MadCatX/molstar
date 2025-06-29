@@ -6,8 +6,9 @@ import { PropertyWrapper } from '../../mol-model-props/common/wrapper';
 import { Model } from '../../mol-model/structure';
 import { MmcifFormat } from '../../mol-model-formats/structure/mmcif';
 import { ParamDefinition as PD } from '../../mol-util/param-definition';
+import { mmCIF_Schema } from '../../mol-io/reader/cif/schema/mmcif';
 
-export type Pairings = PropertyWrapper<BasePairsTypes.BasePairs | undefined>;
+export type Pairings = PropertyWrapper<BasePairsTypes.Items | undefined>;
 
 export const BasePairsParams = {};
 export type BasePairsParams = typeof BasePairsParams;
@@ -19,14 +20,14 @@ export namespace BasePairs {
             base_pair_id: Column.Schema.int,
             PDB_model_number: Column.Schema.int,
             asym_id_1: Column.Schema.str,
-            entity_id_1: Column.Schema.int,
+            entity_id_1: Column.Schema.str,
             seq_id_1: Column.Schema.int,
             comp_id_1: Column.Schema.str,
             PDB_ins_code_1: Column.Schema.str,
             alt_id_1: Column.Schema.str,
             struct_oper_id_1: Column.Schema.str,
             asym_id_2: Column.Schema.str,
-            entity_id_2: Column.Schema.int,
+            entity_id_2: Column.Schema.str,
             seq_id_2: Column.Schema.int,
             comp_id_2: Column.Schema.str,
             PDB_ins_code_2: Column.Schema.str,
@@ -44,33 +45,92 @@ export namespace BasePairs {
             class: Column.Schema.str,
             subclass: Column.Schema.str,
         },
+        atom_site: mmCIF_Schema.atom_site,
     };
     export type Schema = typeof Schema;
 
     export function getBasePairsFromCif(
         annotation: Table<typeof BasePairs.Schema.ndb_base_pair_annotation>,
-        list: Table<typeof BasePairs.Schema.ndb_base_pair_list>
+        list: Table<typeof BasePairs.Schema.ndb_base_pair_list>,
+        atom_site: Table<typeof BasePairs.Schema.atom_site>
     ) {
-        const basePairs = new Array<BasePairsTypes.BasePair>();
-        const { _rowCount: annotation_row_count } = annotation;
-        const { _rowCount: list_row_count } = list;
+        const basePairs = makeBasePairs(annotation, list);
+        const { _rowCount: atom_site_row_count } = atom_site;
 
-        if (annotation_row_count !== list_row_count) throw new Error('Inconsistent mmCIF data');
+        // We need to walk the entire structure to figure out what bases ar *not*
+        // paired because the base_pair list contains only the paired residues.
 
-        for (let i = 0; i < annotation_row_count; i++) {
-            const bp = getBasePair(i, annotation, list);
-            basePairs.push(bp);
+        const items = new Array<BasePairsTypes.Item>();
+
+        let last_PDB_model_number = -1;
+        let last_seq_id = -1;
+        for (let idx = 0; idx < atom_site_row_count; idx++) {
+            const PDB_model_number = atom_site.pdbx_PDB_model_num.value(idx);
+            if (last_PDB_model_number !== PDB_model_number) {
+                last_PDB_model_number = PDB_model_number;
+                last_seq_id = -1;
+            }
+
+            const seq_id = atom_site.label_seq_id.value(idx);
+            if (seq_id === last_seq_id) continue;
+
+            last_seq_id = seq_id;
+
+            const asym_id = atom_site.label_asym_id.value(idx);
+            const entity_id = atom_site.label_entity_id.value(idx);
+            const comp_id = atom_site.label_comp_id.value(idx);
+            const PDB_ins_code = atom_site.pdbx_PDB_ins_code.value(idx);
+            // We do not have to apply the "expand alt_id to residue" trick here
+            // because will eventually pick out individual atoms from the base
+            const alt_id = atom_site.label_alt_id.value(idx);
+
+            const pairIdx = basePairs.findIndex(bp => (
+                bp.PDB_model_number === PDB_model_number &&
+                (
+                    isBaseMatching(
+                        bp.a,
+                        asym_id, entity_id, seq_id, comp_id, PDB_ins_code
+                    ) ||
+                    isBaseMatching(
+                        bp.b,
+                        asym_id, entity_id, seq_id, comp_id, PDB_ins_code
+                    )
+                )
+            ));
+
+            if (pairIdx >= 0) {
+                items.push(basePairs[pairIdx]);
+            } else {
+                // We are not checking if the unpaired residue is a NA base
+                // This is intentional because there is no easy way to detect if the residue
+                // is a NA base that we could use here.
+                // We will skip any non-NA residues during rendering
+                items.push({
+                    kind: 'unpaired',
+                    PDB_model_number,
+                    residue: {
+                        asym_id,
+                        entity_id,
+                        seq_id,
+                        comp_id,
+                        PDB_ins_code,
+                        alt_id,
+                    }
+                });
+            }
+
         }
 
-        return { basePairs };
+        return { items };
     }
 
     export function getCifData(model: Model) {
         if (!MmcifFormat.is(model.sourceData)) throw new Error('Data format must be mmCIF');
-        if (!hasNdbBasePairsNtcCategories(model)) return undefined;
+        if (!hasRequiredCategories(model)) return undefined;
         return {
             annotations: toTable(Schema.ndb_base_pair_annotation, model.sourceData.data.frame.categories.ndb_base_pair_annotation),
             list: toTable(Schema.ndb_base_pair_list, model.sourceData.data.frame.categories.ndb_base_pair_list),
+            atom_site: toTable(Schema.atom_site, model.sourceData.data.frame.categories.atom_site),
         };
     }
 
@@ -79,18 +139,54 @@ export namespace BasePairs {
         const data = getCifData(model);
         if (!data) return { value: { info, data: void 0 } };
 
-        const fromCif = getBasePairsFromCif(data.annotations, data.list);
+        const fromCif = getBasePairsFromCif(data.annotations, data.list, data.atom_site);
         return { value: { info, data: fromCif } };
     }
 
     export function isApplicable(model?: Model) {
-        return !!model && hasNdbBasePairsNtcCategories(model);
+        return !!model && hasRequiredCategories(model);
     }
 
-    function hasNdbBasePairsNtcCategories(model: Model) {
+    const RequiredCategories = [
+        'ndb_base_pair_list',
+        'ndb_base_pair_annotation',
+        'atom_site',
+    ];
+    function hasRequiredCategories(model: Model) {
         if (!MmcifFormat.is(model.sourceData)) return false;
         const names = (model.sourceData).data.frame.categoryNames;
-        return names.includes('ndb_base_pair_list') && names.includes('ndb_base_pair_annotation');
+        return RequiredCategories.every(name => names.includes(name));
+    }
+
+    function isBaseMatching(
+        base: BasePairsTypes.Base,
+        asym_id: string, entity_id: string, seq_id: number, comp_id: string, ins_code: string,
+    ) {
+        return (
+            base.asym_id === asym_id &&
+            base.entity_id === entity_id &&
+            base.seq_id === seq_id &&
+            base.comp_id === comp_id &&
+            base.PDB_ins_code === ins_code
+        );
+    }
+
+    function makeBasePairs(
+        annotation: Table<typeof BasePairs.Schema.ndb_base_pair_annotation>,
+        list: Table<typeof BasePairs.Schema.ndb_base_pair_list>,
+    ) {
+        const { _rowCount: annotation_row_count } = annotation;
+        const { _rowCount: list_row_count } = list;
+
+        if (annotation_row_count !== list_row_count) throw new Error('Inconsistent mmCIF data');
+
+        const pairs = [];
+        for (let idx = 0; idx < annotation_row_count; idx++) {
+            const bp = getBasePair(idx, annotation, list)
+            pairs.push(bp);
+        }
+
+        return pairs;
     }
 }
 
@@ -144,6 +240,7 @@ function getBasePair(
     const comp_id_b = list.comp_id_2.value(listIndex);
 
     return {
+        kind: 'pair',
         PDB_model_number: list.PDB_model_number.value(listIndex),
         orientation: intoOrientation(annotation.orientation.value(index)),
         is_complementary: isBpComplementary(comp_id_a, comp_id_b),

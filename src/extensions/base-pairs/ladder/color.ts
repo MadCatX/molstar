@@ -41,26 +41,28 @@ export function BasePairsLadderColorTheme(ctx: ThemeDataContext, props: PD.Value
 
     function color(location: Location, isSecondary: boolean): Color {
         if (BasePairsLadderTypes.isLocation(location)) {
-            const { object, pair } = location.data;
+            const { object } = location.data;
 
             if (object.kind === 'base') {
                 const { base } = object;
                 if (base.base_edge === 'watson-crick') {
-                    if (pair.is_complementary && pair.orientation === 'cis') {
+                    if (object.pair.is_complementary && object.pair.orientation === 'cis') {
                         return colorMap.cWW_Complementary;
                     } else {
                         return colorMap.WW_Other;
                     }
                 } else if (base.base_edge === 'hoogsteen') return colorMap.Hoogsteen;
                 else if (base.base_edge === 'sugar') return colorMap.Sugar;
-            } else {
-                if (pair.orientation === 'cis') return colorMap.Cis_Ball;
+            } else if (object.kind === 'ball') {
+                if (object.pair.orientation === 'cis') return colorMap.Cis_Ball;
                 else return colorMap.Trans_Ball;
+            } else if (object.kind === 'unpaired') {
+                return colorMap.Default;
             }
 
             return colorMap.Default;
         } else {
-            return DefaultColor;
+            return colorMap.Default;
         }
     }
 

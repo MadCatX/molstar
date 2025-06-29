@@ -54,14 +54,19 @@ function westhofAbbrev(pair: BasePairsTypes.BasePair) {
     return `${ct}${edges.join('')}`;
 }
 
-function formatBase(base: BasePairsTypes.BaseInPair) {
-    return `<b>${base.comp_id} ${base.seq_id}${base.PDB_ins_code}${base.alt_id.length > 0 ? ` (alt ${base.alt_id})` : ''}`
+function formatBase(base: BasePairsTypes.Base) {
+    return `<b>${base.comp_id} ${base.seq_id}${base.PDB_ins_code}${base.alt_id.length > 0 ? ` (alt ${base.alt_id})` : ''}`;
 }
 
 const RemoveNewline = /\r?\n/g;
-export function basePairLabel(pair: BasePairsTypes.BasePair) {
-    return `
-        <b>${westhofAbbrev(pair)}</b><br />
-        <b>${formatBase(pair.a)} ${formatBase(pair.b)}</b>
-    `.replace(RemoveNewline, '');
+export function itemLabel(item: BasePairsTypes.Item) {
+    if (item.kind === 'unpaired') {
+        // FIXME
+        return 'Unpaired base';
+    } else {
+        return `
+            <b>${westhofAbbrev(item)}</b><br />
+            <b>${formatBase(item.a)} ${formatBase(item.b)}</b>
+        `.replace(RemoveNewline, '');
+    }
 }
