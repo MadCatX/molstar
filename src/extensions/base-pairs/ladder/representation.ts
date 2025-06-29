@@ -16,7 +16,7 @@ import { StructureGroup } from '../../../mol-repr/structure/visual/util/common';
 import { VisualUpdateState } from '../../../mol-repr/util';
 import { VisualContext } from '../../../mol-repr/visual';
 import { UnitsMeshParams, UnitsMeshVisual, UnitsVisual } from '../../../mol-repr/structure/units-visual';
-import { Theme, ThemeRegistryContext } from '../../../mol-theme/theme';
+import { Theme } from '../../../mol-theme/theme';
 import { ParamDefinition as PD } from '../../../mol-util/param-definition';
 import { MeshBuilder } from '../../../mol-geo/geometry/mesh/mesh-builder';
 import { getNucleotideBaseType } from '../../../mol-repr/structure/visual/util/nucleotide';
@@ -310,6 +310,10 @@ function BasePairsLadderVisual(materialId: number): UnitsVisual<BasePairsLadderM
                 newProps.ballRadius !== currentProps.ballRadius
             );
         },
+        mustRecreate() {
+            // Is this too heavy-handed?
+            return true;
+        },
     }, materialId);
 }
 const BasePairsLadderVisuals = {
@@ -325,7 +329,7 @@ export type BasePairsLadderRepresentation = StructureRepresentation<BasePairsLad
 export function BasePairsLadderRepresentation(ctx: RepresentationContext, getParams: RepresentationParamsGetter<Structure, BasePairsLadderParams>): BasePairsLadderRepresentation {
     return Representation.createMulti('Base Pairs Ladder', ctx, getParams, StructureRepresentationStateBuilder, BasePairsLadderVisuals);
 }
-function getBasePairsLadderParams(ctx: ThemeRegistryContext, structure: Structure) {
+function getBasePairsLadderParams() {
     return PD.clone(BasePairsLadderParams);
 }
 

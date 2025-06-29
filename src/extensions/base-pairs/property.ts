@@ -114,7 +114,6 @@ export namespace BasePairs {
                     }
                 });
             }
-
         }
 
         return { items };
