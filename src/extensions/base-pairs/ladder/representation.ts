@@ -1,4 +1,5 @@
 import { BasePairsLadderProvider } from './property';
+import { BasePairsUtil } from '../util';
 import { BasePairs } from '../property';
 import { BasePairsTypes } from '../types';
 import { Interval, Segmentation } from '../../../mol-data/int';
@@ -31,25 +32,6 @@ const BasePairsLadderMeshParams = {
     ballRadius: PD.Numeric(1.3, { min: 0.1, max: 5.0, step: 0.1 }),
 };
 type BasePairsLadderMeshParams = typeof BasePairsLadderMeshParams;
-
-type ResidueDescription = {
-    asym_id: string,
-    entity_id: string,
-    seq_id: number,
-    PDB_ins_code: string,
-};
-
-function areResiduesMatching(
-    expected: { asym_id: string, entity_id: string, seq_id: number, PDB_ins_code: string },
-    actual: { asym_id: string, entity_id: string, seq_id: number, PDB_ins_code: string }) {
-
-    return (
-        expected.asym_id === actual.asym_id &&
-        expected.entity_id === actual.entity_id &&
-        expected.seq_id === actual.seq_id &&
-        expected.PDB_ins_code === actual.PDB_ins_code
-    );
-}
 
 function calcMidpoint(mp: Vec3, v: Vec3, w: Vec3) {
     Vec3.sub(mp, v, w);
@@ -115,16 +97,16 @@ function findResidueInUnit(asymId: string, seqId: number, insCode: string, struc
 function findMatchingBasePair(
     item: BasePairsTypes.BasePair,
     unit: Unit.Atomic,
-    currentResidue: ResidueDescription
+    currentResidue: BasePairsTypes.Residue
 ) {
     if (
         unit.conformation.operator.assembly?.operList.includes(item.a.struct_oper_id) &&
-        areResiduesMatching(item.a, currentResidue)
+        BasePairsUtil.areResiduesMatching(item.a, currentResidue)
     ) {
         return { first: item.a, second: item.b };
     } else if (
         unit.conformation.operator.assembly?.operList.includes(item.b.struct_oper_id) &&
-        areResiduesMatching(item.a, currentResidue)
+        BasePairsUtil.areResiduesMatching(item.a, currentResidue)
     ) {
         return { first: item.b, second: item.a };
     } else return void 0;
@@ -138,7 +120,7 @@ const firstAnchorPos = Vec3();
 const secondAnchorPos = Vec3();
 const midpoint = Vec3();
 
-function getAnchorAtoms(pair: { first: BasePairsTypes.Base, second: BasePairsTypes.Base}, structure: Structure, unit: Unit.Atomic) {
+function getAnchorAtoms(pair: { first: BasePairsTypes.PairedBase, second: BasePairsTypes.PairedBase}, structure: Structure, unit: Unit.Atomic) {
     const { first, second } = pair;
     const firstResidue = findResidueInUnit(first.asym_id, first.seq_id, first.PDB_ins_code, structure, unit);
     if (!firstResidue) {
@@ -226,10 +208,11 @@ function createBasePairsLadderMesh(ctx: VisualContext, unit: Unit, structure: St
             const entity_id = StructureProperties.entity.id(loc);
             const seq_id = StructureProperties.residue.label_seq_id(loc);
             const PDB_ins_code = StructureProperties.residue.pdbx_PDB_ins_code(loc);
+            const comp_id = StructureProperties.atom.label_comp_id(loc);
             const rAltId = StructureProperties.atom.label_alt_id(loc);
 
             const current = {
-                asym_id, entity_id, seq_id, PDB_ins_code
+                asym_id, entity_id, seq_id, comp_id, PDB_ins_code
             };
 
             for (let idx = 0; idx < items.length; idx++) {
@@ -237,7 +220,7 @@ function createBasePairsLadderMesh(ctx: VisualContext, unit: Unit, structure: St
                 if (item.PDB_model_number !== structure.model.modelNum) continue;
 
                 if (item.kind === 'unpaired') {
-                    if (!areResiduesMatching(item.residue, current)) continue;
+                    if (!BasePairsUtil.areResiduesMatching(item.residue, current)) continue;
 
                     const baseType = getNucleotideBaseType(unit, residue.index);
                     if (isUsableBaseType(baseType)) {

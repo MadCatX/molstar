@@ -8,7 +8,7 @@ export namespace BasePairsLadderTypes {
     export interface Location extends DataLocation<{
         object: {
             kind: 'base',
-            base: BasePairsTypes.Base,
+            base: BasePairsTypes.PairedBase,
             pair: BasePairsTypes.BasePair,
         } | {
             kind: 'ball',

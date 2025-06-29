@@ -80,20 +80,17 @@ export namespace BasePairs {
             const entity_id = atom_site.label_entity_id.value(idx);
             const comp_id = atom_site.label_comp_id.value(idx);
             const PDB_ins_code = atom_site.pdbx_PDB_ins_code.value(idx);
-            // We do not have to apply the "expand alt_id to residue" trick here
-            // because will eventually pick out individual atoms from the base
-            const alt_id = atom_site.label_alt_id.value(idx);
 
             const pairIdx = basePairs.findIndex(bp => (
                 bp.PDB_model_number === PDB_model_number &&
                 (
                     isBaseMatching(
                         bp.a,
-                        asym_id, entity_id, seq_id, comp_id, PDB_ins_code
+                        asym_id, entity_id, seq_id, PDB_ins_code
                     ) ||
                     isBaseMatching(
                         bp.b,
-                        asym_id, entity_id, seq_id, comp_id, PDB_ins_code
+                        asym_id, entity_id, seq_id, PDB_ins_code
                     )
                 )
             ));
@@ -114,7 +111,6 @@ export namespace BasePairs {
                         seq_id,
                         comp_id,
                         PDB_ins_code,
-                        alt_id,
                     }
                 });
             }
@@ -159,14 +155,13 @@ export namespace BasePairs {
     }
 
     function isBaseMatching(
-        base: BasePairsTypes.Base,
-        asym_id: string, entity_id: string, seq_id: number, comp_id: string, ins_code: string,
+        base: BasePairsTypes.PairedBase,
+        asym_id: string, entity_id: string, seq_id: number, ins_code: string,
     ) {
         return (
             base.asym_id === asym_id &&
             base.entity_id === entity_id &&
             base.seq_id === seq_id &&
-            base.comp_id === comp_id &&
             base.PDB_ins_code === ins_code
         );
     }

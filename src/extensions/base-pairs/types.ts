@@ -3,25 +3,26 @@ export namespace BasePairsTypes {
 
     export type Item = UnpairedResidue | BasePair;
 
+    export type Residue = {
+        asym_id: string,
+        entity_id: string,
+        seq_id: number,
+        comp_id: string,
+        PDB_ins_code: string,
+    }
+
     export type BaseEdge = 'watson-crick' | 'hoogsteen' | 'sugar';
     export type UnpairedResidue = {
         kind: 'unpaired',
         PDB_model_number: number,
-        residue: {
-            asym_id: string,
-            entity_id: string,
-            seq_id: number,
-            comp_id: string,
-            PDB_ins_code: string,
-            alt_id: string,
-        }
+        residue: Residue,
     };
     export type BasePair = {
         kind: 'pair',
         PDB_model_number: number,
         orientation: 'cis' | 'trans',
-        a: Base,
-        b: Base,
+        a: PairedBase,
+        b: PairedBase,
         is_complementary: boolean,
     };
 
@@ -29,14 +30,9 @@ export namespace BasePairsTypes {
         items: Item[],
     }
 
-    export interface Base {
-        asym_id: string,
-        entity_id: string,
-        seq_id: number,
-        comp_id: string,
-        PDB_ins_code: string,
+    export type PairedBase = Residue & {
         alt_id: string,
         struct_oper_id: string,
         base_edge: BaseEdge,
-    }
+    };
 }
