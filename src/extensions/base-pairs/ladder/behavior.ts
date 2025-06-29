@@ -1,11 +1,12 @@
-import { BasePairs } from '../property';
 import { BasePairsLadderColorThemeProvider } from './color';
 import { BasePairsLadderProvider } from './property';
 import { BasePairsLadderRepresentationProvider } from './representation';
+import { BasePairsLadderTypes } from './types';
+import { BasePairs } from '../property';
+import { BasePairsTypes } from '../types';
 import { StructureRepresentationPresetProvider, PresetStructureRepresentations } from '../../../mol-plugin-state/builder/structure/representation-preset';
 import { StateObjectRef } from '../../../mol-state';
 import { Task } from '../../../mol-task';
-import { BasePairsTypes } from '../types';
 
 export const BasePairsLadderPreset = StructureRepresentationPresetProvider({
     id: 'preset-structure-representation-base-pairs-ladder',
@@ -25,7 +26,6 @@ export const BasePairsLadderPreset = StructureRepresentationPresetProvider({
         await plugin.runTask(Task.create('Base Pairs Ladder', async runtime => {
             await BasePairsLadderProvider.attach({ runtime, assetManager: plugin.managers.asset, errorContext: plugin.errorContext }, model);
         }));
-
 
         const { components, representations } = await PresetStructureRepresentations.auto.apply(ref, { ...params }, plugin);
 
@@ -54,20 +54,20 @@ function westhofAbbrev(pair: BasePairsTypes.BasePair) {
     return `${ct}${edges.join('')}`;
 }
 
-function formatBase(base: BasePairsTypes.Residue, alt_id: string) {
-    return `<b>${base.asym_id} | ${base.comp_id} ${base.seq_id}${base.PDB_ins_code}${alt_id.length > 0 ? ` (alt ${alt_id})` : ''}`;
+function formatBase(instanceName: string, base: BasePairsTypes.Residue, alt_id: string) {
+    return `Instance ${instanceName} | <b>${base.asym_id} | ${base.comp_id} ${base.seq_id}${base.PDB_ins_code}${alt_id.length > 0 ? ` (alt ${alt_id})` : ''}</b>`;
 }
 
 const RemoveNewline = /\r?\n/g;
-export function itemLabel(item: BasePairsTypes.Item) {
+export function itemLabel(item: BasePairsLadderTypes.LociItem) {
     const label = item.kind === 'unpaired'
         ? `
             Unpaired base<br />
-            ${formatBase(item.residue, '')}
+            ${formatBase(item.instanceName, item.residue, '')}
         `
         : `
             <b>${westhofAbbrev(item)}</b><br />
-            ${formatBase(item.a, item.a.alt_id)} \u27FA ${formatBase(item.b, item.b.alt_id)}
+            ${formatBase(item.instanceNameA, item.a, item.a.alt_id)} \u27FA ${formatBase(item.instanceNameB, item.b, item.b.alt_id)}
         `;
     return label.replace(RemoveNewline, '');
 }

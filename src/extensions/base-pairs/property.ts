@@ -46,6 +46,7 @@ export namespace BasePairs {
             subclass: Column.Schema.str,
         },
         atom_site: mmCIF_Schema.atom_site,
+        pdbx_struct_oper_list: mmCIF_Schema.pdbx_struct_oper_list,
     };
     export type Schema = typeof Schema;
 
@@ -81,23 +82,25 @@ export namespace BasePairs {
             const comp_id = atom_site.label_comp_id.value(idx);
             const PDB_ins_code = atom_site.pdbx_PDB_ins_code.value(idx);
 
-            const pairIdx = basePairs.findIndex(bp => (
-                bp.PDB_model_number === PDB_model_number &&
-                (
-                    isBaseMatching(
-                        bp.a,
-                        asym_id, entity_id, seq_id, PDB_ins_code
-                    ) ||
-                    isBaseMatching(
-                        bp.b,
-                        asym_id, entity_id, seq_id, PDB_ins_code
-                    )
-                )
-            ));
+            let unpaired = true;
+            for (const bp of basePairs) {
+                if (bp.PDB_model_number !== PDB_model_number) continue;
+                if (isBaseMatching(
+                    bp.a,
+                    asym_id, entity_id, seq_id, PDB_ins_code
+                )) {
+                    items.push(bp);
+                } else if (isBaseMatching(
+                    bp.b,
+                    asym_id, entity_id, seq_id, PDB_ins_code
+                )) {
+                    // We do not want to create duplicit items in the list but
+                    // we still want to mark this residue as paired
+                    unpaired = false;
+                }
+            }
 
-            if (pairIdx >= 0) {
-                items.push(basePairs[pairIdx]);
-            } else {
+            if (unpaired) {
                 // We are not checking if the unpaired residue is a NA base
                 // This is intentional because there is no easy way to detect if the residue
                 // is a NA base that we could use here.
@@ -167,7 +170,7 @@ export namespace BasePairs {
 
     function makeBasePairs(
         annotation: Table<typeof BasePairs.Schema.ndb_base_pair_annotation>,
-        list: Table<typeof BasePairs.Schema.ndb_base_pair_list>,
+        list: Table<typeof BasePairs.Schema.ndb_base_pair_list>
     ) {
         const { _rowCount: annotation_row_count } = annotation;
         const { _rowCount: list_row_count } = list;
@@ -176,7 +179,7 @@ export namespace BasePairs {
 
         const pairs = [];
         for (let idx = 0; idx < annotation_row_count; idx++) {
-            const bp = getBasePair(idx, annotation, list)
+            const bp = getBasePair(idx, annotation, list);
             pairs.push(bp);
         }
 

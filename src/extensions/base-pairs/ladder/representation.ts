@@ -94,22 +94,15 @@ function findResidueInUnit(asymId: string, seqId: number, insCode: string, struc
     return void 0;
 }
 
-function findMatchingBasePair(
+function isBasePairMatching(
     item: BasePairsTypes.BasePair,
     unit: Unit.Atomic,
     currentResidue: BasePairsTypes.Residue
 ) {
-    if (
+    return (
         unit.conformation.operator.assembly?.operList.includes(item.a.struct_oper_id) &&
         BasePairsUtil.areResiduesMatching(item.a, currentResidue)
-    ) {
-        return { first: item.a, second: item.b };
-    } else if (
-        unit.conformation.operator.assembly?.operList.includes(item.b.struct_oper_id) &&
-        BasePairsUtil.areResiduesMatching(item.a, currentResidue)
-    ) {
-        return { first: item.b, second: item.a };
-    } else return void 0;
+    );
 }
 
 function isUsableBaseType(bt: { isPurine: boolean, isPyrimidine: boolean }) {
@@ -120,8 +113,7 @@ const firstAnchorPos = Vec3();
 const secondAnchorPos = Vec3();
 const midpoint = Vec3();
 
-function getAnchorAtoms(pair: { first: BasePairsTypes.PairedBase, second: BasePairsTypes.PairedBase}, structure: Structure, unit: Unit.Atomic) {
-    const { first, second } = pair;
+function getAnchorAtoms(first: BasePairsTypes.PairedBase, second: BasePairsTypes.PairedBase, structure: Structure, unit: Unit.Atomic) {
     const firstResidue = findResidueInUnit(first.asym_id, first.seq_id, first.PDB_ins_code, structure, unit);
     if (!firstResidue) {
         return void 0;
@@ -209,13 +201,14 @@ function createBasePairsLadderMesh(ctx: VisualContext, unit: Unit, structure: St
             const seq_id = StructureProperties.residue.label_seq_id(loc);
             const PDB_ins_code = StructureProperties.residue.pdbx_PDB_ins_code(loc);
             const comp_id = StructureProperties.atom.label_comp_id(loc);
-            const rAltId = StructureProperties.atom.label_alt_id(loc);
+            const alt_id = StructureProperties.atom.label_alt_id(loc);
 
             const current = {
                 asym_id, entity_id, seq_id, comp_id, PDB_ins_code
             };
 
-            for (let idx = 0; idx < items.length; idx++) {
+            let idx = 0;
+            for (; idx < items.length; idx++) {
                 const item = items[idx];
                 if (item.PDB_model_number !== structure.model.modelNum) continue;
 
@@ -225,7 +218,7 @@ function createBasePairsLadderMesh(ctx: VisualContext, unit: Unit, structure: St
                     const baseType = getNucleotideBaseType(unit, residue.index);
                     if (isUsableBaseType(baseType)) {
                         const anchorAtomName = baseType.isPyrimidine ? 'N1' : 'N9';
-                        const atom = findAtomInRange(anchorAtomName, rAltId, residue.start, residue.end, structure, unit);
+                        const atom = findAtomInRange(anchorAtomName, alt_id, residue.start, residue.end, structure, unit);
 
                         if (atom !== -1) {
                             const pos = Vec3();
@@ -238,10 +231,12 @@ function createBasePairsLadderMesh(ctx: VisualContext, unit: Unit, structure: St
                         }
                     }
                 } else if (item.kind === 'pair') {
-                    const matching = findMatchingBasePair(item, unit, current);
+                    const matching = isBasePairMatching(item, unit, current);
                     if (matching) {
-                        const anchors = getAnchorAtoms(matching, structure, unit);
-                        if (!anchors) continue;
+                        const anchors = getAnchorAtoms(item.a, item.b, structure, unit);
+                        if (!anchors) {
+                            continue;
+                        }
                         const { firstAtom, secondAtom } = anchors;
 
                         calcMidpoint(midpoint, firstAtom, secondAtom);
@@ -263,6 +258,26 @@ function createBasePairsLadderMesh(ctx: VisualContext, unit: Unit, structure: St
     return MeshBuilder.getMesh(mb);
 }
 
+function findOpposingUnit(oper_id: string, refItem: BasePairsTypes.BasePair, items: BasePairsTypes.Item[], units: readonly Unit[]) {
+    // First we need to find a base pair where the base "a" is from the "current" unit. We identify the current
+    // unit by its symmetry operator ID
+
+    let item;
+    for (const _item of items) {
+        if (_item.kind !== 'pair') continue;
+        if (_item.PDB_model_number !== refItem.PDB_model_number) continue;
+
+        if (BasePairsUtil.areResiduesMatching(refItem.a, _item.a) && _item.a.struct_oper_id === oper_id) {
+            item = _item;
+            break;
+        }
+    }
+    if (!item) return void 0;
+
+    // Now find the opposing unit based on the symmetry operator ID of the base "b"
+    return units.find(u => u.conformation.operator.assembly?.operList.includes(item.b.struct_oper_id));
+}
+
 function getBasePairsLadderLoci(pickingId: PickingId, structureGroup: StructureGroup, id: number) {
     const { groupId, objectId, instanceId } = pickingId;
     if (objectId !== id) return EmptyLoci;
@@ -282,7 +297,22 @@ function getBasePairsLadderLoci(pickingId: PickingId, structureGroup: StructureG
     const itemIdx = Math.floor(groupId / 3);
     const offsetGroupId = itemIdx * 3 + meshGroupsCount * instanceId;
 
-    return BasePairsLadderTypes.Loci(data.items, [itemIdx], [offsetGroupId], undefined);
+    const item = data.items[itemIdx];
+    if (item.kind === 'unpaired') {
+        const lociItem = { ...item, instanceName: unit.conformation.operator.name };
+        return BasePairsLadderTypes.Loci([lociItem], [0], [offsetGroupId]);
+    } else {
+        const opposingUnit = structureGroup.group.units.length === 1
+            ? unit
+            : findOpposingUnit(unit.conformation.operator.assembly?.operList[0] ?? '', item, data.items, structureGroup.group.units);
+        if (!opposingUnit) return EmptyLoci;
+
+        const instanceNameA = unit.conformation?.operator.name;
+        const instanceNameB = opposingUnit.conformation?.operator.name ?? '?';
+
+        const lociItem = { ...item, instanceNameA, instanceNameB };
+        return BasePairsLadderTypes.Loci([lociItem], [0], [offsetGroupId]);
+    }
 }
 
 function eachBasePairsLadderStep(loci: Loci, structureGroup: StructureGroup, apply: (interval: Interval) => boolean) {

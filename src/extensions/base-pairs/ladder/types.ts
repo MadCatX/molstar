@@ -26,9 +26,13 @@ export namespace BasePairsLadderTypes {
         return !!x && x.kind === 'data-location' && x.tag === BasePairsTypes.DataTag;
     }
 
+    export type LociItem =
+        BasePairsTypes.UnpairedResidue & { instanceName: string } |
+        BasePairsTypes.BasePair & { instanceNameA: string, instanceNameB: string };
+
     export interface Loci extends DataLoci<BasePairsTypes.Item[], number> {}
 
-    export function Loci(data: BasePairsTypes.Item[], itemIndices: number[], elements: number[], boundingSphere?: Sphere3D): Loci {
+    export function Loci(data: LociItem[], itemIndices: number[], elements: number[], boundingSphere?: Sphere3D): Loci {
         return DataLoci(
             BasePairsTypes.DataTag,
             data,
