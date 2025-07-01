@@ -235,12 +235,18 @@ function getBasePair(
 
     const comp_id_a = list.comp_id_1.value(listIndex);
     const comp_id_b = list.comp_id_2.value(listIndex);
+    const orientation = intoOrientation(annotation.orientation.value(index));
+    const base_edge_1 = intoBaseEdge(annotation.base_1_edge.value(index));
+    const base_edge_2 = intoBaseEdge(annotation.base_2_edge.value(index));
 
     return {
         kind: 'pair',
         PDB_model_number: list.PDB_model_number.value(listIndex),
-        orientation: intoOrientation(annotation.orientation.value(index)),
-        is_complementary: isBpComplementary(comp_id_a, comp_id_b),
+        orientation,
+        is_coding: isBpComplementary(comp_id_a, comp_id_b) &&
+            orientation === 'cis' &&
+            base_edge_1 === 'watson-crick' &&
+            base_edge_2 === 'watson-crick',
         a: {
             asym_id: list.asym_id_1.value(listIndex),
             entity_id: list.entity_id_1.value(listIndex),
@@ -249,7 +255,7 @@ function getBasePair(
             PDB_ins_code: list.PDB_ins_code_1.value(listIndex),
             alt_id: list.alt_id_1.value(listIndex),
             struct_oper_id: list.struct_oper_id_1.value(listIndex),
-            base_edge: intoBaseEdge(annotation.base_1_edge.value(index)),
+            base_edge: base_edge_1,
         },
         b: {
             asym_id: list.asym_id_2.value(listIndex),
@@ -259,7 +265,7 @@ function getBasePair(
             PDB_ins_code: list.PDB_ins_code_2.value(listIndex),
             alt_id: list.alt_id_2.value(listIndex),
             struct_oper_id: list.struct_oper_id_2.value(listIndex),
-            base_edge: intoBaseEdge(annotation.base_2_edge.value(index)),
+            base_edge: base_edge_2,
         }
     };
 }

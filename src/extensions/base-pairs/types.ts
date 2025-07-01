@@ -23,7 +23,7 @@ export namespace BasePairsTypes {
         orientation: 'cis' | 'trans',
         a: PairedBase,
         b: PairedBase,
-        is_complementary: boolean,
+        is_coding: boolean,
     };
 
     export interface Items {

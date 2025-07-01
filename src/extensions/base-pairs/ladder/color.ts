@@ -46,7 +46,7 @@ export function BasePairsLadderColorTheme(ctx: ThemeDataContext, props: PD.Value
             if (object.kind === 'base') {
                 const { base } = object;
                 if (base.base_edge === 'watson-crick') {
-                    if (object.pair.is_complementary && object.pair.orientation === 'cis') {
+                    if (object.pair.is_coding) {
                         return colorMap.cWW_Complementary;
                     } else {
                         return colorMap.WW_Other;
