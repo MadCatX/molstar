@@ -30,6 +30,8 @@ const BasePairsLadderMeshParams = {
     barRadius: PD.Numeric(0.5, { min: 0.1, max: 5.0, step: 0.1 }),
     barScale: PD.Numeric(1.0, { min: 0.1, max: 2.0, step: 0.1 }),
     ballRadius: PD.Numeric(1.3, { min: 0.1, max: 5.0, step: 0.1 }),
+    showPairs: PD.Boolean(true),
+    showUnpaired: PD.Boolean(true),
 };
 type BasePairsLadderMeshParams = typeof BasePairsLadderMeshParams;
 
@@ -214,6 +216,7 @@ function createBasePairsLadderMesh(ctx: VisualContext, unit: Unit, structure: St
 
                 if (item.kind === 'unpaired') {
                     if (!BasePairsUtil.areResiduesMatching(item.residue, current)) continue;
+                    if (!props.showUnpaired) break;
 
                     const baseType = getNucleotideBaseType(unit, residue.index);
                     if (isUsableBaseType(baseType)) {
@@ -233,6 +236,8 @@ function createBasePairsLadderMesh(ctx: VisualContext, unit: Unit, structure: St
                 } else if (item.kind === 'pair') {
                     const matching = isBasePairMatching(item, unit, current);
                     if (matching) {
+                        if (!props.showPairs) break;
+
                         const anchors = getAnchorAtoms(item.a, item.b, structure, unit);
                         if (!anchors) {
                             continue;
@@ -337,7 +342,9 @@ function BasePairsLadderVisual(materialId: number): UnitsVisual<BasePairsLadderM
                 newProps.alpha !== currentProps.alpha ||
                 newProps.barRadius !== currentProps.barRadius ||
                 newProps.barScale !== currentProps.barScale ||
-                newProps.ballRadius !== currentProps.ballRadius
+                newProps.ballRadius !== currentProps.ballRadius ||
+                newProps.showPairs !== currentProps.showPairs ||
+                newProps.showUnpaired !== currentProps.showUnpaired
             );
         },
         mustRecreate() {
