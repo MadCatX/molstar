@@ -26,8 +26,14 @@ export namespace BasePairsTypes {
         is_coding: boolean,
     };
 
+    // Groups items by seq_id
+    export type SeqIdMap = Map<number, number[]>;
+    // Groups SeqIdMaps by asym_id
+    export type AsymIdMap = Map<string, SeqIdMap>;
+
     export interface Items {
         items: Item[],
+        mapping: AsymIdMap[]; // Indices are model_nums - 1
     }
 
     export type PairedBase = Residue & {

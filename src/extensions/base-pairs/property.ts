@@ -14,6 +14,22 @@ export const BasePairsParams = {};
 export type BasePairsParams = typeof BasePairsParams;
 export type BasePairsProps = PD.Values<BasePairsParams>;
 
+function updateMapping(subject: {
+    modelIdx: number,
+    mapping: BasePairsTypes.AsymIdMap[],
+    asym_id: string,
+    seq_id: number,
+}, items: BasePairsTypes.Item[]) {
+    const { modelIdx, mapping, asym_id, seq_id } = subject;
+    const asymIdMap = mapping[modelIdx];
+    const seqIdMap = asymIdMap.get(asym_id) ?? new Map();
+    const itemsPerSeqId = seqIdMap.get(seq_id) ?? [];
+    itemsPerSeqId.push(items.length - 1);
+
+    seqIdMap.set(seq_id, itemsPerSeqId);
+    asymIdMap.set(asym_id, seqIdMap);
+}
+
 export namespace BasePairs {
     export const Schema = {
         ndb_base_pair_list: {
@@ -62,14 +78,20 @@ export namespace BasePairs {
         // paired because the base_pair list contains only the paired residues.
 
         const items = new Array<BasePairsTypes.Item>();
+        const mapping = new Array<BasePairsTypes.AsymIdMap>();
 
         let last_PDB_model_number = -1;
         let last_seq_id = -1;
         for (let idx = 0; idx < atom_site_row_count; idx++) {
             const PDB_model_number = atom_site.pdbx_PDB_model_num.value(idx);
+            const modelIdx = PDB_model_number - 1;
             if (last_PDB_model_number !== PDB_model_number) {
                 last_PDB_model_number = PDB_model_number;
                 last_seq_id = -1;
+
+                if (mapping[modelIdx] === undefined) {
+                    mapping[modelIdx] = new Map();
+                }
             }
 
             const seq_id = atom_site.label_seq_id.value(idx);
@@ -91,6 +113,8 @@ export namespace BasePairs {
                 )) {
                     items.push(bp);
                     unpaired = false;
+
+                    updateMapping({ modelIdx, mapping, asym_id, seq_id }, items);
                 } else if (isBaseMatching(
                     bp.b,
                     asym_id, entity_id, seq_id, PDB_ins_code
@@ -117,10 +141,12 @@ export namespace BasePairs {
                         PDB_ins_code,
                     }
                 });
+
+                updateMapping({ modelIdx, mapping, asym_id, seq_id }, items);
             }
         }
 
-        return { items };
+        return { items, mapping };
     }
 
     export function getCifData(model: Model) {

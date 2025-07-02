@@ -182,7 +182,7 @@ function createBasePairsLadderMesh(ctx: VisualContext, unit: Unit, structure: St
     const data = BasePairsLadderProvider.get(structure.model)?.value?.data;
     if (!data) return Mesh.createEmpty(mesh);
 
-    const { items } = data;
+    const { items, mapping } = data;
 
     const cylinderProps = { topCap: true, bottomCap: true, radiusTop: props.barRadius, radiusBottom: props.barRadius, radialSegments: 8 };
     // This estimate is completely wrong but we need to give the builder something
@@ -209,14 +209,16 @@ function createBasePairsLadderMesh(ctx: VisualContext, unit: Unit, structure: St
                 asym_id, entity_id, seq_id, comp_id, PDB_ins_code
             };
 
-            let idx = 0;
-            for (; idx < items.length; idx++) {
-                const item = items[idx];
-                if (item.PDB_model_number !== structure.model.modelNum) continue;
+            const asymIdMap = mapping[structure.model.modelNum - 1];
+            const seqIdMap = asymIdMap.get(asym_id);
+            if (!seqIdMap) continue;
 
-                if (item.kind === 'unpaired') {
+            const itemIndices = (seqIdMap.get(seq_id) ?? []);
+            for (const itemIdx of itemIndices) {
+                const item = items[itemIdx];
+
+                if (item.kind === 'unpaired' && props.showUnpaired) {
                     if (!BasePairsUtil.areResiduesMatching(item.residue, current)) continue;
-                    if (!props.showUnpaired) break;
 
                     const baseType = getNucleotideBaseType(unit, residue.index);
                     if (isUsableBaseType(baseType)) {
@@ -224,18 +226,17 @@ function createBasePairsLadderMesh(ctx: VisualContext, unit: Unit, structure: St
                         const atom = findAtomInRange(anchorAtomName, alt_id, residue.start, residue.end, structure, unit);
 
                         if (atom !== -1) {
-                            const pos = Vec3();
-                            unit.conformation.position(atom, pos);
+                            unit.conformation.position(atom, midpoint);
 
-                            mb.currentGroup = 3 * idx;
-                            addSphere(mb, pos, props.ballRadius, 4);
+                            mb.currentGroup = 3 * itemIdx;
+                            addSphere(mb, midpoint, props.ballRadius, 4);
 
                             break;
                         }
                     }
-                } else if (item.kind === 'pair') {
+                } else if (item.kind === 'pair' && props.showPairs) {
                     const matching = isBasePairMatching(item, unit, current);
-                    if (matching && props.showPairs) {
+                    if (matching) {
                         const anchors = getAnchorAtoms(item.a, item.b, structure, unit);
                         if (!anchors) {
                             continue;
@@ -244,11 +245,11 @@ function createBasePairsLadderMesh(ctx: VisualContext, unit: Unit, structure: St
 
                         calcMidpoint(midpoint, firstAtom, secondAtom);
 
-                        mb.currentGroup = 3 * idx;
+                        mb.currentGroup = 3 * itemIdx;
                         addCylinder(mb, midpoint, firstAtom, props.barScale, cylinderProps);
-                        mb.currentGroup = 3 * idx + 1;
+                        mb.currentGroup = 3 * itemIdx + 1;
                         addCylinder(mb, midpoint, secondAtom, props.barScale, cylinderProps);
-                        mb.currentGroup = 3 * idx + 2;
+                        mb.currentGroup = 3 * itemIdx + 2;
                         addSphere(mb, midpoint, props.ballRadius, 4);
                     }
                 }
