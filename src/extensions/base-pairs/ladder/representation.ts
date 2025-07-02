@@ -235,9 +235,7 @@ function createBasePairsLadderMesh(ctx: VisualContext, unit: Unit, structure: St
                     }
                 } else if (item.kind === 'pair') {
                     const matching = isBasePairMatching(item, unit, current);
-                    if (matching) {
-                        if (!props.showPairs) break;
-
+                    if (matching && props.showPairs) {
                         const anchors = getAnchorAtoms(item.a, item.b, structure, unit);
                         if (!anchors) {
                             continue;
@@ -252,8 +250,6 @@ function createBasePairsLadderMesh(ctx: VisualContext, unit: Unit, structure: St
                         addCylinder(mb, midpoint, secondAtom, props.barScale, cylinderProps);
                         mb.currentGroup = 3 * idx + 2;
                         addSphere(mb, midpoint, props.ballRadius, 4);
-
-                        break;
                     }
                 }
             }

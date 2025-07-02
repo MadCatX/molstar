@@ -90,6 +90,7 @@ export namespace BasePairs {
                     asym_id, entity_id, seq_id, PDB_ins_code
                 )) {
                     items.push(bp);
+                    unpaired = false;
                 } else if (isBaseMatching(
                     bp.b,
                     asym_id, entity_id, seq_id, PDB_ins_code
