@@ -6,15 +6,22 @@ import { CustomProperty } from '../../../mol-model-props/common/custom-property'
 import { ColorTheme } from '../../../mol-theme/color';
 import { ColorThemeCategory } from '../../../mol-theme/color/categories';
 import { ThemeDataContext } from '../../../mol-theme/theme';
-import { Color, ColorMap } from '../../../mol-util/color';
-import { getColorMapParams } from '../../../mol-util/color/params';
+import { Color } from '../../../mol-util/color';
 import { TableLegend } from '../../../mol-util/legend';
 import { ParamDefinition as PD } from '../../../mol-util/param-definition';
 import { ObjectKeys } from '../../../mol-util/type-helpers';
 
 const DefaultColor = Color(0xFFAAFF);
 
-const LadderColors = ColorMap({
+function toColorMapParams(defn: Record<string, Color>) {
+    const params = {} as Record<string, PD.Color>;
+    ObjectKeys(defn).forEach(k => {
+        params[k] = PD.Color(defn[k], { label: k.replace('_', ' ') });
+    });
+    return params;
+}
+
+const LadderColors = {
     'Hoogsteen': Color(0x0F0FCD),
     'Sugar': Color(0xFF0000),
     'cWW_Complementary': Color(0x6BED00),
@@ -22,12 +29,12 @@ const LadderColors = ColorMap({
     'Cis_Ball': Color(0xFAFAFA),
     'Trans_Ball': Color(0x363636),
     Default: DefaultColor,
-});
+};
 
 export const BasePairsLadderColorThemeParams = {
     colors: PD.MappedStatic('default', {
         default: PD.EmptyGroup(),
-        custom: PD.Group(getColorMapParams(LadderColors)),
+        custom: PD.Group(toColorMapParams(LadderColors)),
     }),
 };
 export type BasePairsLadderColorThemeParams = typeof BasePairsLadderColorThemeParams;
