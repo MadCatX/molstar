@@ -8,7 +8,7 @@ import { MmcifFormat } from '../../mol-model-formats/structure/mmcif';
 import { ParamDefinition as PD } from '../../mol-util/param-definition';
 import { mmCIF_Schema } from '../../mol-io/reader/cif/schema/mmcif';
 
-export type Pairings = PropertyWrapper<BasePairsTypes.Items | undefined>;
+export type Pairings = PropertyWrapper<BasePairsTypes.Data | undefined>;
 
 export const BasePairsParams = {};
 export type BasePairsParams = typeof BasePairsParams;

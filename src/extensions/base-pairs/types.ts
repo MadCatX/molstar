@@ -31,7 +31,7 @@ export namespace BasePairsTypes {
     // Groups SeqIdMaps by asym_id
     export type AsymIdMap = Map<string, SeqIdMap>;
 
-    export interface Items {
+    export interface Data {
         items: Item[],
         mapping: AsymIdMap[]; // Indices are model_nums - 1
     }

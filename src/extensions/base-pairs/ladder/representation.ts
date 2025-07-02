@@ -96,6 +96,17 @@ function findResidueInUnit(asymId: string, seqId: number, insCode: string, struc
     return void 0;
 }
 
+const EmptyItemIndices = new Array<number>();
+function findItemIndices(mapping: BasePairsTypes.AsymIdMap[], modelIdx: number, asym_id: string, seq_id: number) {
+    const asymIdMap = mapping[modelIdx];
+    if (!asymIdMap) return EmptyItemIndices;
+
+    const seqIdMap = asymIdMap.get(asym_id);
+    if (!seqIdMap) return EmptyItemIndices;
+
+    return seqIdMap.get(seq_id) ?? EmptyItemIndices;
+}
+
 function isBasePairMatching(
     item: BasePairsTypes.BasePair,
     unit: Unit.Atomic,
@@ -209,11 +220,7 @@ function createBasePairsLadderMesh(ctx: VisualContext, unit: Unit, structure: St
                 asym_id, entity_id, seq_id, comp_id, PDB_ins_code
             };
 
-            const asymIdMap = mapping[structure.model.modelNum - 1];
-            const seqIdMap = asymIdMap.get(asym_id);
-            if (!seqIdMap) continue;
-
-            const itemIndices = (seqIdMap.get(seq_id) ?? []);
+            const itemIndices = findItemIndices(mapping, structure.model.modelNum - 1, asym_id, seq_id);
             for (const itemIdx of itemIndices) {
                 const item = items[itemIdx];
 
@@ -260,14 +267,17 @@ function createBasePairsLadderMesh(ctx: VisualContext, unit: Unit, structure: St
     return MeshBuilder.getMesh(mb);
 }
 
-function findOpposingUnit(oper_id: string, refItem: BasePairsTypes.BasePair, items: BasePairsTypes.Item[], units: readonly Unit[]) {
+function findOpposingUnit(oper_id: string, refItem: BasePairsTypes.BasePair, data: BasePairsTypes.Data, units: readonly Unit[]) {
     // First we need to find a base pair where the base "a" is from the "current" unit. We identify the current
     // unit by its symmetry operator ID
 
+    const { items, mapping } = data;
+    const itemIndices = findItemIndices(mapping, refItem.PDB_model_number - 1, refItem.a.asym_id, refItem.a.seq_id);
+
     let item;
-    for (const _item of items) {
+    for (const itemIdx of itemIndices) {
+        const _item = items[itemIdx];
         if (_item.kind !== 'pair') continue;
-        if (_item.PDB_model_number !== refItem.PDB_model_number) continue;
 
         if (BasePairsUtil.areResiduesMatching(refItem.a, _item.a) && _item.a.struct_oper_id === oper_id) {
             item = _item;
@@ -306,7 +316,7 @@ function getBasePairsLadderLoci(pickingId: PickingId, structureGroup: StructureG
     } else {
         const opposingUnit = structureGroup.group.units.length === 1
             ? unit
-            : findOpposingUnit(unit.conformation.operator.assembly?.operList[0] ?? '', item, data.items, structureGroup.group.units);
+            : findOpposingUnit(unit.conformation.operator.assembly?.operList[0] ?? '', item, data, structureGroup.group.units);
         if (!opposingUnit) return EmptyLoci;
 
         const instanceNameA = unit.conformation?.operator.name;
