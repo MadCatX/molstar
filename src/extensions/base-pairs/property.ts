@@ -107,18 +107,12 @@ export namespace BasePairs {
             let unpaired = true;
             for (const bp of basePairs) {
                 if (bp.PDB_model_number !== PDB_model_number) continue;
-                if (isBaseMatching(
-                    bp.a,
-                    asym_id, entity_id, seq_id, PDB_ins_code
-                )) {
+                if (isBaseMatching(bp.a, asym_id, entity_id, seq_id, PDB_ins_code)) {
                     items.push(bp);
                     unpaired = false;
 
                     updateMapping({ modelIdx, mapping, asym_id, seq_id }, items);
-                } else if (isBaseMatching(
-                    bp.b,
-                    asym_id, entity_id, seq_id, PDB_ins_code
-                )) {
+                } else if (isBaseMatching(bp.b, asym_id, entity_id, seq_id, PDB_ins_code)) {
                     // We do not want to create duplicit items in the list but
                     // we still want to mark this residue as paired
                     unpaired = false;
