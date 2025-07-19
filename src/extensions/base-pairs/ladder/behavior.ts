@@ -67,7 +67,9 @@ export function itemLabel(item: BasePairsLadderTypes.LociItem) {
         `
         : `
             <b>${westhofAbbrev(item)}</b><br />
-            ${formatBase(item.instanceNameA, item.a, item.a.alt_id)} \u27FA ${formatBase(item.instanceNameB, item.b, item.b.alt_id)}
+            ${formatBase(item.instanceNameA, item.a, item.a.alt_id)}<br />
+            <div style="text-align:center">\u296E</div>
+            ${formatBase(item.instanceNameB, item.b, item.b.alt_id)}<br />
         `;
     return label.replace(RemoveNewline, '');
 }
