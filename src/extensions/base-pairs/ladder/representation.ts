@@ -29,9 +29,13 @@ const BasePairsLadderMeshParams = {
     ...UnitsMeshParams,
     barRadius: PD.Numeric(0.5, { min: 0.1, max: 5.0, step: 0.1 }),
     barScale: PD.Numeric(1.0, { min: 0.1, max: 2.0, step: 0.1 }),
-    ballRadius: PD.Numeric(1.3, { min: 0.1, max: 5.0, step: 0.1 }),
+    cisBallRadius: PD.Numeric(1.3, { min: 0.1, max: 5.0, step: 0.1 }),
+    transBallRadius: PD.Numeric(1.3, { min: 0.1, max: 5.0, step: 0.1 }),
+    unpairedBallRadius: PD.Numeric(1.3, { min: 0.1, max: 5.0, step: 0.1 }),
     showPairs: PD.Boolean(true),
     showUnpaired: PD.Boolean(true),
+    showCisBall: PD.Boolean(false),
+    showTransBall: PD.Boolean(true),
 };
 type BasePairsLadderMeshParams = typeof BasePairsLadderMeshParams;
 
@@ -236,7 +240,7 @@ function createBasePairsLadderMesh(ctx: VisualContext, unit: Unit, structure: St
                             unit.conformation.position(atom, midpoint);
 
                             mb.currentGroup = 3 * itemIdx;
-                            addSphere(mb, midpoint, props.ballRadius, 4);
+                            addSphere(mb, midpoint, props.unpairedBallRadius, 4);
 
                             break;
                         }
@@ -257,7 +261,11 @@ function createBasePairsLadderMesh(ctx: VisualContext, unit: Unit, structure: St
                         mb.currentGroup = 3 * itemIdx + 1;
                         addCylinder(mb, midpoint, secondAtom, props.barScale, cylinderProps);
                         mb.currentGroup = 3 * itemIdx + 2;
-                        addSphere(mb, midpoint, props.ballRadius, 4);
+                        if (item.orientation === 'cis' && props.showCisBall) {
+                            addSphere(mb, midpoint, props.cisBallRadius, 4);
+                        } else if (item.orientation === 'trans' && props.showTransBall) {
+                            addSphere(mb, midpoint, props.transBallRadius, 4);
+                        }
                     }
                 }
             }
@@ -349,9 +357,13 @@ function BasePairsLadderVisual(materialId: number): UnitsVisual<BasePairsLadderM
                 newProps.alpha !== currentProps.alpha ||
                 newProps.barRadius !== currentProps.barRadius ||
                 newProps.barScale !== currentProps.barScale ||
-                newProps.ballRadius !== currentProps.ballRadius ||
+                newProps.cisBallRadius !== currentProps.cisBallRadius ||
+                newProps.transBallRadius !== currentProps.transBallRadius ||
+                newProps.unpairedBallRadius !== currentProps.unpairedBallRadius ||
                 newProps.showPairs !== currentProps.showPairs ||
-                newProps.showUnpaired !== currentProps.showUnpaired
+                newProps.showUnpaired !== currentProps.showUnpaired ||
+                newProps.showCisBall !== currentProps.showCisBall ||
+                newProps.showTransBall !== currentProps.showTransBall
             );
         },
         mustRecreate() {
