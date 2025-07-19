@@ -1,4 +1,4 @@
-import { BasePairsLadderColorThemeProvider } from './color';
+import { BasePairsLadderSimpleColorThemeProvider } from './color';
 import { BasePairsLadderProvider } from './property';
 import { BasePairsLadderRepresentationProvider } from './representation';
 import { BasePairsLadderTypes } from './types';
@@ -34,7 +34,7 @@ export const BasePairsLadderPreset = StructureRepresentationPresetProvider({
 
         let ladderRepr;
         if (representations)
-            ladderRepr = builder.buildRepresentation(update, ladder, { type: BasePairsLadderRepresentationProvider, typeParams, color: BasePairsLadderColorThemeProvider }, { tag: 'base-pairs-ladder' });
+            ladderRepr = builder.buildRepresentation(update, ladder, { type: BasePairsLadderRepresentationProvider, typeParams, color: BasePairsLadderSimpleColorThemeProvider }, { tag: 'base-pairs-ladder' });
 
         await update.commit({ revertOnError: true });
         return { components: { ...components, ladder }, representations: { ...representations, ladderRepr } };
